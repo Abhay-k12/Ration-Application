@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart-Ration · Login | TPDS India</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+    <link rel="stylesheet" href="css/login_page.css">
+</head>
+<body>
+
+<header id="header">
+    <div class="logo">
+        <div class="logo-icon"><i class="ri-government-line"></i></div>
+        <div class="logo-text">
+            <h1>Smart-Ration</h1>
+            <span>Govt of India · TPDS</span>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
+            <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
+            <li><a href="index.html#process"><i class="ri-focus-line"></i> Process</a></li>
+            <li><a href="index.html#features"><i class="ri-star-line"></i> Features</a></li>
+            <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Contact</a></li>
+            <li><a href="login_page.html" class="active"><i class="ri-login-box-line"></i> Login</a></li>
+        </ul>
+    </nav>
+    <div class="mobile-menu"><i class="ri-menu-line"></i></div>
+</header>
+
+<!-- LOGIN SECTION -->
+<section class="login-section">
+    <div class="login-container">
+        <!-- left panel: dynamic features -->
+        <div class="login-info">
+            <h2 id="roleWelcome">Welcome, Beneficiary</h2>
+            <p id="roleDescription">Access your ration dashboard, view quota & history.</p>
+            <div class="features-list" id="roleFeatures">
+                <!-- beneficiary features (default) -->
+                <div class="role-info active" id="beneficiaryFeatures">
+                    <div class="feature-item"><i class="ri-user-line"></i><span>View monthly entitlement & quota</span></div>
+                    <div class="feature-item"><i class="ri-history-line"></i><span>Complete transaction history</span></div>
+                    <div class="feature-item"><i class="ri-qr-code-line"></i><span>Generate QR for shop</span></div>
+                    <div class="feature-item"><i class="ri-shield-check-line"></i><span>Face verification enabled</span></div>
+                </div>
+                <!-- PDS officer features -->
+                <div class="role-info" id="pdsFeatures">
+                    <div class="feature-item"><i class="ri-store-line"></i><span>Distribute rations, scan beneficiary QR</span></div>
+                    <div class="feature-item"><i class="ri-camera-line"></i><span>Face verification of beneficiaries</span></div>
+                    <div class="feature-item"><i class="ri-wifi-off-line"></i><span>Offline transaction & sync</span></div>
+                    <div class="feature-item"><i class="ri-bar-chart-2-line"></i><span>Shop stock & daily reports</span></div>
+                </div>
+                <!-- admin features -->
+                <div class="role-info" id="adminFeatures">
+                    <div class="feature-item"><i class="ri-dashboard-line"></i><span>District‑wise monitoring dashboard</span></div>
+                    <div class="feature-item"><i class="ri-pie-chart-line"></i><span>Real‑time analytics & duplicate alerts</span></div>
+                    <div class="feature-item"><i class="ri-user-settings-line"></i><span>Manage officers and shops</span></div>
+                    <div class="feature-item"><i class="ri-file-copy-line"></i><span>Generate reports & audits</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-form-container">
+            <h2 id="formTitle">Beneficiary Login</h2>
+            <p id="formDescription">Enter your credentials to access the portal</p>
+            <div id="loginErrorMessage" class="error-message"></div>
+
+            <!-- role selector pills -->
+            <div class="role-selection">
+                <div class="role-option active" data-role="beneficiary"><i class="ri-user-line"></i><span>Beneficiary</span></div>
+                <div class="role-option" data-role="pds"><i class="ri-store-line"></i><span>PDS Officer</span></div>
+                <div class="role-option" data-role="admin"><i class="ri-admin-line"></i><span>Admin</span></div>
+            </div>
+
+            <form id="loginForm">
+                <!-- beneficiary form -->
+                <div class="role-info active" id="beneficiaryForm">
+                    <div class="form-group"><label class="form-label" for="benId"> Ration Card No.</label>
+                        <div class="input-group"><input type="text" id="benId" placeholder="Enter Ration Card Number" required><div class="input-icon"><i class="ri-user-line"></i></div></div>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="benPass">Password / OTP</label>
+                        <div class="input-group"><input type="password" id="benPass" placeholder="••••••••" required><button type="button" class="password-toggle" onclick="toggleField('benPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    </div>
+                </div>
+
+                <!-- pds officer form -->
+                <div class="role-info" id="pdsForm">
+                    <div class="form-group"><label class="form-label" for="pdsId">PDS Employee ID</label>
+                        <div class="input-group"><input type="text" id="pdsId" placeholder="e.g. PDS/UP/12345"><div class="input-icon"><i class="ri-store-line"></i></div></div>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="pdsPass">Password</label>
+                        <div class="input-group"><input type="password" id="pdsPass" placeholder="••••••••"><button type="button" class="password-toggle" onclick="toggleField('pdsPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    </div>
+                </div>
+
+                <!-- admin form -->
+                <div class="role-info" id="adminForm">
+                    <div class="form-group"><label class="form-label" for="adminId">Admin ID (District)</label>
+                        <div class="input-group"><input type="text" id="adminId" placeholder="e.g. DM/KA/BLR"><div class="input-icon"><i class="ri-admin-line"></i></div></div>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="adminPass">Password</label>
+                        <div class="input-group"><input type="password" id="adminPass" placeholder="••••••••"><button type="button" class="password-toggle" onclick="toggleField('adminPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    </div>
+                </div>
+
+                <div class="forgot-password"><a href="#" id="forgotPasswordLink">Forgot Password?</a></div>
+                <button type="submit" class="login-btn"><i class="ri-login-box-line"></i> <span id="loginBtnText">Login as Beneficiary</span></button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Forgot password modal (dynamic) -->
+<div class="modal" id="forgotModal">
+    <div class="modal-content">
+        <span class="close-modal" id="closeModalBtn">&times;</span>
+        <h3 id="modalTitle">Reset Beneficiary Password</h3>
+        <p id="modalDesc">Enter your Aadhaar / Ration card number to receive reset link.</p>
+        <form id="forgotForm">
+            <div class="form-group"><label class="form-label" id="modalLabel" for="resetField">Aadhaar / RC No.</label>
+                <div class="input-group"><input type="text" id="resetField" class="form-control" placeholder="12‑digit number"><div class="input-icon"><i class="ri-user-line"></i></div></div>
+            </div>
+            <button type="submit" class="login-btn"><i class="ri-mail-send-line"></i> <span id="resetBtnText">Send Reset Link</span></button>
+            <div class="success-message" id="resetSuccess"><i class="ri-checkbox-circle-line"></i> <span>Reset link sent to registered mobile/email!</span></div>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-column"><h4>Quick Links</h4><ul class="footer-links"><li><a href="index.html">Home</a></li><li><a href="#">About NFSA</a></li><li><a href="#">Fair Price Shops</a></li><li><a href="#">Grievance</a></li></ul></div>
+        <div class="footer-column"><h4>Beneficiary</h4><ul class="footer-links"><li><a href="#">Check Eligibility</a></li><li><a href="#">Download Ration Card</a></li><li><a href="#">Transaction History</a></li><li><a href="#">Raise Complaint</a></li></ul></div>
+        <div class="footer-column"><h4>Officer/Admin</h4><ul class="footer-links"><li><a href="#">PDS Login</a></li><li><a href="#">Admin Login</a></li><li><a href="#">District Reports</a></li><li><a href="#">Stock Management</a></li></ul></div>
+        <div class="footer-column"><h4>Contact</h4><ul class="footer-links"><li><i class="ri-phone-line"></i> 1800‑111‑222</li><li><i class="ri-mail-line"></i> support@pds.gov.in</li><li><i class="ri-map-pin-line"></i> Krishi Bhawan, Delhi</li></ul></div>
+    </div>
+    <div class="copyright"><p>© 2025 Smart-Ration TPDS, Ministry of Food, Govt of India. All rights reserved.</p></div>
+</footer>
+
+<script src="js/login_page.js"></script>
+</body>
+</html>
