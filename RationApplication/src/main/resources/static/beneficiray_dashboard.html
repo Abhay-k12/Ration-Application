@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beneficiary Dashboard · Smart-Ration TPDS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+    <link rel="stylesheet" href="css/beneficiary_dasboard.css">
+</head>
+<body>
+<header id="header">
+    <div class="logo">
+        <div class="logo-icon"><i class="ri-government-line"></i></div>
+        <div class="logo-text">
+            <h1>Smart-Ration</h1>
+            <span>Govt of India · TPDS</span>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
+            <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
+            <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
+            <li><a href="login_page.html" class="active"><i class="ri-logout-box-line"></i> Logout</a></li>
+        </ul>
+    </nav>
+    <div class="mobile-menu"><i class="ri-menu-line"></i></div>
+</header>
+
+<!-- Central dashboard -->
+<div class="dashboard-container">
+    <!-- sidebar containing user information -->
+    <aside class="sidebar">
+        <div class="profile-card">
+            <div class="avatar"><i class="ri-user-line"></i></div>
+            <h3>Mohan Lal</h3>
+            <div class="rc-number"><i class="ri-number-1"></i> RC: 1234 5678 9012</div>
+            <div class="info-row"><i class="ri-map-pin-line"></i><span>Lucknow, Uttar Pradesh - 226001</span></div>
+            <div class="info-row"><i class="ri-group-line"></i><span>Family members : 5</span></div>
+        </div>
+
+        <div class="family-members">
+            <h4 style="margin-bottom: 15px;"><i class="ri-group-line"></i> Family members</h4>
+            <div class="family-member"><i class="ri-user-line"></i> Mohan Lal (self) <span class="member-tag">private</span></div>
+            <div class="family-member"><i class="ri-user-line"></i> Sita Devi (wife) <span class="member-tag govt">govt</span></div>
+            <div class="family-member"><i class="ri-user-line"></i> Rahul Lal (son) <span class="member-tag private">private</span></div>
+            <div class="family-member"><i class="ri-user-line"></i> Priya Lal (daughter) <span class="member-tag">student</span></div>
+            <div class="family-member"><i class="ri-user-line"></i> Ram Lal (father) <span class="member-tag">retired</span></div>
+        </div>
+
+        <div class="logout-btn" onclick="location.href='index.html'">
+            <i class="ri-logout-box-line"></i> Logout
+        </div>
+    </aside>
+
+    <!-- main content of the beneficiary dashboard -->
+    <main class="main-content">
+        <div class="dash-header">
+            <h2>Beneficiary Dashboard</h2>
+        </div>
+
+        <!-- navigation tabs -->
+        <div class="nav-tabs">
+            <div class="nav-item active" data-module="module1"><i class="ri-profile-line"></i> Ration details</div>
+            <div class="nav-item" data-module="module2"><i class="ri-qr-code-line"></i> Generate QR</div>
+            <div class="nav-item" data-module="module3"><i class="ri-alert-line"></i> Register complaint</div>
+            <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> Complaint history</div>
+            <div class="nav-item" data-module="module5"><i class="ri-file-list-3-line"></i> Transaction history</div>
+        </div>
+
+        <!-- MODULE 1: Ration card details + profile Management Section -->
+        <div id="module1" class="module active">
+            <div class="card">
+                <div class="card-title"><i class="ri-profile-line"></i> Ration card details</div>
+                <div class="grid-2">
+                    <div><strong>Card type:</strong> BPL (Antyodaya)</div>
+                    <div><strong>Issue date:</strong> 12 Mar 2020</div>
+                    <div><strong>Valid upto:</strong> 31 Mar 2030</div>
+                    <div><strong>FPS allotted:</strong> Shop #RC45, Alambagh</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="ri-group-line"></i> Family composition</div>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead><tr style="border-bottom:2px solid #e2e8f0"><th>Name</th><th>Relation</th><th>Occupation</th></tr></thead>
+                    <tbody>
+                    <tr><td>Mohan Lal</td><td>Self</td><td>Private job</td></tr>
+                    <tr><td>Sita Devi</td><td>Wife</td><td>Teacher (govt)</td></tr>
+                    <tr><td>Rahul Lal</td><td>Son</td><td>Private</td></tr>
+                    <tr><td>Priya Lal</td><td>Daughter</td><td>Student</td></tr>
+                    <tr><td>Ram Lal</td><td>Father</td><td>Retired</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="ri-lock-line"></i> Change password</div>
+                <form id="changePwdForm">
+                    <div class="form-group"><input type="password" class="form-control" placeholder="Current password"></div>
+                    <div class="form-group"><input type="password" class="form-control" placeholder="New password"></div>
+                    <div class="form-group"><input type="password" class="form-control" placeholder="Confirm password"></div>
+                    <button type="submit" class="submit-btn">Update password</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODULE 2: Generate QR Through Ration Card of the beneficiary-->
+        <div id="module2" class="module">
+            <div class="ration-card">
+                <div class="ration-header">
+                    <div class="govt-emblem">
+                        <i class="ri-government-line" style="font-size:32px;"></i>
+                        <div><strong>Government of India</strong><br>Ministry of Food</div>
+                    </div>
+                    <div class="qr-code-placeholder">
+                        <i class="ri-qr-code-line" style="font-size:32px;"></i>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 25px; align-items: center;">
+                    <div class="photo-placeholder"><i class="ri-user-face-line"></i></div>
+                    <div style="flex:1">
+                        <h3 style="color:var(--primary);">Mohan Lal</h3>
+                        <p><i class="ri-number-1"></i> <strong>RC:</strong> 1234-5678-9012</p>
+                        <p><i class="ri-map-pin-line"></i> <strong>Address:</strong> 45/12, Alambagh, Lucknow, UP - 226001</p>
+                        <p><i class="ri-group-line"></i> <strong>Family members:</strong> 5 (4 adults, 1 child)</p>
+                        <p><i class="ri-calendar-line"></i> <strong>Valid until:</strong> 31/03/2030</p>
+                    </div>
+                </div>
+                <div style="margin-top:20px; background:#fef3c7; padding:15px; border-radius:16px;">
+                    <i class="ri-information-line"></i> Show this QR code at the PDS shop to receive your monthly ration.
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3: Register complaint -->
+        <div id="module3" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-alert-line"></i> Register a new complaint</div>
+                <form id="complaintForm">
+                    <div class="form-group">
+                        <label class="form-label">Subject type</label>
+                        <select class="form-control">
+                            <option>Add new member</option>
+                            <option>Remove member</option>
+                            <option>Transfer member</option>
+                            <option>Family separation</option>
+                            <option>Ration not received</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message body</label>
+                        <textarea class="form-control" rows="4" placeholder="Describe your issue in detail"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Supporting document link (merged PDF)</label>
+                        <input type="url" class="form-control" placeholder="https://drive.google.com/...">
+                    </div>
+                    <button type="submit" class="submit-btn"><i class="ri-send-plane-line"></i> Submit complaint</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODULE 4: Complaint history  -->
+        <div id="module4" class="module">
+            <div class="complaint-card" onclick="openComplaintModal(1)" style="border-left-color: var(--secondary);">
+                <div><strong>Add new member</strong><br><small>22 Jan 2025</small></div>
+                <span class="status-badge status-approved">Approved</span>
+            </div>
+            <div class="complaint-card" onclick="openComplaintModal(2)" style="border-left-color: var(--danger);">
+                <div><strong>Duplicate ration card</strong><br><small>05 Feb 2025</small></div>
+                <span class="status-badge status-rejected">Rejected</span>
+            </div>
+            <div class="complaint-card" onclick="openComplaintModal(3)" style="border-left-color: var(--accent);">
+                <div><strong>Change address</strong><br><small>18 Mar 2025</small></div>
+                <span class="status-badge status-pending">Processing</span>
+            </div>
+        </div>
+
+        <!-- MODULE 5: Transaction history -->
+        <div id="module5" class="module">
+            <div class="txn-card" onclick="openTxnModal(1)">
+                <div>
+                    <strong>March 2025</strong><br>
+                    <small>Wheat 10kg, Rice 5kg, Sugar 2kg</small>
+                </div>
+                <div style="text-align:right">
+                    <span class="txn-badge taken">Taken</span><br>
+                    <small>₹ 85</small>
+                </div>
+            </div>
+            <div class="txn-card" onclick="openTxnModal(2)">
+                <div>
+                    <strong>February 2025</strong><br>
+                    <small>Wheat 10kg, Rice 5kg, Sugar 2kg</small>
+                </div>
+                <div style="text-align:right">
+                    <span class="txn-badge taken">Taken</span><br>
+                    <small>₹ 85</small>
+                </div>
+            </div>
+            <div class="txn-card" onclick="openTxnModal(3)">
+                <div>
+                    <strong>January 2025</strong><br>
+                    <small>Wheat 10kg, Rice 5kg, Sugar 2kg</small>
+                </div>
+                <div style="text-align:right">
+                    <span class="txn-badge skipped">Skipped</span><br>
+                    <small>₹ 0</small>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL for complaint detail -->
+<div class="modal" id="complaintModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
+        <h3 style="color:var(--primary);">Complaint details</h3>
+        <div id="complaintDetailContent">
+            <p><strong>Subject:</strong> Add new member (daughter marriage)</p>
+            <p><strong>Date:</strong> 22 Jan 2025</p>
+            <p><strong>Status:</strong> <span class="status-badge status-approved">Approved</span></p>
+            <p><strong>Message:</strong> My daughter got married, need to add her husband to the ration card. Documents attached.</p>
+            <p><strong>Supporting doc:</strong> <a href="#">view link</a></p>
+            <p><strong>Resolution notes:</strong> Member added successfully on 28 Jan 2025.</p>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL for transaction detail -->
+<div class="modal" id="txnModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('txnModal')">&times;</span>
+        <h3 style="color:var(--primary);">Transaction receipt</h3>
+        <div id="txnDetailContent">
+            <p><strong>Month:</strong> March 2025</p>
+            <p><strong>Date & time:</strong> 05 Mar 2025, 11:30 AM</p>
+            <p><strong>Shop:</strong> FPS Alambagh (RC45)</p>
+            <p><strong>Items:</strong> Wheat 10kg, Rice 5kg, Sugar 2kg, Kerosene 2L</p>
+            <p><strong>Total price:</strong> ₹ 85 (subsidized)</p>
+            <p><strong>Status:</strong> <span class="txn-badge taken">Taken</span></p>
+            <p><strong>Bill no:</strong> TNX/0325/9812</p>
+        </div>
+    </div>
+</div>
+
+<script src="js/beneficiary_dashboard.js"></script>
+</body>
+</html>
