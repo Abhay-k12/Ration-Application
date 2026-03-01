@@ -1,13 +1,12 @@
-/* ===== ROOT VARIABLES (from index.html) ===== */
 :root {
-    --primary: #1E3A8A;        /* Deep Blue - Government */
-    --primary-dark: #0F2650;    /* Darker Blue */
-    --secondary: #10B981;       /* Emerald Green - Success */
-    --accent: #F59E0B;          /* Amber Yellow - Alert/Warning */
-    --danger: #EF4444;           /* Rose Red - Error/Face Verify */
-    --light: #F8FAFC;           /* Light Gray - Background */
-    --dark: #1E293B;            /* Dark Gray - Text */
-    --gray: #64748B;            /* Medium Gray */
+    --primary: #1E3A8A;
+    --primary-dark: #0F2650;
+    --secondary: #10B981;
+    --accent: #F59E0B;
+    --danger: #EF4444;
+    --light: #F8FAFC;
+    --dark: #1E293B;
+    --gray: #64748B;
     --white: #FFFFFF;
     --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
     --shadow-md: 0 10px 30px rgba(0,0,0,0.1);
@@ -33,7 +32,7 @@ html {
     scroll-behavior: smooth;
 }
 
-/* ===== HEADER (from index.html) ===== */
+/***** HEADER STYLING ******/
 #header {
     width: 100%;
     position: fixed;
@@ -143,7 +142,7 @@ nav ul li a:hover {
     cursor: pointer;
 }
 
-/* ===== LOGIN SECTION - COMPACT VERSION ===== */
+/****** LOGIN SECTION STYLING ******/
 .login-section {
     min-height: 100vh;
     background: linear-gradient(135deg, rgba(30,58,138,0.97), rgba(16,185,129,0.9)),
@@ -194,7 +193,7 @@ nav ul li a:hover {
     animation: slideInUp 1s ease;
 }
 
-/* Left info panel - compact */
+/****** LEFT INFORMATION PANEL ******/
 .login-info {
     flex: 1.2;
     background: rgba(255,255,255,0.1);
@@ -271,7 +270,7 @@ nav ul li a:hover {
     font-size: 13px;
 }
 
-/* Right form panel - compact */
+/****** RIGHT PANEL FOR LOGIN FUNCTIONALITY ******/
 .login-form-container {
     flex: 1;
     background: rgba(255,255,255,0.1);
@@ -297,7 +296,7 @@ nav ul li a:hover {
     font-size: 14px;
 }
 
-/* Role Selection Pills - compact */
+/****** Role Selection Pills *****/
 .role-selection {
     display: flex;
     gap: 8px;
@@ -334,7 +333,7 @@ nav ul li a:hover {
     box-shadow: 0 6px 14px rgba(16,185,129,0.4);
 }
 
-/* Forms - compact */
+/****** Forms For Login ******/
 .role-info {
     display: none;
 }
@@ -470,7 +469,7 @@ nav ul li a:hover {
     font-size: 13px;
 }
 
-/* Modal - compact */
+/****** Modal ******/
 .modal {
     display: none;
     position: fixed;
@@ -568,7 +567,7 @@ nav ul li a:hover {
     display: flex;
 }
 
-/* Footer - from index.html */
+/****** Footer ******/
 footer {
     background: var(--dark);
     color: var(--white);
@@ -637,7 +636,7 @@ footer {
     font-size: 13px;
 }
 
-/* Animations */
+/****** Animations ******/
 @keyframes slideInUp {
     from {
         opacity: 0;
@@ -654,7 +653,7 @@ footer {
     to { opacity: 1; }
 }
 
-/* Responsive */
+/****** Responsive ******/
 @media(max-width: 1200px) {
     .login-container {
         max-width: 950px;
