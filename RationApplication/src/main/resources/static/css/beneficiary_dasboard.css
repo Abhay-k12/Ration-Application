@@ -147,14 +147,14 @@ nav ul li a.active {
     cursor: pointer;
 }
 
-/* ----- Dashboard layout (with header offset) ----- */
+/****** Dashboard layout ******/
 .dashboard-container {
     display: flex;
     min-height: 100vh;
     padding-top: 72px; /* matches fixed header height */
 }
 
-/* ===== SIDEBAR (30% width) ===== */
+/****** SIDEBAR HAVING USER INFORMATION ******/
 .sidebar {
     width: 30%;
     background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -255,8 +255,15 @@ nav ul li a.active {
     margin-left: auto;
 }
 
-.member-tag.govt { background: #3B82F6; color: white; }
-.member-tag.private { background: #8B5CF6; color: white; }
+.member-tag.govt {
+    background: #3B82F6;
+    color: white;
+}
+
+.member-tag.private {
+    background: #8B5CF6;
+    color: white;
+}
 
 .logout-btn {
     width: 100%;
@@ -281,7 +288,7 @@ nav ul li a.active {
     transform: translateY(-3px);
 }
 
-/* ===== MAIN CONTENT (70%) ===== */
+/****** MAIN CONTENT ******/
 .main-content {
     width: 70%;
     padding: 30px;
@@ -289,7 +296,7 @@ nav ul li a.active {
     overflow-y: auto;
 }
 
-/* Dashboard header */
+/****** Dashboard header ******/
 .dash-header {
     display: flex;
     justify-content: space-between;
@@ -314,7 +321,7 @@ nav ul li a.active {
     border-radius: 4px;
 }
 
-/* Navigation tabs */
+/****** Navigation tabs ******/
 .nav-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -352,7 +359,7 @@ nav ul li a.active {
     box-shadow: 0 6px 14px rgba(30,58,138,0.3);
 }
 
-/* modules */
+/****** modules ******/
 .module {
     display: none;
     animation: fadeIn 0.4s ease;
@@ -362,7 +369,7 @@ nav ul li a.active {
     display: block;
 }
 
-/* cards */
+/****** cards ******/
 .card {
     background: white;
     border-radius: 24px;
@@ -382,7 +389,7 @@ nav ul li a.active {
     gap: 10px;
 }
 
-/* ration card style (module2) */
+/****** ration card style ******/
 .ration-card {
     background: linear-gradient(145deg, #fef9e7, #fff);
     border: 2px solid #eab308;
@@ -439,7 +446,7 @@ nav ul li a.active {
     font-size: 50px;
 }
 
-/* complaint history cards */
+/****** complaint history cards ******/
 .complaint-card {
     background: white;
     border-radius: 20px;
@@ -467,11 +474,20 @@ nav ul li a.active {
     color: white;
 }
 
-.status-approved { background: var(--secondary); }
-.status-rejected { background: var(--danger); }
-.status-pending { background: var(--accent); color: black; }
+.status-approved {
+    background: var(--secondary);
+}
 
-/* transaction cards */
+.status-rejected {
+    background: var(--danger);
+}
+
+.status-pending {
+    background: var(--accent);
+    color: black;
+}
+
+/****** Transaction cards ******/
 .txn-card {
     background: white;
     border-radius: 18px;
@@ -498,10 +514,17 @@ nav ul li a.active {
     font-weight: 600;
 }
 
-.txn-badge.taken { background: #10B98120; color: #065f46; }
-.txn-badge.skipped { background: #F59E0B20; color: #92400e; }
+.txn-badge.taken {
+    background: #10B98120;
+    color: #065f46;
+}
 
-/* modal (shared) */
+.txn-badge.skipped {
+    background: #F59E0B20;
+    color: #92400e;
+}
+
+/****** modal *****/
 .modal {
     display: none;
     position: fixed;
@@ -541,9 +564,18 @@ nav ul li a.active {
     color: var(--danger);
 }
 
-/* form elements */
-.form-group { margin-bottom: 20px; }
-.form-label { display: block; font-weight: 500; margin-bottom: 6px; color: var(--dark); }
+/****** form elements ******/
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--dark);
+}
+
 .form-control {
     width: 100%;
     padding: 14px 16px;
@@ -552,6 +584,7 @@ nav ul li a.active {
     font-size: 14px;
     transition: var(--transition);
 }
+
 .form-control:focus {
     outline: none;
     border-color: var(--secondary);
@@ -600,13 +633,13 @@ td {
     border-bottom: 1px solid #e2e8f0;
 }
 
-/* animations */
+/****** animations ******/
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-/* responsive */
+/****** responsive ******/
 @media (max-width: 1000px) {
     .dashboard-container {
         flex-direction: column;
