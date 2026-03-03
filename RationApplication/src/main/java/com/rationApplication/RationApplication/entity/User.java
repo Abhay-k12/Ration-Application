@@ -1,10 +1,13 @@
 package com.rationApplication.RationApplication.entity;
 
+import com.mongodb.lang.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -14,13 +17,16 @@ import java.util.List;
 public class User {
 
     @Indexed(unique=true)
-    @ID
-    private String rationCardNumber;
+    @Id
+    @NonNull
+    private String username;
 
+    @NonNull
     private String password;
 
-    private List<String> Roles = new ArrayList<>();
+    private String email;
 
-    @DBref
-    private List<AdharCard> familyMembers = new ArrayList<>();
+    private List<String> Roles;
+
+    private List<Complaint> complaints;
 }
