@@ -1,6 +1,7 @@
 package com.rationApplication.RationApplication.entity;
 
 import com.mongodb.lang.NonNull;
+import com.rationApplication.RationApplication.enums.EmploymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,25 +9,22 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="User")
-public class User {
+@Document(collection="Aadhaar")
+public class Aadhaar {
 
-    @Indexed(unique=true)
+    @NonNull
+    @Indexed(unique = true)
     @Id
-    @NonNull
-    private String username;
+    private String aadhaarNumber;
 
-    @NonNull
-    private String password;
+    private String name;
 
-    private String email;
+    private LocalDate dateOfBirth;
 
-    private List<String> Roles;
-
-    private List<Complaint> complaints;
+    private EmploymentStatus employmentStatus;
 }
