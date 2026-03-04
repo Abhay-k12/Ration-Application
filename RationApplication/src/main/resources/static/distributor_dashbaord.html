@@ -87,86 +87,21 @@
                         <input type="number" class="form-control" placeholder="Enter total annual income" required>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" placeholder="Enter Email Address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Number of Family Members (including head)</label>
+                        <input type="number" id="totalMembers" class="form-control" min="1" max="10" value="1" onchange="handleTotalMembersChange()">
+                        <small style="color: var(--gray);">Maximum 10 members allowed</small>
+                    </div>
+
                     <h4 style="margin: 20px 0 10px; color: var(--primary);">Family Members</h4>
 
-                    <!-- Member 1 (Head) -->
-                    <div class="member-entry">
-                        <span class="member-number">Member 1 (Head)</span>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" value="Mohan Lal" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Aadhaar Number</label>
-                                <input type="text" class="form-control" value="1234 5678 9012" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Date of Birth</label>
-                                <input type="date" class="form-control" value="1980-01-01" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Working Status</label>
-                                <select class="form-control">
-                                    <option>Government Employee</option>
-                                    <option selected>Private Employee</option>
-                                    <option>Student</option>
-                                    <option>Housewife</option>
-                                    <option>Retired</option>
-                                    <option>Unemployed</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Live Photograph</label>
-                            <div class="photo-upload" onclick="triggerPhotoUpload(this)">
-                                <i class="ri-camera-line"></i>
-                                <p>Click to capture photo</p>
-                                <input type="file" accept="image/*" capture="user" style="display: none;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Member 2 -->
-                    <div class="member-entry">
-                        <span class="member-number">Member 2</span>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" value="Sita Devi" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Aadhaar Number</label>
-                                <input type="text" class="form-control" value="2345 6789 0123" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Date of Birth</label>
-                                <input type="date" class="form-control" value="1985-05-15" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Working Status</label>
-                                <select class="form-control">
-                                    <option>Government Employee</option>
-                                    <option>Private Employee</option>
-                                    <option>Student</option>
-                                    <option selected>Housewife</option>
-                                    <option>Retired</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Live Photograph</label>
-                            <div class="photo-upload" onclick="triggerPhotoUpload(this)">
-                                <i class="ri-camera-line"></i>
-                                <p>Click to capture photo</p>
-                                <input type="file" accept="image/*" capture="user" style="display: none;">
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Dynamic Family Members Container -->
+                    <div id="familyMembersContainer"></div>
 
                     <button type="button" class="add-member-btn" onclick="addNewMember()">
                         <i class="ri-add-line"></i> Add Another Family Member
@@ -179,7 +114,7 @@
             </div>
         </div>
 
-        <!-- MODULE 2: Complaint Registration (Dual Case) -->
+        <!-- MODULE 2: Complaint Registration -->
         <div id="module2" class="module">
             <div class="card">
                 <div class="card-title"><i class="ri-alert-line"></i> Register Complaint</div>
