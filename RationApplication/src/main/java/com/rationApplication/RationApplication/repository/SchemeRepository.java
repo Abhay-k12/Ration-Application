@@ -4,5 +4,5 @@ import com.rationApplication.RationApplication.entity.Scheme;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface SchemeRepository extends MongoRepository<ObjectId, Scheme> {
+public interface SchemeRepository extends MongoRepository<Scheme, ObjectId> {
 }
