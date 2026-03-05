@@ -4,5 +4,6 @@ import com.rationApplication.RationApplication.entity.User;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface UserRepository extends MongoRepository<String, User> {
+public interface UserRepository extends MongoRepository<User, String> {
+    public User findUserByUsername(String username);
 }
