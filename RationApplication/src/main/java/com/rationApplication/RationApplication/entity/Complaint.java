@@ -19,7 +19,7 @@ public class Complaint {
     @Id
     private ObjectId id;
 
-    private User applicant;
+    private String applicantUsername;
 
     private String title;
 
