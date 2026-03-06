@@ -1,8 +1,6 @@
 package com.rationApplication.RationApplication.controller;
 
-import com.rationApplication.RationApplication.entity.Beneficiary;
-import com.rationApplication.RationApplication.entity.User;
-import com.rationApplication.RationApplication.repository.UserRepository;
+import com.rationApplication.RationApplication.entity.*;
 import com.rationApplication.RationApplication.service.BeneficiaryService;
 import com.rationApplication.RationApplication.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/beneficiary")
@@ -26,18 +23,26 @@ public class BeneficiaryController {
     @Autowired
     private UserService userService;
 
-    @PutMapping("/register")
-    @Transactional
-    public ResponseEntity<Boolean> addNewBeneficiary(@RequestBody Beneficiary beneficiary) {
+    @GetMapping("/getComplaints/{userId}")
+    public ResponseEntity<List<Complaint>> getAllComplaints(@PathVariable String userId) {
         try {
-            userService.addNewBeneficiaryUser(new User(beneficiary));
-            beneficiaryService.addNewBeneficiary(beneficiary);
+            List<Complaint> complaints = userService.getComplaints(userId);
+            return new ResponseEntity<>(complaints, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("ERROR IN TRACKING THE COMPLAINTS: {}", e.toString());
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        catch(Exception e) {
-            log.error(e.toString());
-            throw e;
+    }
+
+    @GetMapping("/getTransactions/{rationCardNumber}")
+    public ResponseEntity<List<Transaction>> getAllTransactions(@PathVariable String rationCardNumber) {
+        try {
+            List<Transaction> transactions = beneficiaryService.getTransactions(rationCardNumber);
+            return new ResponseEntity<>(transactions,HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("ERROR IN TRACKING THE TRANSACTIONS: {}", e.toString());
         }
-        return new ResponseEntity<>(true, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
 }
