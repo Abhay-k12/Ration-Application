@@ -1,5 +1,6 @@
 # 📁 Smart-Ration System
- 
+
+```
 
 RationApplication/
 │
