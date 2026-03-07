@@ -30,6 +30,8 @@ public class User {
 
     private List<String> Roles;
 
+    private String stateDistrictCode;
+
     @DBRef
     private List<Complaint> complaints;
 

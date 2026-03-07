@@ -19,8 +19,9 @@ public class Beneficiary extends User{
 
     private int annualIncome;
 
-    private String stateDistrictCode;
-
     @DBRef
     private List<Aadhaar> members;
+
+    @DBRef
+    private List<Transaction> transactions;
 }
