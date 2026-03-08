@@ -1,6 +1,6 @@
 # 📁 Smart-Ration System
  
-````
+```
 RationApplication/
 │
 ├── 📁 src/
@@ -27,10 +27,9 @@ RationApplication/
 │   │       ├── 📄 application-dev.properties
 │   │       ├── 📄 application-prod.properties
 │   │       ├── 📁 static/
-    │       │       ├── 📁css
-    │       │       ├── 📁 js
-    │       │       └── index.html and other html pages.        
-│   │       └── 📁 templates/
+│   │       ├── 📁 templates/
+│   │       └── 📁 db/
+│   │           └── 📄 migration/
 │   │
 │   └── 📁 test/
 │       └── 📁 java/
