@@ -28,4 +28,6 @@ public class Scheme {
     List<String> suppliesName;
 
     List<Float> suppliesCost;
+
+    List<Float> supplyPerPerson;
 }
