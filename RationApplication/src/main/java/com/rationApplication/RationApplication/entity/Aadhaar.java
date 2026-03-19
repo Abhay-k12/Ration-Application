@@ -19,7 +19,6 @@ public class Aadhaar {
 
     @NonNull
     @Indexed(unique = true)
-    @Id
     private String aadhaarNumber;
 
     private String name;
