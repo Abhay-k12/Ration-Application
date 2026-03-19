@@ -19,7 +19,6 @@ import java.util.List;
 public class User {
 
     @Indexed(unique=true)
-    @Id
     @NonNull
     private String username;
 
