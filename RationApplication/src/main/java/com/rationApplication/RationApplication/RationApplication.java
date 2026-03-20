@@ -2,6 +2,10 @@ package com.rationApplication.RationApplication;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class RationApplication {
@@ -11,3 +15,8 @@ public class RationApplication {
 	}
 
 }
+//1. Open Food Facts
+//2. Neutralinojs
+//3. Processing Foundation
+//4. checkstyle
+//5. Wikimedia Foundation
