@@ -48,9 +48,9 @@
                 </div>
 
                 <!-- PDS officer features -->
-                <div class="role-info" id="pdsFeatures">
+                <div class="role-info" id="distributorFeatures">
                     <div class="feature-item"><i class="ri-store-line"></i><span>Distribute rations, scan beneficiary QR</span></div>
-                    <div class="feature-item"><i class="ri-camera-line"></i><span>Face verification of beneficiaries</span></div>
+                    <div class="feature-item"><i class="ri-camera-line"></i><span>Register beneficiaries</span></div>
                     <div class="feature-item"><i class="ri-wifi-off-line"></i><span>Offline transaction & sync</span></div>
                     <div class="feature-item"><i class="ri-bar-chart-2-line"></i><span>Shop stock & daily reports</span></div>
                 </div>
@@ -72,44 +72,78 @@
 
             <!-- role selector pills -->
             <div class="role-selection">
-                <div class="role-option active" data-role="beneficiary"><i class="ri-user-line"></i><span>Beneficiary</span></div>
-                <div class="role-option" data-role="pds"><i class="ri-store-line"></i><span>PDS Officer</span></div>
-                <div class="role-option" data-role="admin"><i class="ri-admin-line"></i><span>Admin</span></div>
+                <div class="role-option active" data-role="BENEFICIARY"><i class="ri-user-line"></i><span>Beneficiary</span></div>
+                <div class="role-option" data-role="DISTRIBUTOR"><i class="ri-store-line"></i><span>Distributor</span></div>
+                <div class="role-option" data-role="ADMIN"><i class="ri-admin-line"></i><span>Admin</span></div>
             </div>
 
             <form id="loginForm">
                 <!-- beneficiary form -->
                 <div class="role-info active" id="beneficiaryForm">
-                    <div class="form-group"><label class="form-label" for="benId"> Ration Card No.</label>
-                        <div class="input-group"><input type="text" id="benId" placeholder="Enter Ration Card Number" required><div class="input-icon"><i class="ri-user-line"></i></div></div>
+                    <div class="form-group">
+                        <label class="form-label" for="benUsername">Username</label>
+                        <div class="input-group">
+                            <input type="text" id="benUsername" placeholder="Enter username" required>
+                            <div class="input-icon"><i class="ri-user-line"></i></div>
+                        </div>
                     </div>
-                    <div class="form-group"><label class="form-label" for="benPass">Password / OTP</label>
-                        <div class="input-group"><input type="password" id="benPass" placeholder="••••••••" required><button type="button" class="password-toggle" onclick="toggleField('benPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    <div class="form-group">
+                        <label class="form-label" for="benPassword">Password</label>
+                        <div class="input-group">
+                            <input type="password" id="benPassword" placeholder="••••••••" required>
+                            <button type="button" class="password-toggle" onclick="toggleField('benPassword',this)">
+                                <i class="ri-eye-off-line"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- pds officer form -->
-                <div class="role-info" id="pdsForm">
-                    <div class="form-group"><label class="form-label" for="pdsId">PDS Employee ID</label>
-                        <div class="input-group"><input type="text" id="pdsId" placeholder="e.g. PDS/UP/12345"><div class="input-icon"><i class="ri-store-line"></i></div></div>
+                <!-- distributor form -->
+                <div class="role-info" id="distributorForm">
+                    <div class="form-group">
+                        <label class="form-label" for="distUsername">Username</label>
+                        <div class="input-group">
+                            <input type="text" id="distUsername" placeholder="Enter distributor username">
+                            <div class="input-icon"><i class="ri-store-line"></i></div>
+                        </div>
                     </div>
-                    <div class="form-group"><label class="form-label" for="pdsPass">Password</label>
-                        <div class="input-group"><input type="password" id="pdsPass" placeholder="••••••••"><button type="button" class="password-toggle" onclick="toggleField('pdsPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    <div class="form-group">
+                        <label class="form-label" for="distPassword">Password</label>
+                        <div class="input-group">
+                            <input type="password" id="distPassword" placeholder="••••••••">
+                            <button type="button" class="password-toggle" onclick="toggleField('distPassword',this)">
+                                <i class="ri-eye-off-line"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- admin form -->
                 <div class="role-info" id="adminForm">
-                    <div class="form-group"><label class="form-label" for="adminId">Admin ID (District)</label>
-                        <div class="input-group"><input type="text" id="adminId" placeholder="e.g. DM/KA/BLR"><div class="input-icon"><i class="ri-admin-line"></i></div></div>
+                    <div class="form-group">
+                        <label class="form-label" for="adminUsername">Username</label>
+                        <div class="input-group">
+                            <input type="text" id="adminUsername" placeholder="Enter admin username">
+                            <div class="input-icon"><i class="ri-admin-line"></i></div>
+                        </div>
                     </div>
-                    <div class="form-group"><label class="form-label" for="adminPass">Password</label>
-                        <div class="input-group"><input type="password" id="adminPass" placeholder="••••••••"><button type="button" class="password-toggle" onclick="toggleField('adminPass',this)"><i class="ri-eye-off-line"></i></button></div>
+                    <div class="form-group">
+                        <label class="form-label" for="adminPassword">Password</label>
+                        <div class="input-group">
+                            <input type="password" id="adminPassword" placeholder="••••••••">
+                            <button type="button" class="password-toggle" onclick="toggleField('adminPassword',this)">
+                                <i class="ri-eye-off-line"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="forgot-password"><a href="#" id="forgotPasswordLink">Forgot Password?</a></div>
-                <button type="submit" class="login-btn"><i class="ri-login-box-line"></i> <span id="loginBtnText">Login as Beneficiary</span></button>
+                <div class="forgot-password">
+                    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="ri-login-box-line"></i> <span id="loginBtnText">Login as Beneficiary</span>
+                </button>
             </form>
         </div>
     </div>
@@ -120,27 +154,69 @@
     <div class="modal-content">
         <span class="close-modal" id="closeModalBtn">&times;</span>
         <h3 id="modalTitle">Reset Beneficiary Password</h3>
-        <p id="modalDesc">Enter your Aadhaar / Ration card number to receive reset link.</p>
+        <p id="modalDesc">Enter your username to receive reset link.</p>
         <form id="forgotForm">
-            <div class="form-group"><label class="form-label" id="modalLabel" for="resetField">Aadhaar / RC No.</label>
-                <div class="input-group"><input type="text" id="resetField" class="form-control" placeholder="12‑digit number"><div class="input-icon"><i class="ri-user-line"></i></div></div>
+            <div class="form-group">
+                <label class="form-label" id="modalLabel" for="resetField">Username</label>
+                <div class="input-group">
+                    <input type="text" id="resetField" class="form-control" placeholder="Enter username">
+                    <div class="input-icon"><i class="ri-user-line"></i></div>
+                </div>
             </div>
-            <button type="submit" class="login-btn"><i class="ri-mail-send-line"></i> <span id="resetBtnText">Send Reset Link</span></button>
-            <div class="success-message" id="resetSuccess"><i class="ri-checkbox-circle-line"></i> <span>Reset link sent to registered mobile/email!</span></div>
+            <button type="submit" class="login-btn">
+                <i class="ri-mail-send-line"></i> <span id="resetBtnText">Send Reset Link</span>
+            </button>
+            <div class="success-message" id="resetSuccess">
+                <i class="ri-checkbox-circle-line"></i> <span>Reset link sent to registered email!</span>
+            </div>
         </form>
     </div>
 </div>
 
 <footer>
     <div class="footer-content">
-        <div class="footer-column"><h4>Quick Links</h4><ul class="footer-links"><li><a href="index.html">Home</a></li><li><a href="#">About NFSA</a></li><li><a href="#">Fair Price Shops</a></li><li><a href="#">Grievance</a></li></ul></div>
-        <div class="footer-column"><h4>Beneficiary</h4><ul class="footer-links"><li><a href="#">Check Eligibility</a></li><li><a href="#">Download Ration Card</a></li><li><a href="#">Transaction History</a></li><li><a href="#">Raise Complaint</a></li></ul></div>
-        <div class="footer-column"><h4>Officer/Admin</h4><ul class="footer-links"><li><a href="#">PDS Login</a></li><li><a href="#">Admin Login</a></li><li><a href="#">District Reports</a></li><li><a href="#">Stock Management</a></li></ul></div>
-        <div class="footer-column"><h4>Contact</h4><ul class="footer-links"><li><i class="ri-phone-line"></i> 1800‑111‑222</li><li><i class="ri-mail-line"></i> support@pds.gov.in</li><li><i class="ri-map-pin-line"></i> Krishi Bhawan, Delhi</li></ul></div>
+        <div class="footer-column">
+            <h4>Quick Links</h4>
+            <ul class="footer-links">
+                <li><a href="index.html"><i class="ri-arrow-right-line"></i> Home</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> About NFSA</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Fair Price Shops</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Grievance</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Beneficiary</h4>
+            <ul class="footer-links">
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Check Eligibility</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Download Ration Card</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Transaction History</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Raise Complaint</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Officer/Admin</h4>
+            <ul class="footer-links">
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Distributor Login</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Admin Login</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> District Reports</a></li>
+                <li><a href="#"><i class="ri-arrow-right-line"></i> Stock Management</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Contact</h4>
+            <ul class="footer-links">
+                <li><i class="ri-phone-line"></i> 1800‑111‑222</li>
+                <li><i class="ri-mail-line"></i> support@pds.gov.in</li>
+                <li><i class="ri-map-pin-line"></i> Krishi Bhawan, Delhi</li>
+            </ul>
+        </div>
     </div>
-    <div class="copyright"><p>© 2025 Smart-Ration TPDS, Ministry of Food, Govt of India. All rights reserved.</p></div>
+    <div class="copyright">
+        <p>© 2025 Smart-Ration TPDS, Ministry of Food, Govt of India. All rights reserved.</p>
+    </div>
 </footer>
 
+<script src="js/api_client.js"></script>
 <script src="js/login_page.js"></script>
 </body>
 </html>
