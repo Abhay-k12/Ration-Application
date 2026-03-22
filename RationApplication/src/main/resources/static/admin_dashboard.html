@@ -22,7 +22,7 @@
             <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
             <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
             <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
-            <li><a href="login_page.html" class="active"><i class="ri-logout-box-line"></i> Logout</a></li>
+            <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i> Logout</a></li>
         </ul>
     </nav>
     <div class="mobile-menu"><i class="ri-menu-line"></i></div>
@@ -34,21 +34,21 @@
     <aside class="sidebar">
         <div class="profile-card">
             <div class="avatar"><i class="ri-admin-line"></i></div>
-            <h3>Anil Kumar</h3>
-            <div class="admin-id"><i class="ri-fingerprint-line"></i> ADM/UK/DDN/001</div>
-            <div class="info-row"><i class="ri-map-pin-line"></i><span>Dehradun, Uttarakhand - 248001</span></div>
+            <h3 id="adminName">Admin</h3>
+            <div class="admin-id"><i class="ri-fingerprint-line"></i><span id="adminId">ADM/001</span></div>
+            <div class="info-row"><i class="ri-map-pin-line"></i><span id="adminLocation">District</span></div>
             <div class="info-row"><i class="ri-user-star-line"></i><span>District Admin · Grade A</span></div>
         </div>
 
         <div class="district-info">
             <h4><i class="ri-bar-chart-line"></i> District Summary</h4>
-            <div class="district-detail"><span>Total PDS Shops:</span> <strong>147</strong></div>
-            <div class="district-detail"><span>Total Beneficiaries:</span> <strong>1,24,567</strong></div>
-            <div class="district-detail"><span>Pending Complaints:</span> <strong>23</strong></div>
-            <div class="district-detail"><span>Active Schemes:</span> <strong>5</strong></div>
+            <div class="district-detail"><span>Total PDS Shops:</span> <strong id="totalShops">0</strong></div>
+            <div class="district-detail"><span>Total Beneficiaries:</span> <strong id="totalBeneficiaries">0</strong></div>
+            <div class="district-detail"><span>Pending Complaints:</span> <strong id="pendingComplaints">0</strong></div>
+            <div class="district-detail"><span>Active Schemes:</span> <strong id="activeSchemes">0</strong></div>
         </div>
 
-        <div class="logout-btn" onclick="location.href='index.html'">
+        <div class="logout-btn" onclick="logout()">
             <i class="ri-logout-box-line"></i> Logout
         </div>
         <div class="change-pwd" onclick="openChangePwdModal()">
@@ -64,10 +64,11 @@
 
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
-            <div class="nav-item active" data-module="module1"><i class="ri-file-copy-line"></i> Issue New Ration Card</div>
-            <div class="nav-item" data-module="module2"><i class="ri-error-warning-line"></i> Complaint Section</div>
-            <div class="nav-item" data-module="module3"><i class="ri-customer-service-line"></i> Ration Card Service</div>
-            <div class="nav-item" data-module="module4"><i class="ri-calendar-line"></i> Set Scheme of Month</div>
+            <div class="nav-item active" data-module="module1"><i class="ri-file-copy-line"></i> Issue Ration Card</div>
+            <div class="nav-item" data-module="module2"><i class="ri-error-warning-line"></i> Complaints</div>
+            <div class="nav-item" data-module="module3"><i class="ri-customer-service-line"></i> Card Service</div>
+            <div class="nav-item" data-module="module4"><i class="ri-calendar-line"></i> Schemes</div>
+            <div class="nav-item" data-module="module5"><i class="ri-team-line"></i> Manage Users</div>
         </div>
 
         <!-- MODULE 1: Issue New Ration Card -->
@@ -85,35 +86,45 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" placeholder="Enter full name" required>
+                                <input type="text" id="fresName" class="form-control" placeholder="Enter full name" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Aadhaar Number</label>
-                                <input type="text" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
+                                <input type="text" id="fresAadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Mobile Number</label>
-                                <input type="tel" class="form-control" placeholder="10 digit mobile number" required>
+                                <label class="form-label">Email</label>
+                                <input type="email" id="fresEmail" class="form-control" placeholder="email@example.com" required>
                             </div>
                             <div class="form-group">
+                                <label class="form-label">Mobile Number</label>
+                                <input type="tel" id="fresMobile" class="form-control" placeholder="10 digit mobile number" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label class="form-label">Annual Income (₹)</label>
-                                <input type="number" class="form-control" placeholder="Enter annual income" required>
+                                <input type="number" id="fresIncome" class="form-control" placeholder="Enter annual income" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">State District Code</label>
+                                <input type="text" id="fresDistrictCode" class="form-control" placeholder="e.g., UK-01" required>
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Address</label>
-                            <textarea class="form-control" rows="2" placeholder="Complete address" required></textarea>
+                            <textarea id="fresAddress" class="form-control" rows="2" placeholder="Complete address" required></textarea>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Family Members Count</label>
-                                <input type="number" class="form-control" min="1" max="10" required>
+                                <input type="number" id="fresFamilyCount" class="form-control" min="1" max="10" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Scheme Type</label>
-                                <select class="form-control" required>
+                                <select id="fresSchemeType" class="form-control" required>
                                     <option value="">Select Scheme</option>
                                     <option value="BPL">BPL (Below Poverty Line)</option>
                                     <option value="APL">APL (Above Poverty Line)</option>
@@ -124,9 +135,6 @@
                         <button type="submit" class="submit-btn">
                             <i class="ri-save-line"></i> Generate Ration Card
                         </button>
-                        <small style="display: block; text-align: center; margin-top: 10px; color: var(--gray);">
-                            <i class="ri-information-line"></i> Card number will be auto-generated: RC-2025-XXXX
-                        </small>
                     </form>
                 </div>
 
@@ -136,9 +144,14 @@
                         <div class="case-icon"><i class="ri-group-line"></i></div>
                         <h3>Separation from Existing Card</h3>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Old Ration Card Number</label>
-                        <input type="text" id="oldCardNumber" class="form-control" placeholder="Enter RC number (e.g., RC-2024-1234)" onkeyup="fetchFamilyMembers()">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Old Ration Card Number</label>
+                            <input type="text" id="oldCardNumber" class="form-control" placeholder="Enter RC number">
+                        </div>
+                        <button type="button" class="submit-btn" style="margin-top: 22px;" onclick="fetchFamilyMembers()">
+                            <i class="ri-search-line"></i> Fetch Members
+                        </button>
                     </div>
 
                     <div id="familyMembersList" style="display: none; margin-top: 20px;">
@@ -147,30 +160,12 @@
                             <thead>
                             <tr>
                                 <th>Name</th>
-                                <th>Relation</th>
                                 <th>Aadhaar</th>
+                                <th>Employment Status</th>
                                 <th>Action</th>
                             </tr>
                             </thead>
                             <tbody id="familyMembersTable">
-                            <tr>
-                                <td>Rahul Sharma</td>
-                                <td>Head</td>
-                                <td>XXXX-XXXX-1234</td>
-                                <td><button class="shift-btn" onclick="shiftToNewCard('Rahul Sharma')">Shift to New Card</button></td>
-                            </tr>
-                            <tr>
-                                <td>Priya Sharma</td>
-                                <td>Spouse</td>
-                                <td>XXXX-XXXX-5678</td>
-                                <td><button class="shift-btn" onclick="shiftToNewCard('Priya Sharma')">Shift to New Card</button></td>
-                            </tr>
-                            <tr>
-                                <td>Aarav Sharma</td>
-                                <td>Son</td>
-                                <td>XXXX-XXXX-9012</td>
-                                <td><button class="shift-btn" onclick="shiftToNewCard('Aarav Sharma')">Shift to New Card</button></td>
-                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -188,49 +183,15 @@
                     <tr>
                         <th>Complaint ID</th>
                         <th>Beneficiary</th>
-                        <th>Ration Card</th>
                         <th>Subject</th>
                         <th>Date</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr onclick="viewComplaint('C001')">
-                        <td><strong>#C001</strong></td>
-                        <td>Rahul Sharma</td>
-                        <td>RC-2024-1234</td>
-                        <td>Incorrect quantity received</td>
-                        <td>10 Mar 2025</td>
-                        <td><span class="status-badge status-pending">Pending</span></td>
-                        <td><button class="action-btn edit" onclick="event.stopPropagation(); viewComplaint('C001')">View</button></td>
-                    </tr>
-                    <tr onclick="viewComplaint('C002')">
-                        <td><strong>#C002</strong></td>
-                        <td>Priya Singh</td>
-                        <td>RC-2024-5678</td>
-                        <td>Face verification failed</td>
-                        <td>09 Mar 2025</td>
-                        <td><span class="status-badge status-pending">Pending</span></td>
-                        <td><button class="action-btn edit" onclick="event.stopPropagation(); viewComplaint('C002')">View</button></td>
-                    </tr>
-                    <tr onclick="viewComplaint('C003')">
-                        <td><strong>#C003</strong></td>
-                        <td>Amit Kumar</td>
-                        <td>RC-2024-9012</td>
-                        <td>Add new family member</td>
-                        <td>08 Mar 2025</td>
-                        <td><span class="status-badge status-approved">Resolved</span></td>
-                        <td><button class="action-btn edit" onclick="event.stopPropagation(); viewComplaint('C003')">View</button></td>
-                    </tr>
-                    <tr onclick="viewComplaint('C004')">
-                        <td><strong>#C004</strong></td>
-                        <td>Sunita Devi</td>
-                        <td>RC-2024-3456</td>
-                        <td>Remove deceased member</td>
-                        <td>07 Mar 2025</td>
-                        <td><span class="status-badge status-rejected">Rejected</span></td>
-                        <td><button class="action-btn edit" onclick="event.stopPropagation(); viewComplaint('C004')">View</button></td>
+                    <tbody id="complaintTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--gray);">Loading complaints...</td>
                     </tr>
                     </tbody>
                 </table>
@@ -243,7 +204,7 @@
                 <div class="card-title"><i class="ri-customer-service-line"></i> Ration Card Service</div>
 
                 <div class="search-section">
-                    <input type="text" class="form-control" id="searchCardNumber" placeholder="Enter Ration Card Number (e.g., RC-2024-1234)">
+                    <input type="text" class="form-control" id="searchCardNumber" placeholder="Enter Ration Card Number">
                     <button class="search-btn" onclick="searchRationCard()">
                         <i class="ri-search-line"></i> Search
                     </button>
@@ -252,12 +213,11 @@
                 <div id="cardDetails" style="display: none;">
                     <div style="background: #f0fdf4; border-radius: 16px; padding: 20px; margin: 20px 0; border: 2px solid var(--secondary);">
                         <h4 style="color: var(--secondary); margin-bottom: 10px;">
-                            <i class="ri-checkbox-circle-line"></i> Card Found: <span id="displayCardNumber">RC-2024-1234</span>
+                            <i class="ri-checkbox-circle-line"></i> Card Found: <span id="displayCardNumber"></span>
                         </h4>
-                        <p><strong>Head of Family:</strong> Rahul Sharma</p>
-                        <p><strong>Total Members:</strong> 4</p>
-                        <p><strong>Scheme:</strong> BPL (Below Poverty Line)</p>
-                        <p><strong>Valid Upto:</strong> Dec 2026</p>
+                        <p><strong>Head of Family:</strong> <span id="cardHeadName"></span></p>
+                        <p><strong>Total Members:</strong> <span id="cardTotalMembers"></span></p>
+                        <p><strong>Annual Income:</strong> ₹<span id="cardAnnualIncome"></span></p>
                     </div>
 
                     <div class="quick-actions">
@@ -267,51 +227,10 @@
                         <button class="quick-btn" onclick="showRemoveMemberModal()">
                             <i class="ri-user-unfollow-line"></i> Remove Member
                         </button>
-                        <button class="quick-btn" onclick="viewTransactions()">
-                            <i class="ri-history-line"></i> Transactions
-                        </button>
-                        <button class="quick-btn" onclick="updateDetails()">
-                            <i class="ri-edit-line"></i> Update Details
-                        </button>
                     </div>
 
                     <h4 style="margin: 20px 0 15px;">Members List</h4>
-                    <div class="member-card">
-                        <div class="member-info">
-                            <div class="member-avatar">RS</div>
-                            <div>
-                                <h5>Rahul Sharma (Head)</h5>
-                                <p style="font-size: 13px; color: var(--gray);">Aadhaar: XXXX-XXXX-1234 | Age: 45 | Employed</p>
-                            </div>
-                        </div>
-                        <button class="action-btn edit" onclick="updateMemberPhoto()">
-                            <i class="ri-camera-line"></i> Update Photo
-                        </button>
-                    </div>
-                    <div class="member-card">
-                        <div class="member-info">
-                            <div class="member-avatar">PS</div>
-                            <div>
-                                <h5>Priya Sharma (Spouse)</h5>
-                                <p style="font-size: 13px; color: var(--gray);">Aadhaar: XXXX-XXXX-5678 | Age: 38 | Homemaker</p>
-                            </div>
-                        </div>
-                        <button class="action-btn edit" onclick="updateMemberPhoto()">
-                            <i class="ri-camera-line"></i> Update Photo
-                        </button>
-                    </div>
-                    <div class="member-card">
-                        <div class="member-info">
-                            <div class="member-avatar">AS</div>
-                            <div>
-                                <h5>Aarav Sharma (Son)</h5>
-                                <p style="font-size: 13px; color: var(--gray);">Aadhaar: XXXX-XXXX-9012 | Age: 16 | Student</p>
-                            </div>
-                        </div>
-                        <button class="action-btn edit" onclick="updateMemberPhoto()">
-                            <i class="ri-camera-line"></i> Update Photo
-                        </button>
-                    </div>
+                    <div id="membersList"></div>
                 </div>
             </div>
         </div>
@@ -328,9 +247,9 @@
                             <select id="schemeType" class="form-control" onchange="toggleSchemeName()" required>
                                 <option value="">Select Scheme Type</option>
                                 <option value="CHILD_SCHEME">Child Scheme</option>
-                                <option value="ANNUAL_INCOME_LESS_THAN_3_LAKH">Annual Income Less Than 3 Lakh</option>
-                                <option value="ANNUAL_INCOME_IN_BETWEEN_3_AND_6">Annual Income Between 3-6 Lakh</option>
-                                <option value="ANNUAL_INCOME_MORE_THAN_6">Annual Income More Than 6 Lakh</option>
+                                <option value="ANNUAL_INCOME_LESS_THAN_3_LAKH">Annual Income < 3 Lakh</option>
+                                <option value="ANNUAL_INCOME_IN_BETWEEN_3_AND_6">Annual Income 3-6 Lakh</option>
+                                <option value="ANNUAL_INCOME_MORE_THAN_6">Annual Income > 6 Lakh</option>
                                 <option value="OTHERS">Others</option>
                             </select>
                         </div>
@@ -350,24 +269,15 @@
                         <div id="suppliesSection">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <label class="form-label">Supplies List</label>
-                                <button type="button" class="add-supply-btn" onclick="addSupplyRow()" style="width: auto; padding: 8px 20px;">
+                                <button type="button" class="add-supply-btn" onclick="addSupplyRow()">
                                     <i class="ri-add-line"></i> Add Supply
                                 </button>
                             </div>
                             <div id="suppliesContainer">
-                                <!-- Supply rows will be added here -->
                                 <div class="supply-row">
-                                    <input type="text" class="form-control" placeholder="Supply name (e.g., Wheat)" value="Wheat">
-                                    <input type="number" class="form-control" placeholder="Cost (₹)" value="2">
-                                    <input type="number" class="form-control" placeholder="Per person (kg)" value="5">
-                                    <button type="button" class="remove-supply" onclick="this.parentElement.remove()">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
-                                </div>
-                                <div class="supply-row">
-                                    <input type="text" class="form-control" placeholder="Supply name (e.g., Rice)" value="Rice">
-                                    <input type="number" class="form-control" placeholder="Cost (₹)" value="3">
-                                    <input type="number" class="form-control" placeholder="Per person (kg)" value="3">
+                                    <input type="text" class="form-control" placeholder="Supply name (e.g., Wheat)">
+                                    <input type="number" class="form-control" placeholder="Cost (₹)">
+                                    <input type="number" class="form-control" placeholder="Per person (kg)">
                                     <button type="button" class="remove-supply" onclick="this.parentElement.remove()">
                                         <i class="ri-delete-bin-line"></i>
                                     </button>
@@ -380,34 +290,59 @@
                         </button>
                     </form>
                 </div>
+            </div>
+        </div>
 
-                <h4 style="margin: 30px 0 15px;">Active Schemes</h4>
+        <!-- MODULE 5: Manage Users -->
+        <div id="module5" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-team-line"></i> Manage Users</div>
 
-                <div class="scheme-card">
-                    <div class="scheme-header">
-                        <h4>Child Scheme - Bal Poshan Yojana</h4>
-                        <span class="status-badge status-approved">Active</span>
-                    </div>
-                    <p><strong>Eligibility:</strong> Children up to 14 years in BPL families</p>
-                    <div class="scheme-items">
-                        <div class="scheme-item"><strong>Wheat</strong><br>5 kg</div>
-                        <div class="scheme-item"><strong>Rice</strong><br>3 kg</div>
-                        <div class="scheme-item"><strong>Sugar</strong><br>1 kg</div>
-                    </div>
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 15px;">Create New Distributor</h4>
+                    <form id="createDistributorForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" id="distUsername" class="form-control" placeholder="Distributor username" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="distEmail" class="form-control" placeholder="email@example.com" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <input type="password" id="distPassword" class="form-control" placeholder="Password" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">State District Code</label>
+                                <input type="text" id="distDistrictCode" class="form-control" placeholder="e.g., UK-01" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">
+                            <i class="ri-user-add-line"></i> Create Distributor
+                        </button>
+                    </form>
                 </div>
 
-                <div class="scheme-card">
-                    <div class="scheme-header">
-                        <h4>Annual Income Less Than 3 Lakh</h4>
-                        <span class="status-badge status-approved">Active</span>
-                    </div>
-                    <p><strong>Eligibility:</strong> Families with annual income < ₹3,00,000</p>
-                    <div class="scheme-items">
-                        <div class="scheme-item"><strong>Wheat</strong><br>10 kg</div>
-                        <div class="scheme-item"><strong>Rice</strong><br>5 kg</div>
-                        <div class="scheme-item"><strong>Sugar</strong><br>2 kg</div>
-                    </div>
-                </div>
+                <h4 style="margin: 30px 0 15px;">Active Distributors</h4>
+                <table class="complaint-table">
+                    <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>District</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="distributorsTableBody">
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--gray);">No distributors yet</td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -418,22 +353,12 @@
     <div class="modal-content">
         <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
         <h3 style="color: var(--primary); margin-bottom: 20px;">Complaint Details</h3>
-        <div id="complaintDetailContent">
-            <p><strong>Complaint ID:</strong> #C001</p>
-            <p><strong>Beneficiary:</strong> Rahul Sharma</p>
-            <p><strong>Ration Card:</strong> RC-2024-1234</p>
-            <p><strong>Subject:</strong> Incorrect quantity received</p>
-            <p><strong>Date:</strong> 10 March 2025</p>
-            <p><strong>Status:</strong> <span class="status-badge status-pending">Pending</span></p>
-            <p><strong>Description:</strong> Received only 3kg wheat instead of 5kg at PDS shop #RC45 on 10 March 2025. The distributor said stock was low.</p>
-            <p><strong>PDS Shop:</strong> FPS Alambagh (Shop #RC45)</p>
-            <p><strong>Supporting Document:</strong> <a href="#">receipt_image.jpg</a></p>
-        </div>
+        <div id="complaintDetailContent"></div>
         <div class="modal-actions">
-            <button class="resolve-btn" onclick="resolveComplaint()">
+            <button class="resolve-btn" onclick="resolveComplaintAction()">
                 <i class="ri-check-line"></i> Resolve
             </button>
-            <button class="reject-btn" onclick="rejectComplaint()">
+            <button class="reject-btn" onclick="rejectComplaintAction()">
                 <i class="ri-close-line"></i> Reject
             </button>
         </div>
@@ -448,15 +373,15 @@
         <form id="changePwdForm">
             <div class="form-group">
                 <label class="form-label">Current Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="currentPwd" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">New Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="newPwd" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Confirm New Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="confirmPwd" class="form-control" required>
             </div>
             <button type="submit" class="submit-btn">Update Password</button>
         </form>
@@ -471,40 +396,43 @@
         <form id="addMemberForm">
             <div class="form-group">
                 <label class="form-label">Full Name</label>
-                <input type="text" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Relation</label>
-                <select class="form-control">
-                    <option>Son</option>
-                    <option>Daughter</option>
-                    <option>Spouse</option>
-                    <option>Parent</option>
-                </select>
+                <input type="text" id="memberName" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Aadhaar Number</label>
-                <input type="text" class="form-control" required>
+                <input type="text" id="memberAadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Employment Type</label>
-                <select class="form-control">
-                    <option>Self Employed</option>
-                    <option>Government Job</option>
-                    <option>Private Job</option>
-                    <option>Unemployed</option>
-                    <option>Student</option>
+                <label class="form-label">Date of Birth</label>
+                <input type="date" id="memberDOB" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Employment Status</label>
+                <select id="memberEmployment" class="form-control" required>
+                    <option value="GOVERNMENT">Government Employee</option>
+                    <option value="PRIVATE">Private Employee</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="HOUSE_WIFE">Homemaker</option>
                 </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Photo</label>
-                <input type="file" class="form-control" accept="image/*">
             </div>
             <button type="submit" class="submit-btn">Add Member</button>
         </form>
     </div>
 </div>
 
+<!-- Remove Member Modal -->
+<div class="modal" id="removeMemberModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('removeMemberModal')">&times;</span>
+        <h3 style="color: var(--primary); margin-bottom: 20px;">Remove Family Member</h3>
+        <div id="removeSelectMembersContainer"></div>
+        <button class="submit-btn" style="margin-top: 20px;" onclick="removeMemberAction()">
+            <i class="ri-delete-bin-line"></i> Remove Member
+        </button>
+    </div>
+</div>
+
+<script src="js/api_client.js"></script>
 <script src="js/admin_dashboard.js"></script>
 </body>
 </html>

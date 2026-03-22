@@ -23,7 +23,7 @@
             <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
             <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
             <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
-            <li><a href="login_page.html" class="active"><i class="ri-logout-box-line"></i> Logout</a></li>
+            <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i> Logout</a></li>
         </ul>
     </nav>
     <div class="mobile-menu"><i class="ri-menu-line"></i></div>
@@ -35,21 +35,21 @@
     <aside class="sidebar">
         <div class="profile-card">
             <div class="avatar"><i class="ri-store-line"></i></div>
-            <h3>Ramesh Kumar</h3>
-            <div class="dist-id"><i class="ri-fingerprint-line"></i> DIST/UP/LKO/042</div>
-            <div class="info-row"><i class="ri-map-pin-line"></i><span>Lucknow, Uttar Pradesh - 226001</span></div>
-            <div class="info-row"><i class="ri-store-line"></i><span>FPS Alambagh (Shop #RC45)</span></div>
+            <h3 id="distributorName">Loading...</h3>
+            <div class="dist-id"><i class="ri-fingerprint-line"></i> <span id="distId">DIST/001</span></div>
+            <div class="info-row"><i class="ri-map-pin-line"></i><span id="shopLocation">District, State</span></div>
+            <div class="info-row"><i class="ri-store-line"></i><span id="shopName">FPS Shop</span></div>
         </div>
 
         <div class="shop-info">
             <h4><i class="ri-bar-chart-line"></i> Today's Summary</h4>
-            <div class="shop-detail"><span>Beneficiaries served:</span> <strong>47</strong></div>
-            <div class="shop-detail"><span>Ration distributed:</span> <strong>235 kg</strong></div>
-            <div class="shop-detail"><span>Pending verifications:</span> <strong>12</strong></div>
-            <div class="shop-detail"><span>Stock available:</span> <strong>Wheat 450kg</strong></div>
+            <div class="shop-detail"><span>Beneficiaries served:</span> <strong id="beneficiariesServed">0</strong></div>
+            <div class="shop-detail"><span>Ration distributed:</span> <strong id="rationDistributed">0 kg</strong></div>
+            <div class="shop-detail"><span>Pending verifications:</span> <strong id="pendingVerifications">0</strong></div>
+            <div class="shop-detail"><span>Stock available:</span> <strong id="stockAvailable">--</strong></div>
         </div>
 
-        <div class="logout-btn" onclick="location.href='index.html'">
+        <div class="logout-btn" onclick="logout()">
             <i class="ri-logout-box-line"></i> Logout
         </div>
         <div class="change-pwd" onclick="openChangePwdModal()">
@@ -65,8 +65,8 @@
 
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
-            <div class="nav-item active" data-module="module1"><i class="ri-user-add-line"></i> New Registration</div>
-            <div class="nav-item" data-module="module2"><i class="ri-alert-line"></i> Complaint Registration</div>
+            <div class="nav-item active" data-module="module1"><i class="ri-user-add-line"></i> Register Beneficiary</div>
+            <div class="nav-item" data-module="module2"><i class="ri-alert-line"></i> Complaints</div>
             <div class="nav-item" data-module="module3"><i class="ri-history-line"></i> Complaint History</div>
             <div class="nav-item" data-module="module4"><i class="ri-exchange-line"></i> Ration Allocation</div>
             <div class="nav-item" data-module="module5"><i class="ri-gift-line"></i> Current Schemes</div>
@@ -75,25 +75,30 @@
         <!-- MODULE 1: New User Registration -->
         <div id="module1" class="module active">
             <div class="card">
-                <div class="card-title"><i class="ri-user-add-line"></i> Digital Ration Card Registration</div>
+                <div class="card-title"><i class="ri-user-add-line"></i> Register New Beneficiary</div>
                 <form id="registrationForm">
                     <div class="form-group">
-                        <label class="form-label">Old Ration Card Number</label>
-                        <input type="text" class="form-control" placeholder="Enter existing RC number" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Annual Family Income (₹)</label>
-                        <input type="number" class="form-control" placeholder="Enter total annual income" required>
+                        <label class="form-label">Username</label>
+                        <input type="text" id="beneficiaryUsername" class="form-control" placeholder="Choose a username" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" class="form-control" placeholder="Enter Email Address" required>
+                        <input type="email" id="beneficiaryEmail" class="form-control" placeholder="Enter email address" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Number of Family Members (including head)</label>
+                        <label class="form-label">Password</label>
+                        <input type="password" id="beneficiaryPassword" class="form-control" placeholder="Create password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Annual Family Income (₹)</label>
+                        <input type="number" id="annualIncome" class="form-control" placeholder="Enter total annual income" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Number of Family Members</label>
                         <input type="number" id="totalMembers" class="form-control" min="1" max="10" value="1" onchange="handleTotalMembersChange()">
                         <small style="color: var(--gray);">Maximum 10 members allowed</small>
                     </div>
@@ -108,7 +113,7 @@
                     </button>
 
                     <button type="submit" class="submit-btn">
-                        <i class="ri-save-line"></i> Register Digital Ration Card
+                        <i class="ri-save-line"></i> Register Beneficiary
                     </button>
                 </form>
             </div>
@@ -125,15 +130,20 @@
                     <form id="distributorComplaintForm">
                         <div class="form-group">
                             <label class="form-label">Subject</label>
-                            <input type="text" class="form-control" placeholder="e.g., Stock shortage, Technical issue">
+                            <input type="text" id="distComplaintSubject" class="form-control" placeholder="e.g., Stock shortage, Technical issue" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Message Body</label>
-                            <textarea class="form-control" rows="4" placeholder="Describe your concern in detail"></textarea>
+                            <textarea id="distComplaintMessage" class="form-control" rows="4" placeholder="Describe your concern in detail" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Supporting Document Link</label>
-                            <input type="url" class="form-control" placeholder="https://drive.google.com/...">
+                            <label class="form-label">Priority</label>
+                            <select id="distComplaintPriority" class="form-control" required>
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="URGENT">Urgent</option>
+                            </select>
                         </div>
                         <button type="submit" class="submit-btn" style="background: var(--primary);">
                             <i class="ri-send-plane-line"></i> Submit as Distributor
@@ -143,30 +153,36 @@
 
                 <!-- Case 2: On behalf of Beneficiary -->
                 <div class="sub-card">
-                    <h4><i class="ri-user-star-line"></i> Complaint as Beneficiary</h4>
+                    <h4><i class="ri-user-star-line"></i> Complaint on Behalf of Beneficiary</h4>
                     <form id="beneficiaryComplaintForm">
                         <div class="form-group">
-                            <label class="form-label">Beneficiary Ration Card Number</label>
-                            <input type="text" class="form-control" placeholder="Enter RC number">
+                            <label class="form-label">Beneficiary Username/RC Number</label>
+                            <input type="text" id="beneficiaryRCNumber" class="form-control" placeholder="Enter username or RC number" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Subject</label>
-                            <select class="form-control">
-                                <option>Add new member</option>
-                                <option>Remove member</option>
-                                <option>Transfer member</option>
-                                <option>Family separation</option>
-                                <option>Ration not received</option>
-                                <option>Other</option>
+                            <label class="form-label">Subject Category</label>
+                            <select id="beneficiaryComplaintCategory" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="ADD_MEMBER">Add new member</option>
+                                <option value="REMOVE_MEMBER">Remove member</option>
+                                <option value="TRANSFER_MEMBER">Transfer member</option>
+                                <option value="FAMILY_SEPARATION">Family separation</option>
+                                <option value="RATION_NOT_RECEIVED">Ration not received</option>
+                                <option value="WRONG_QUANTITY">Wrong quantity</option>
+                                <option value="OTHER">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Message Body</label>
-                            <textarea class="form-control" rows="4" placeholder="Describe the issue"></textarea>
+                            <textarea id="beneficiaryComplaintMessage" class="form-control" rows="4" placeholder="Describe the issue" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Supporting Document Link</label>
-                            <input type="url" class="form-control" placeholder="https://drive.google.com/...">
+                            <label class="form-label">Priority</label>
+                            <select id="beneficiaryComplaintPriority" class="form-control" required>
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                            </select>
                         </div>
                         <button type="submit" class="submit-btn" style="background: var(--accent); color: black;">
                             <i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary
@@ -180,29 +196,8 @@
         <div id="module3" class="module">
             <div class="card">
                 <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
-
-                <div class="complaint-card" onclick="openComplaintModal(1)" style="border-left-color: var(--secondary);">
-                    <div>
-                        <strong>Stock shortage - Wheat</strong><br>
-                        <small>15 Mar 2025</small>
-                    </div>
-                    <span class="status-badge status-approved">Resolved</span>
-                </div>
-
-                <div class="complaint-card" onclick="openComplaintModal(2)" style="border-left-color: var(--accent);">
-                    <div>
-                        <strong>Technical issue in app</strong><br>
-                        <small>22 Mar 2025</small>
-                    </div>
-                    <span class="status-badge status-pending">Processing</span>
-                </div>
-
-                <div class="complaint-card" onclick="openComplaintModal(3)" style="border-left-color: var(--danger);">
-                    <div>
-                        <strong>Network connectivity</strong><br>
-                        <small>05 Mar 2025</small>
-                    </div>
-                    <span class="status-badge status-rejected">Rejected</span>
+                <div id="complaintHistoryContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
                 </div>
             </div>
         </div>
@@ -214,12 +209,12 @@
 
                 <div class="allocation-method">
                     <div class="method-card" onclick="showOnlineVerification()">
-                        <i class="ri-wifi-line"></i>
-                        <h4>Online Verification</h4>
-                        <p>Face verification with live photo</p>
+                        <i class="ri-qr-scan-line"></i>
+                        <h4>QR Code Scan</h4>
+                        <p>Scan beneficiary QR code for verification</p>
                     </div>
                     <div class="method-card" onclick="showOfflineOTP()">
-                        <i class="ri-wifi-off-line"></i>
+                        <i class="ri-mail-send-line"></i>
                         <h4>Offline / OTP Mode</h4>
                         <p>Email OTP when no network</p>
                     </div>
@@ -231,8 +226,9 @@
                         <i class="ri-qr-scan-line" style="font-size: 60px; margin-bottom: 20px;"></i>
                         <h3>Scan Beneficiary QR Code</h3>
                         <p>Position the QR code within the frame</p>
-                        <button class="submit-btn" style="width: auto; margin-top: 20px; background: var(--primary);" onclick="simulateQRScan()">
-                            <i class="ri-camera-line"></i> Simulate Scan
+                        <input type="text" id="qrCodeInput" class="form-control" placeholder="Paste QR code data here or scan" style="margin: 20px 0;">
+                        <button class="submit-btn" style="width: auto; margin-top: 20px; background: var(--primary);" onclick="processQRScan()">
+                            <i class="ri-search-line"></i> Verify QR Code
                         </button>
                     </div>
 
@@ -240,38 +236,19 @@
                         <h4 style="color: var(--secondary); margin-bottom: 15px;">
                             <i class="ri-checkbox-circle-line"></i> Card Verified Successfully
                         </h4>
-                        <p><strong>Ration Card:</strong> 1234-5678-9012</p>
-                        <p><strong>Head:</strong> Mohan Lal</p>
-                        <p><strong>Family Members:</strong> 5</p>
+                        <p><strong>Ration Card:</strong> <span id="verifiedRCNumber">--</span></p>
+                        <p><strong>Beneficiary:</strong> <span id="verifiedBeneficiaryName">--</span></p>
+                        <p><strong>Family Members:</strong> <span id="verifiedMemberCount">0</span></p>
 
-                        <h5 style="margin: 20px 0 10px;">Select member for face verification:</h5>
-                        <div class="face-selection">
-                            <div class="face-option" onclick="selectFace('Mohan Lal')">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%231E3A8A'/%3E%3Ccircle cx='40' cy='30' r='12' fill='%23F59E0B'/%3E%3C/svg%3E" alt="face">
-                                <p>Mohan Lal</p>
-                            </div>
-                            <div class="face-option" onclick="selectFace('Sita Devi')">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%2310B981'/%3E%3Ccircle cx='40' cy='30' r='12' fill='%23F59E0B'/%3E%3C/svg%3E" alt="face">
-                                <p>Sita Devi</p>
-                            </div>
-                            <div class="face-option" onclick="selectFace('Rahul Lal')">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%23EF4444'/%3E%3Ccircle cx='40' cy='30' r='12' fill='%23F59E0B'/%3E%3C/svg%3E" alt="face">
-                                <p>Rahul Lal</p>
-                            </div>
+                        <h5 style="margin: 20px 0 10px;">Select member for verification:</h5>
+                        <div class="face-selection" id="faceSelectionContainer">
+                            <p style="text-align: center; color: var(--gray);">Loading family members...</p>
                         </div>
 
                         <div id="allocationSummary" style="display: none;">
                             <h5 style="margin: 20px 0 10px;">Ration to be allocated:</h5>
-                            <div class="allocation-summary">
-                                <p><strong>Wheat:</strong> 10 kg (₹ 2/kg) - ₹ 20</p>
-                                <p><strong>Rice:</strong> 5 kg (₹ 3/kg) - ₹ 15</p>
-                                <p><strong>Sugar:</strong> 2 kg (₹ 15/kg) - ₹ 30</p>
-                                <p><strong>Kerosene:</strong> 2 L (₹ 10/L) - ₹ 20</p>
-                                <hr style="margin: 10px 0;">
-                                <p><strong>Total Payable:</strong> ₹ 85</p>
-                                <button class="submit-btn" style="margin-top: 15px;" onclick="completeAllocation()">
-                                    <i class="ri-check-double-line"></i> Complete Allocation
-                                </button>
+                            <div class="allocation-summary" id="allocationDetails">
+                                <p>Loading allocation details...</p>
                             </div>
                         </div>
                     </div>
@@ -282,29 +259,24 @@
                     <div class="card" style="background: #f8fafc;">
                         <h4 style="margin-bottom: 20px;"><i class="ri-mail-send-line"></i> OTP Verification (Offline Mode)</h4>
                         <div class="form-group">
-                            <label class="form-label">Enter Ration Card Number</label>
-                            <input type="text" class="form-control" id="otpRcNumber" placeholder="1234-5678-9012">
+                            <label class="form-label">Enter Beneficiary Username/RC Number</label>
+                            <input type="text" class="form-control" id="otpBeneficiaryId" placeholder="Username or RC number">
                         </div>
                         <button class="submit-btn" style="background: var(--accent); color: black;" onclick="sendOTP()">
                             <i class="ri-mail-send-line"></i> Send OTP to Registered Email
                         </button>
 
                         <div id="otpSection" style="display: none; margin-top: 30px;">
-                            <h5>Enter OTP received on email</h5>
+                            <h5>Enter OTP received on beneficiary email</h5>
                             <div class="otp-container">
-                                <input type="text" class="otp-input" maxlength="6" placeholder="••••••">
-                                <button class="verify-btn" onclick="verifyOTP()">Verify</button>
+                                <input type="text" id="otpInput" class="otp-input" maxlength="6" placeholder="••••••">
+                                <button type="button" class="verify-btn" onclick="verifyOTP()">Verify</button>
                             </div>
                         </div>
 
                         <div id="offlineAllocation" style="display: none; margin-top: 20px;">
-                            <div class="allocation-summary">
-                                <p><strong>Wheat:</strong> 10 kg - ₹ 20</p>
-                                <p><strong>Rice:</strong> 5 kg - ₹ 15</p>
-                                <p><strong>Sugar:</strong> 2 kg - ₹ 30</p>
-                                <hr>
-                                <p><strong>Total:</strong> ₹ 85</p>
-                                <button class="submit-btn" style="margin-top: 15px;">Complete Transaction</button>
+                            <div class="allocation-summary" id="offlineAllocationDetails">
+                                <p>Loading allocation details...</p>
                             </div>
                         </div>
                     </div>
@@ -315,45 +287,9 @@
         <!-- MODULE 5: Current Schemes -->
         <div id="module5" class="module">
             <div class="card">
-                <div class="card-title"><i class="ri-gift-line"></i> Active Schemes (March 2025)</div>
-
-                <div class="scheme-card">
-                    <div class="scheme-header">
-                        <h4>Antyodaya Anna Yojana (AAY)</h4>
-                        <span class="status-badge status-approved">Active</span>
-                    </div>
-                    <p><strong>Eligibility:</strong> Poorest of the poor families, income < ₹15,000/year</p>
-                    <div class="scheme-items">
-                        <div class="scheme-item"><strong>Wheat</strong><br>35 kg</div>
-                        <div class="scheme-item"><strong>Rice</strong><br>20 kg</div>
-                        <div class="scheme-item"><strong>Sugar</strong><br>3 kg</div>
-                    </div>
-                    <p style="margin-top: 10px;"><small>Price: Wheat ₹2/kg, Rice ₹3/kg, Sugar ₹15/kg</small></p>
-                </div>
-
-                <div class="scheme-card">
-                    <div class="scheme-header">
-                        <h4>Priority Household (PHH)</h4>
-                        <span class="status-badge status-approved">Active</span>
-                    </div>
-                    <p><strong>Eligibility:</strong> Annual income between ₹15,000 - ₹3,00,000</p>
-                    <div class="scheme-items">
-                        <div class="scheme-item"><strong>Wheat</strong><br>10 kg</div>
-                        <div class="scheme-item"><strong>Rice</strong><br>5 kg</div>
-                        <div class="scheme-item"><strong>Sugar</strong><br>2 kg</div>
-                    </div>
-                </div>
-
-                <div class="scheme-card">
-                    <div class="scheme-header">
-                        <h4>Special Add-on: Kerosene</h4>
-                        <span class="status-badge status-pending">Limited Stock</span>
-                    </div>
-                    <p><strong>Eligibility:</strong> Families without LPG connection</p>
-                    <div class="scheme-items">
-                        <div class="scheme-item"><strong>Kerosene</strong><br>2 L per month</div>
-                    </div>
-                    <p><small>Price: ₹10/L (subsidized)</small></p>
+                <div class="card-title"><i class="ri-gift-line"></i> Active Schemes (Current Month)</div>
+                <div id="schemesContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading schemes...</p>
                 </div>
             </div>
         </div>
@@ -366,12 +302,7 @@
         <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
         <h3 style="color: var(--primary);">Complaint Details</h3>
         <div id="complaintDetailContent">
-            <p><strong>Subject:</strong> Stock shortage - Wheat</p>
-            <p><strong>Date:</strong> 15 Mar 2025</p>
-            <p><strong>Status:</strong> <span class="status-badge status-approved">Resolved</span></p>
-            <p><strong>Message:</strong> Wheat stock is running low, only 50kg left. Need urgent replenishment for the next 3 days.</p>
-            <p><strong>Supporting doc:</strong> <a href="#">inventory_report.pdf</a></p>
-            <p><strong>Resolution notes:</strong> Stock replenished on 18 Mar 2025.</p>
+            <p>Loading...</p>
         </div>
     </div>
 </div>
@@ -384,21 +315,22 @@
         <form id="changePwdForm">
             <div class="form-group">
                 <label class="form-label">Current Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="currentPwd" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">New Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="newPwd" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Confirm New Password</label>
-                <input type="password" class="form-control" required>
+                <input type="password" id="confirmPwd" class="form-control" required>
             </div>
             <button type="submit" class="submit-btn">Update Password</button>
         </form>
     </div>
 </div>
 
+<script src="js/api_client.js"></script>
 <script src="js/distributor_dashboard.js"></script>
 </body>
 </html>

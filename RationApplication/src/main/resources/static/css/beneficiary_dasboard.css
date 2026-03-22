@@ -108,6 +108,7 @@ nav ul li a {
     display: flex;
     align-items: center;
     gap: 6px;
+    cursor: pointer;
 }
 
 nav ul li a i {
@@ -253,6 +254,7 @@ nav ul li a.active {
     font-size: 10px;
     font-weight: 600;
     margin-left: auto;
+    text-transform: capitalize;
 }
 
 .member-tag.govt {
@@ -359,6 +361,11 @@ nav ul li a.active {
     box-shadow: 0 6px 14px rgba(30,58,138,0.3);
 }
 
+.nav-item:hover:not(.active) {
+    background: rgba(30, 58, 138, 0.1);
+    color: var(--primary);
+}
+
 /****** modules ******/
 .module {
     display: none;
@@ -387,6 +394,8 @@ nav ul li a.active {
     display: flex;
     align-items: center;
     gap: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 12px;
 }
 
 /****** ration card style ******/
@@ -419,13 +428,21 @@ nav ul li a.active {
 .qr-code-placeholder {
     width: 100px;
     height: 100px;
-    background: repeating-linear-gradient(45deg, #00000010 0px, #00000010 10px, #ffffff 10px, #ffffff 20px);
-    border: 2px solid black;
+    background: #e5e7eb;
+    border: 2px solid #1f2937;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-code-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .ration-details {
@@ -444,6 +461,7 @@ nav ul li a.active {
     justify-content: center;
     color: white;
     font-size: 50px;
+    flex-shrink: 0;
 }
 
 /****** complaint history cards ******/
@@ -472,16 +490,20 @@ nav ul li a.active {
     font-size: 12px;
     font-weight: 600;
     color: white;
+    text-transform: capitalize;
 }
 
+.status-badge.status-resolved,
 .status-approved {
     background: var(--secondary);
 }
 
+.status-badge.status-rejected,
 .status-rejected {
     background: var(--danger);
 }
 
+.status-badge.status-processing,
 .status-pending {
     background: var(--accent);
     color: black;
@@ -512,6 +534,7 @@ nav ul li a.active {
     border-radius: 30px;
     font-size: 12px;
     font-weight: 600;
+    text-transform: capitalize;
 }
 
 .txn-badge.taken {
@@ -549,6 +572,8 @@ nav ul li a.active {
     padding: 30px;
     position: relative;
     box-shadow: var(--shadow-lg);
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .close-modal {
@@ -558,10 +583,18 @@ nav ul li a.active {
     cursor: pointer;
     color: var(--gray);
     transition: var(--transition);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f1f5f9;
 }
 
 .close-modal:hover {
     color: var(--danger);
+    background: #fee2e2;
 }
 
 /****** form elements ******/
@@ -574,15 +607,17 @@ nav ul li a.active {
     font-weight: 500;
     margin-bottom: 6px;
     color: var(--dark);
+    font-size: 14px;
 }
 
 .form-control {
     width: 100%;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border: 1.5px solid #e2e8f0;
-    border-radius: 16px;
+    border-radius: 14px;
     font-size: 14px;
     transition: var(--transition);
+    font-family: 'Poppins', sans-serif;
 }
 
 .form-control:focus {
@@ -595,13 +630,17 @@ nav ul li a.active {
     background: var(--secondary);
     color: white;
     border: none;
-    padding: 16px;
-    border-radius: 16px;
+    padding: 14px 24px;
+    border-radius: 14px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
     font-size: 16px;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .submit-btn:hover {
@@ -609,10 +648,21 @@ nav ul li a.active {
     transform: translateY(-2px);
 }
 
+.submit-btn i {
+    font-size: 18px;
+}
+
 .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+}
+
+.grid-2 div {
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border-left: 4px solid var(--secondary);
 }
 
 table {
@@ -624,13 +674,15 @@ th {
     text-align: left;
     padding: 12px 8px;
     color: var(--gray);
-    font-weight: 500;
+    font-weight: 600;
     border-bottom: 2px solid #e2e8f0;
+    font-size: 13px;
 }
 
 td {
     padding: 10px 8px;
     border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
 }
 
 /****** animations ******/
@@ -678,5 +730,12 @@ td {
     }
     .dashboard-container {
         padding-top: 62px;
+    }
+    .nav-item {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    .grid-2 {
+        grid-template-columns: 1fr;
     }
 }
