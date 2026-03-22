@@ -1,19 +1,28 @@
 package com.rationApplication.RationApplication.controller;
 
-import com.rationApplication.RationApplication.entity.*;
+import com.rationApplication.RationApplication.dto.QRCodeResponse;
+import com.rationApplication.RationApplication.entity.Complaint;
+import com.rationApplication.RationApplication.entity.Transaction;
 import com.rationApplication.RationApplication.service.BeneficiaryService;
-import com.rationApplication.RationApplication.service.UserService;
+import com.rationApplication.RationApplication.service.ComplaintService;
+import com.rationApplication.RationApplication.service.QRCodeService;
+import com.rationApplication.RationApplication.service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/beneficiary")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+@PreAuthorize("hasRole('BENEFICIARY')")
 @Slf4j
 public class BeneficiaryController {
 
@@ -21,28 +30,91 @@ public class BeneficiaryController {
     private BeneficiaryService beneficiaryService;
 
     @Autowired
-    private UserService userService;
+    private ComplaintService complaintService;
 
-    @GetMapping("/getComplaints/{userId}")
-    public ResponseEntity<List<Complaint>> getAllComplaints(@PathVariable String userId) {
+    @Autowired
+    private QRCodeService qrCodeService;
+
+    @Autowired
+    private TransactionService transactionService;
+
+    @PostMapping("/generateQR")
+    public ResponseEntity<QRCodeResponse> generateQRCode(Authentication authentication) {
         try {
-            List<Complaint> complaints = userService.getComplaints(userId);
+            String username = authentication.getName();
+
+            log.info("Generating QR code for beneficiary: {}", username);
+            QRCodeResponse response = qrCodeService.generateQRCode(username, username);
+
+            if (response.isSuccess()) {
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            log.error("Error generating QR code: {}", e.getMessage());
+            return new ResponseEntity<>(
+                    new QRCodeResponse(null, null, null, null, null, null, false,
+                            "Error generating QR code: " + e.getMessage()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/getTransactions")
+    public ResponseEntity<?> getAllTransactions(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            log.info("Getting transactions for beneficiary: {}", username);
+
+            List<Transaction> transactions = transactionService.getTransactionsByBeneficiary(username);
+            return new ResponseEntity<>(transactions, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("ERROR IN TRACKING THE TRANSACTIONS: {}", e.toString());
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Error fetching transactions");
+            return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @GetMapping("/getComplaints")
+    public ResponseEntity<?> getAllComplaints(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            log.info("Getting complaints for beneficiary: {}", username);
+
+            List<Complaint> complaints = complaintService.getComplaintsByUser(username);
             return new ResponseEntity<>(complaints, HttpStatus.OK);
         } catch (Exception e) {
             log.error("ERROR IN TRACKING THE COMPLAINTS: {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Error fetching complaints");
+            return new ResponseEntity<>(error, HttpStatus.NO_CONTENT);
         }
     }
 
-    @GetMapping("/getTransactions/{rationCardNumber}")
-    public ResponseEntity<List<Transaction>> getAllTransactions(@PathVariable String rationCardNumber) {
+    @PostMapping("/submitComplaint")
+    public ResponseEntity<Map<String, Object>> submitComplaint(
+            @RequestBody Complaint complaint,
+            Authentication authentication) {
         try {
-            List<Transaction> transactions = beneficiaryService.getTransactions(rationCardNumber);
-            return new ResponseEntity<>(transactions,HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("ERROR IN TRACKING THE TRANSACTIONS: {}", e.toString());
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
+            String username = authentication.getName();
+            complaint.setApplicantUsername(username);
 
+            log.info("Submitting complaint for beneficiary: {}", username);
+            complaintService.registerComplaint(complaint);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Complaint submitted successfully");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            log.error("Error submitting complaint: {}", e.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error submitting complaint");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
