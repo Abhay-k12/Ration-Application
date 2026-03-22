@@ -6,9 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -19,19 +18,49 @@ public class Complaint {
     @Id
     private ObjectId id;
 
+    @Indexed
     private String applicantUsername;
 
-    private String title;
+    private String complaintTitle;
 
-    private String body;
+    private String description;
 
-    private String documentLink;
+    private String category;
 
-    private String response;
+    private String priority;
 
-    private Status status;
+    private Status status = Status.PROCESSING;
 
-    private LocalDateTime registrationDate;
+    private String resolutionNotes;
 
-    private LocalDateTime resolvedDate;
+    @Indexed
+    private String stateDistrictCode;
+
+    private Long createdAt;
+    private Long resolvedAt;
+
+
+    public Complaint(String applicantUsername, String title, String description,
+                     String category, String priority, String stateDistrictCode) {
+        this.applicantUsername = applicantUsername;
+        this.complaintTitle = title;
+        this.description = description;
+        this.category = category;
+        this.priority = priority;
+        this.stateDistrictCode = stateDistrictCode;
+        this.status = Status.PROCESSING;
+        this.createdAt = System.currentTimeMillis();
+    }
+
+    @Override
+    public String toString() {
+        return "Complaint{" +
+                "id=" + id +
+                ", applicantUsername='" + applicantUsername + '\'' +
+                ", complaintTitle='" + complaintTitle + '\'' +
+                ", status=" + status +
+                ", stateDistrictCode='" + stateDistrictCode + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }
