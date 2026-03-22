@@ -4,18 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
-
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Document(collection="Beneficiary")
-public class Beneficiary extends User{
+public class Beneficiary extends User {
 
     private int annualIncome;
 
@@ -24,4 +24,10 @@ public class Beneficiary extends User{
 
     @DBRef
     private List<Transaction> transactions;
+
+    public Beneficiary(User user) {
+        super((Beneficiary) user);
+        this.setStateDistrictCode(user.getStateDistrictCode());
+        this.setCreatedAt(System.currentTimeMillis());
+    }
 }

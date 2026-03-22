@@ -18,7 +18,7 @@ import java.time.LocalDate;
 public class Aadhaar {
 
     @NonNull
-    @Indexed(unique = true)
+    @Id
     private String aadhaarNumber;
 
     private String name;
@@ -26,4 +26,12 @@ public class Aadhaar {
     private LocalDate dateOfBirth;
 
     private EmploymentStatus employmentStatus;
+
+    public Aadhaar(String aadhaarNumber, String name, LocalDate dateOfBirth, String employmentStatus) {
+        this.aadhaarNumber = aadhaarNumber;
+        this.name = name;
+        this.dateOfBirth = dateOfBirth;
+        this.employmentStatus = EmploymentStatus.valueOf(employmentStatus.toUpperCase());
+    }
+
 }
