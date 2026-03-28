@@ -1,4 +1,3 @@
-// Global variables
 let currentBeneficiary = null;
 let currentComplaints = [];
 let currentTransactions = [];
