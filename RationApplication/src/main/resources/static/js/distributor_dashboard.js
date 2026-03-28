@@ -1,4 +1,3 @@
-// Global variables
 let memberCount = 1;
 let currentFamilyMembers = [];
 let currentComplaints = [];
