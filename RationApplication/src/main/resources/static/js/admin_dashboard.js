@@ -1,4 +1,3 @@
-// Check authentication on page load
 window.addEventListener('load', () => {
     const token = getAuthToken();
     const userRole = localStorage.getItem('userRole');
