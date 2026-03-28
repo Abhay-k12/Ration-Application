@@ -1,5 +1,4 @@
 (function() {
-    // ===== ROLE CONFIGURATION =====
     const roleOptions = document.querySelectorAll('.role-option');
 
     const roleConfig = {
