@@ -72,6 +72,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/").permitAll()
                 .antMatchers("/index.html").permitAll()
                 .antMatchers("/login_page.html").permitAll()
+
+                .antMatchers(
+                        "/admin_dashboard.html",
+                        "/beneficiary_dashboard.html",
+                        "/distributor_dashboard.html"
+                ).permitAll()
+
+                .antMatchers("/favicon.ico").permitAll()
                 .antMatchers("/static/**").permitAll()
                 .antMatchers("/css/**").permitAll()
                 .antMatchers("/js/**").permitAll()
