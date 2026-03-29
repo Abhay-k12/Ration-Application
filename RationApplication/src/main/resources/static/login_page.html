@@ -31,7 +31,6 @@
     <div class="mobile-menu"><i class="ri-menu-line"></i></div>
 </header>
 
-<!-- LOGIN SECTION -->
 <section class="login-section">
     <div class="login-container">
         <div class="login-info">
@@ -39,7 +38,6 @@
             <p id="roleDescription">Access your ration dashboard, view quota & history.</p>
 
             <div class="features-list" id="roleFeatures">
-                <!-- beneficiary features -->
                 <div class="role-info active" id="beneficiaryFeatures">
                     <div class="feature-item"><i class="ri-user-line"></i><span>View monthly entitlement & quota</span></div>
                     <div class="feature-item"><i class="ri-history-line"></i><span>Complete transaction history</span></div>
@@ -47,7 +45,6 @@
                     <div class="feature-item"><i class="ri-shield-check-line"></i><span>Face verification enabled</span></div>
                 </div>
 
-                <!-- PDS officer features -->
                 <div class="role-info" id="distributorFeatures">
                     <div class="feature-item"><i class="ri-store-line"></i><span>Distribute rations, scan beneficiary QR</span></div>
                     <div class="feature-item"><i class="ri-camera-line"></i><span>Register beneficiaries</span></div>
@@ -55,7 +52,6 @@
                     <div class="feature-item"><i class="ri-bar-chart-2-line"></i><span>Shop stock & daily reports</span></div>
                 </div>
 
-                <!-- admin features -->
                 <div class="role-info" id="adminFeatures">
                     <div class="feature-item"><i class="ri-dashboard-line"></i><span>District‑wise monitoring dashboard</span></div>
                     <div class="feature-item"><i class="ri-pie-chart-line"></i><span>Real‑time analytics & duplicate alerts</span></div>
@@ -70,15 +66,14 @@
             <p id="formDescription">Enter your credentials to access the portal</p>
             <div id="loginErrorMessage" class="error-message"></div>
 
-            <!-- role selector pills -->
             <div class="role-selection">
                 <div class="role-option active" data-role="BENEFICIARY"><i class="ri-user-line"></i><span>Beneficiary</span></div>
                 <div class="role-option" data-role="DISTRIBUTOR"><i class="ri-store-line"></i><span>Distributor</span></div>
                 <div class="role-option" data-role="ADMIN"><i class="ri-admin-line"></i><span>Admin</span></div>
             </div>
 
-            <form id="loginForm">
-                <!-- beneficiary form -->
+            <!-- IMPORTANT: novalidate prevents browser validation popup + "not focusable" error -->
+            <form id="loginForm" novalidate>
                 <div class="role-info active" id="beneficiaryForm">
                     <div class="form-group">
                         <label class="form-label" for="benUsername">Username</label>
@@ -98,7 +93,6 @@
                     </div>
                 </div>
 
-                <!-- distributor form -->
                 <div class="role-info" id="distributorForm">
                     <div class="form-group">
                         <label class="form-label" for="distUsername">Username</label>
@@ -118,7 +112,6 @@
                     </div>
                 </div>
 
-                <!-- admin form -->
                 <div class="role-info" id="adminForm">
                     <div class="form-group">
                         <label class="form-label" for="adminUsername">Username</label>
@@ -149,7 +142,6 @@
     </div>
 </section>
 
-<!-- Forgot password modal -->
 <div class="modal" id="forgotModal">
     <div class="modal-content">
         <span class="close-modal" id="closeModalBtn">&times;</span>
