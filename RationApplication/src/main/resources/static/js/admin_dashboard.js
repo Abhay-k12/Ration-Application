@@ -1,3 +1,15 @@
+if (!window.getAuthToken || !window.login) {
+    console.error('API client not loaded');
+    window.location.href = '/login_page.html';
+}
+
+const token = localStorage.getItem('jwtToken');
+const userRole = localStorage.getItem('userRole');
+
+if (!token || userRole !== 'ADMIN') {
+    window.location.href = '/login_page.html';
+}
+
 window.addEventListener('load', () => {
     const token = getAuthToken();
     const userRole = localStorage.getItem('userRole');
