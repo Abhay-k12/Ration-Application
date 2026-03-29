@@ -4,6 +4,18 @@ let currentComplaints = [];
 let currentSchemes = [];
 let currentQRData = null;
 
+if (!window.getAuthToken || !window.login) {
+    console.error('API client not loaded');
+    window.location.href = '/login_page.html';
+}
+
+const token = localStorage.getItem('jwtToken');
+const userRole = localStorage.getItem('userRole');
+
+if (!token || userRole !== 'DISTRIBUTOR') {
+    window.location.href = '/login_page.html';
+}
+
 // Check authentication on page load
 window.addEventListener('load', () => {
     const token = getAuthToken();

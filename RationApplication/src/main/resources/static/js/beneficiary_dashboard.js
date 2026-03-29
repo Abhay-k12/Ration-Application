@@ -2,6 +2,19 @@ let currentBeneficiary = null;
 let currentComplaints = [];
 let currentTransactions = [];
 
+if (!window.getAuthToken || !window.login) {
+    console.error('API client not loaded. Redirecting to login...');
+    window.location.href = '/login_page.html';
+}
+
+// Check authentication immediately
+const token = localStorage.getItem('jwtToken');
+const userRole = localStorage.getItem('userRole');
+
+if (!token || userRole !== 'BENEFICIARY') {
+    window.location.href = '/login_page.html';
+}
+
 // Check authentication on page load
 window.addEventListener('load', () => {
     const token = getAuthToken();

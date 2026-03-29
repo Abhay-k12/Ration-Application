@@ -41,17 +41,10 @@ async function apiRequest(endpoint, method = 'GET', data = null, isFormData = fa
     }
 
     try {
-        console.log(`${method} ${API_BASE_URL}${endpoint}`);
+        console.log(`[API] ${method} ${API_BASE_URL}${endpoint}`);
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-        // Handle 401 Unauthorized
-        if (response.status === 401) {
-            removeAuthToken();
-            window.location.href = '/login_page.html';
-            return null;
-        }
-
-        // Try to parse as JSON
+        // Try to parse as JSON first
         const text = await response.text();
         let result;
         try {
@@ -60,16 +53,26 @@ async function apiRequest(endpoint, method = 'GET', data = null, isFormData = fa
             result = { message: text, success: response.ok };
         }
 
-        return {
-            ...result,
-            status: response.status,
-            ok: response.ok
-        };
+        // Add status and ok to result
+        result.status = response.status;
+        result.ok = response.ok;
+
+        console.log(`[API Response] Status: ${response.status}, Success: ${result.success}`);
+
+        // Handle 401 Unauthorized - but NOT for login endpoint
+        if (response.status === 401 && endpoint !== '/auth/login') {
+            console.log('[API] Unauthorized - Removing auth and redirecting to login');
+            removeAuthToken();
+            window.location.href = '/login_page.html';
+            return null;
+        }
+
+        return result;
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('[API Error]', error);
         return {
             success: false,
-            message: error.message,
+            message: error.message || 'Network error occurred',
             status: 0,
             ok: false
         };
@@ -89,7 +92,10 @@ async function register(username, password, email, roles, stateDistrictCode, ann
 }
 
 async function login(username, password) {
-    return apiRequest('/auth/login', 'POST', { username, password });
+    console.log('[Login] Attempting login with username:', username);
+    const result = await apiRequest('/auth/login', 'POST', { username, password });
+    console.log('[Login] Result:', result);
+    return result;
 }
 
 async function refreshTokenEndpoint() {
