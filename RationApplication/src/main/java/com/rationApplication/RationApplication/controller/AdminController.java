@@ -44,13 +44,15 @@ public class AdminController {
             response.put("success", true);
             response.put("message", "Member added successfully");
             return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             log.warn("Validation error adding member: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Error in adding new member: {}", e.toString());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
