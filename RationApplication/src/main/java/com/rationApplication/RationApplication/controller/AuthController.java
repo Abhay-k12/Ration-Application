@@ -85,7 +85,6 @@ public class AuthController {
         try {
             log.info("User login attempt: {}", authRequest.getUsername());
 
-            // Validate request
             if (authRequest.getUsername() == null || authRequest.getUsername().trim().isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
@@ -109,7 +108,8 @@ public class AuthController {
                 log.warn("Login failed for user: {}", authRequest.getUsername());
                 return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Error in login: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
