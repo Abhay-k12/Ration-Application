@@ -1,11 +1,10 @@
 package com.rationApplication.RationApplication.security;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -15,42 +14,48 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Component
-@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtTokenProvider tokenProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
-                String username = jwtTokenProvider.getUsernameFromToken(jwt);
-                String rolesString = String.valueOf(jwtTokenProvider.getRolesFromToken(jwt));
+            if (jwt != null && tokenProvider.validateToken(jwt)) {
+                String username = tokenProvider.getUsernameFromToken(jwt);
 
-                Collection<GrantedAuthority> authorities = new ArrayList<>();
-                if (rolesString != null && !rolesString.isEmpty()) {
-                    String[] roles = rolesString.split(",");
+                // Extract roles from token
+                List<String> roles = tokenProvider.getRolesFromToken(jwt);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+                if (roles != null) {
                     for (String role : roles) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role.trim()));
+                        // Add ROLE_ prefix if not present
+                        if (!role.startsWith("ROLE_")) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                        } else {
+                            authorities.add(new SimpleGrantedAuthority(role));
+                        }
                     }
                 }
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Set Spring Security authentication for user: {}", username);
+                logger.debug("Set user authentication for username: " + username + " with roles: " + roles);
             }
         } catch (Exception ex) {
-            log.error("Could not set user authentication in security context", ex);
+            logger.error("Could not set user authentication in security context", ex);
         }
 
         filterChain.doFilter(request, response);
