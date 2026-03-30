@@ -13,9 +13,6 @@ import com.rationApplication.RationApplication.repository.UserRepository;
 import com.rationApplication.RationApplication.security.JwtTokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -34,15 +32,6 @@ public class AuthService {
 
     @Autowired
     private BeneficiaryRepository beneficiaryRepository;
-
-    @Autowired
-    private AadhaarService aadhaarService;
-
-    @Autowired
-    private RationCardService rationCardService;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -57,6 +46,7 @@ public class AuthService {
         try {
             // Validate input
             if (request.getUsername() == null || request.getUsername().isEmpty()) {
+                log.warn("Username is required");
                 return new AuthResponse("Username is required", false);
             }
 
@@ -68,25 +58,34 @@ public class AuthService {
                 return new AuthResponse("Username already exists", false);
             }
 
+            // Set default roles if not provided
+            List<String> roles = request.getRoles();
+            if (roles == null || roles.isEmpty()) {
+                roles = List.of("BENEFICIARY");
+                log.info("No roles provided, defaulting to BENEFICIARY");
+            }
+
             User user = new User();
             user.setUsername(request.getUsername());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setEmail(request.getEmail());
-            user.setRoles(request.getRoles() != null ? request.getRoles() : List.of("BENEFICIARY"));
+            user.setRoles(roles);
             user.setStateDistrictCode(request.getStateDistrictCode());
             user.setComplaints(new ArrayList<>());
             user.setIsActive(true);
             user.setCreatedAt(System.currentTimeMillis());
             user.setUpdatedAt(System.currentTimeMillis());
 
+            log.info("Processing registration for username: {} with roles: {}", request.getUsername(), roles);
+
             // If registering as BENEFICIARY
-            if (request.getRoles() != null && request.getRoles().contains("BENEFICIARY")) {
+            if (roles.contains("BENEFICIARY")) {
                 user.setUserType("BENEFICIARY");
 
                 List<Aadhaar> members = new ArrayList<>();
 
                 if (request.getFamilyMembers() != null && !request.getFamilyMembers().isEmpty()) {
-                    log.info("Processing {} family members", request.getFamilyMembers().size());
+                    log.info("Processing {} family members for user: {}", request.getFamilyMembers().size(), request.getUsername());
 
                     for (int i = 0; i < request.getFamilyMembers().size(); i++) {
                         AadhaarRequest aadhaarRequest = request.getFamilyMembers().get(i);
@@ -94,32 +93,38 @@ public class AuthService {
                         try {
                             // Validate
                             if (aadhaarRequest == null) {
+                                log.error("Family member data is null at index {}", i);
                                 return new AuthResponse("Family member data is null at index " + i, false);
                             }
 
                             String aadhaarNumber = aadhaarRequest.getAadhaarNumber();
                             if (aadhaarNumber == null || aadhaarNumber.trim().isEmpty()) {
+                                log.error("Aadhaar number is empty for member {}", i);
                                 return new AuthResponse("Aadhaar number cannot be empty for member " + i, false);
                             }
 
                             String name = aadhaarRequest.getName();
                             if (name == null || name.trim().isEmpty()) {
+                                log.error("Name is empty for member {}", i);
                                 return new AuthResponse("Name cannot be empty for member " + i, false);
                             }
 
                             String dateOfBirthStr = aadhaarRequest.getDateOfBirth();
                             if (dateOfBirthStr == null || dateOfBirthStr.trim().isEmpty()) {
+                                log.error("Date of birth is empty for member {}", i);
                                 return new AuthResponse("Date of birth cannot be empty for member " + i, false);
                             }
 
-                            String employmentStatus = aadhaarRequest.getEmploymentStatus();  // ✅ GET AS STRING
+                            String employmentStatus = aadhaarRequest.getEmploymentStatus();
                             if (employmentStatus == null || employmentStatus.trim().isEmpty()) {
+                                log.error("Employment status is empty for member {}", i);
                                 return new AuthResponse("Employment status cannot be empty for member " + i, false);
                             }
 
                             try {
                                 EmploymentStatus.valueOf(employmentStatus.toUpperCase());
                             } catch (IllegalArgumentException e) {
+                                log.error("Invalid employment status for member {}: {}", i, employmentStatus);
                                 return new AuthResponse("Invalid employment status: " + employmentStatus + ". Valid values: GOVERNMENT, PRIVATE, STUDENT, HOUSE_WIFE, UNEMPLOYED", false);
                             }
 
@@ -133,7 +138,7 @@ public class AuthService {
                             );
 
                             members.add(aadhaar);
-                            log.info("Family member {} prepared: {}", i, aadhaarNumber);
+                            log.info("Family member {} prepared: Aadhaar={}, Name={}", i, aadhaarNumber, name);
 
                         } catch (IllegalArgumentException e) {
                             log.error("Invalid data for member {}: {}", i, e.getMessage());
@@ -149,7 +154,7 @@ public class AuthService {
                 beneficiary.setUsername(request.getUsername());
                 beneficiary.setPassword(user.getPassword());
                 beneficiary.setEmail(request.getEmail());
-                beneficiary.setRoles(request.getRoles());
+                beneficiary.setRoles(roles);
                 beneficiary.setStateDistrictCode(request.getStateDistrictCode());
                 beneficiary.setAnnualIncome(request.getAnnualIncome() != null ? request.getAnnualIncome() : 0);
                 beneficiary.setComplaints(new ArrayList<>());
@@ -164,24 +169,32 @@ public class AuthService {
 
                 if (!members.isEmpty()) {
                     aadhaarRepository.saveAll(members);
-                    log.info("Aadhaar members saved: {}", members.size());
+                    log.info("Aadhaar members saved for user: {} (count: {})", request.getUsername(), members.size());
                 }
 
                 beneficiaryRepository.save(beneficiary);
-                log.info("Beneficiary registered: RC={}", request.getUsername());
+                log.info("Beneficiary registered successfully with RC: {}", request.getUsername());
 
-            } else if (request.getRoles() != null && request.getRoles().contains("DISTRIBUTOR")) {
+            } else if (roles.contains("DISTRIBUTOR")) {
                 user.setUserType("DISTRIBUTOR");
                 userRepository.save(user);
-            } else if (request.getRoles() != null && request.getRoles().contains("ADMIN")) {
+                log.info("Distributor registered: {}", request.getUsername());
+
+            } else if (roles.contains("ADMIN")) {
                 user.setUserType("ADMIN");
                 userRepository.save(user);
+                log.info("Admin registered: {}", request.getUsername());
+
             } else {
                 userRepository.save(user);
+                log.info("User registered with default role: {}", request.getUsername());
             }
 
+            // Generate tokens with roles
             String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRoles());
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+
+            log.info("Tokens generated for user: {} with roles: {}", user.getUsername(), user.getRoles());
 
             return new AuthResponse(token, refreshToken, user.getUsername(), user.getRoles(),
                     user.getEmail(), user.getStateDistrictCode());
@@ -192,46 +205,74 @@ public class AuthService {
         }
     }
 
-
     public AuthResponse login(String username, String password) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password)
-            );
+            log.info("Login attempt for user: {}", username);
 
-            User user = userRepository.findByUsername(username);
-            if (user == null) {
+            Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
+
+            if (user.isEmpty()) {
                 log.warn("User not found: {}", username);
                 return new AuthResponse("User not found", false);
             }
 
-            if (!user.isUserActive()) {
-                log.warn("User account is deactivated: {}", username);
-                return new AuthResponse("User account is deactivated", false);
+            User existingUser = user.get();
+
+            if (!existingUser.isUserActive()) {
+                log.warn("User account is inactive: {}", username);
+                return new AuthResponse("User account is inactive", false);
             }
 
-            // Generate tokens
-            String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRoles());
-            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+            if (!passwordEncoder.matches(password, existingUser.getPassword())) {
+                log.warn("Invalid password for user: {}", username);
+                return new AuthResponse("Invalid credentials", false);
+            }
 
-            log.info("User logged in successfully: {}", username);
+            // Extract roles
+            List<String> roles = new ArrayList<>();
+            if (existingUser.getRoles() != null && !existingUser.getRoles().isEmpty()) {
+                for (String role : existingUser.getRoles()) {
+                    if (!role.startsWith("ROLE_")) {
+                        roles.add(role);
+                    } else {
+                        roles.add(role.replace("ROLE_", ""));
+                    }
+                }
+            }
 
-            return new AuthResponse(token, refreshToken, user.getUsername(), user.getRoles(),
-                    user.getEmail(), user.getStateDistrictCode());
+            log.info("User roles extracted from database: {} for user: {}", roles, username);
 
-        } catch (org.springframework.security.core.AuthenticationException e) {
-            log.warn("Invalid credentials for user: {}", username);
-            return new AuthResponse("Invalid username or password", false);
+            // Generate JWT token with roles
+            String token = jwtTokenProvider.generateToken(username, roles);
+            String refreshToken = jwtTokenProvider.generateRefreshToken(username);
+
+            log.info("Token generated for user: {} with roles: {}", username, roles);
+
+            AuthResponse response = new AuthResponse(
+                    token,
+                    refreshToken,
+                    username,
+                    roles,
+                    existingUser.getEmail(),
+                    existingUser.getStateDistrictCode()
+            );
+
+            log.info("Login successful for user: {} - Response: {}", username, response);
+
+            return response;
+
         } catch (Exception e) {
-            log.error("Login failed for user: {}: {}", username, e.getMessage(), e);
+            log.error("Error during login for user: {}: {}", username, e.getMessage(), e);
             return new AuthResponse("Login failed: " + e.getMessage(), false);
         }
     }
 
-
     public AuthResponse refreshToken(String refreshToken) {
         try {
+            log.info("Refreshing token");
+
             if (refreshToken == null || refreshToken.isEmpty()) {
+                log.warn("Refresh token is required");
                 return new AuthResponse("Refresh token is required", false);
             }
 
@@ -243,12 +284,12 @@ public class AuthService {
                     String newToken = jwtTokenProvider.generateToken(user.getUsername(), user.getRoles());
                     String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
 
-                    log.info("Token refreshed for user: {}", username);
+                    log.info("Token refreshed successfully for user: {}", username);
 
                     return new AuthResponse(newToken, newRefreshToken, user.getUsername(), user.getRoles(),
                             user.getEmail(), user.getStateDistrictCode());
                 } else {
-                    log.warn("User not found or inactive: {}", username);
+                    log.warn("User not found or inactive for token refresh: {}", username);
                     return new AuthResponse("User not found or account is inactive", false);
                 }
             } else {
@@ -261,7 +302,6 @@ public class AuthService {
         }
     }
 
-
     public boolean validateToken(String token) {
         try {
             if (token == null || token.isEmpty()) {
@@ -270,18 +310,13 @@ public class AuthService {
             }
 
             boolean isValid = jwtTokenProvider.validateToken(token);
-            if (isValid) {
-                log.debug("Token validated successfully");
-            } else {
-                log.warn("Token validation failed");
-            }
+            log.debug("Token validation result: {}", isValid);
             return isValid;
         } catch (Exception e) {
             log.error("Error validating token: {}", e.getMessage());
             return false;
         }
     }
-
 
     public String getUsernameFromToken(String token) {
         try {
@@ -299,9 +334,9 @@ public class AuthService {
         }
     }
 
-
     public User getUserByUsername(String username) {
         try {
+            log.debug("Fetching user by username: {}", username);
             return userRepository.findByUsername(username);
         } catch (Exception e) {
             log.error("Error fetching user by username: {}", e.getMessage());
@@ -311,7 +346,9 @@ public class AuthService {
 
     public boolean usernameExists(String username) {
         try {
-            return userRepository.findByUsername(username) != null;
+            boolean exists = userRepository.findByUsername(username) != null;
+            log.debug("Username existence check for {}: {}", username, exists);
+            return exists;
         } catch (Exception e) {
             log.error("Error checking username existence: {}", e.getMessage());
             return false;
@@ -323,16 +360,17 @@ public class AuthService {
             List<User> allUsers = userRepository.findAll();
             for (User user : allUsers) {
                 if (user.getEmail() != null && user.getEmail().equals(email)) {
+                    log.debug("Email found: {}", email);
                     return true;
                 }
             }
+            log.debug("Email not found: {}", email);
             return false;
         } catch (Exception e) {
             log.error("Error checking email existence: {}", e.getMessage());
             return false;
         }
     }
-
 
     public void deactivateUser(String username) {
         try {
@@ -342,12 +380,13 @@ public class AuthService {
                 user.setUpdatedAt(System.currentTimeMillis());
                 userRepository.save(user);
                 log.info("User deactivated: {}", username);
+            } else {
+                log.warn("User not found for deactivation: {}", username);
             }
         } catch (Exception e) {
             log.error("Error deactivating user: {}", e.getMessage());
         }
     }
-
 
     public void activateUser(String username) {
         try {
@@ -357,6 +396,8 @@ public class AuthService {
                 user.setUpdatedAt(System.currentTimeMillis());
                 userRepository.save(user);
                 log.info("User activated: {}", username);
+            } else {
+                log.warn("User not found for activation: {}", username);
             }
         } catch (Exception e) {
             log.error("Error activating user: {}", e.getMessage());
