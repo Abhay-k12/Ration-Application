@@ -103,6 +103,10 @@ public class AuthController {
 
             if (response.isSuccess()) {
                 log.info("User logged in successfully: {}", authRequest.getUsername());
+
+                // Log the roles being returned
+                log.info("Roles in response: {}", response.getRoles());
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 log.warn("Login failed for user: {}", authRequest.getUsername());
