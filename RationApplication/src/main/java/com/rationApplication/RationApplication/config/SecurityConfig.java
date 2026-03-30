@@ -69,16 +69,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .authorizeRequests()
 
+                // PUBLIC ENDPOINTS - No authentication required
                 .antMatchers("/").permitAll()
                 .antMatchers("/index.html").permitAll()
                 .antMatchers("/login_page.html").permitAll()
 
-                .antMatchers(
-                        "/admin_dashboard.html",
-                        "/beneficiary_dashboard.html",
-                        "/distributor_dashboard.html"
-                ).permitAll()
+                // DASHBOARD HTML FILES - No authentication required (client-side auth check)
+                .antMatchers("/beneficiary_dashboard.html").permitAll()
+                .antMatchers("/distributor_dashboard.html").permitAll()
+                .antMatchers("/admin_dashboard.html").permitAll()
 
+                // STATIC RESOURCES - No authentication required
                 .antMatchers("/favicon.ico").permitAll()
                 .antMatchers("/static/**").permitAll()
                 .antMatchers("/css/**").permitAll()
@@ -87,20 +88,39 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/*.css").permitAll()
                 .antMatchers("/*.js").permitAll()
 
+                // AUTHENTICATION ENDPOINTS - No authentication required
                 .antMatchers(HttpMethod.POST, "/auth/register").permitAll()
                 .antMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .antMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                 .antMatchers(HttpMethod.GET, "/auth/validate").permitAll()
 
+                // COMPLAINT ENDPOINTS - No authentication required (public complaints)
                 .antMatchers(HttpMethod.POST, "/complaint/register").permitAll()
                 .antMatchers(HttpMethod.PUT, "/complaint/resolveComplaint/**").permitAll()
                 .antMatchers(HttpMethod.PUT, "/complaint/rejectComplaint/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/complaint/**").permitAll()
 
-                .antMatchers("/beneficiary/**").hasRole("BENEFICIARY")
-                .antMatchers("/distributor/**").hasRole("DISTRIBUTOR")
-                .antMatchers("/admin/**").hasRole("ADMIN")
+                // BENEFICIARY ENDPOINTS - Require BENEFICIARY role
+                .antMatchers(HttpMethod.POST, "/beneficiary/**").hasRole("BENEFICIARY")
+                .antMatchers(HttpMethod.GET, "/beneficiary/getMembers").hasRole("BENEFICIARY")  // NEW
+                .antMatchers(HttpMethod.GET, "/beneficiary/getTransactions").hasRole("BENEFICIARY")  // NEW
+                .antMatchers(HttpMethod.GET, "/beneficiary/getComplaints").hasRole("BENEFICIARY")  // NEW
+                .antMatchers(HttpMethod.PUT, "/beneficiary/**").hasRole("BENEFICIARY")
+                .antMatchers(HttpMethod.DELETE, "/beneficiary/**").hasRole("BENEFICIARY")
 
+                // DISTRIBUTOR ENDPOINTS - Require DISTRIBUTOR role
+                .antMatchers(HttpMethod.POST, "/distributor/**").hasRole("DISTRIBUTOR")
+                .antMatchers(HttpMethod.GET, "/distributor/**").hasRole("DISTRIBUTOR")
+                .antMatchers(HttpMethod.PUT, "/distributor/**").hasRole("DISTRIBUTOR")
+                .antMatchers(HttpMethod.DELETE, "/distributor/**").hasRole("DISTRIBUTOR")
+
+                // ADMIN ENDPOINTS - Require ADMIN role
+                .antMatchers(HttpMethod.POST, "/admin/**").hasRole("ADMIN")
+                .antMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN")
+                .antMatchers(HttpMethod.PUT, "/admin/**").hasRole("ADMIN")
+                .antMatchers(HttpMethod.DELETE, "/admin/**").hasRole("ADMIN")
+
+                // ALL OTHER REQUESTS - Require authentication
                 .anyRequest().authenticated()
                 .and()
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
