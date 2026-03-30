@@ -15,7 +15,7 @@ window.addEventListener('load', () => {
     const userRole = localStorage.getItem('userRole');
 
     if (!token || userRole !== 'ADMIN') {
-        window.location.href = 'login_page.html';
+        window.location.href = '/login_page.html';
         return;
     }
 
