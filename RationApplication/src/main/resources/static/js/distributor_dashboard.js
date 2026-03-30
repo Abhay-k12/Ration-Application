@@ -5,7 +5,7 @@ let currentSchemes = [];
 let currentQRData = null;
 
 if (!window.getAuthToken || !window.login) {
-    console.error('API client not loaded');
+    console.error('[API] API client not loaded');
     window.location.href = '/login_page.html';
 }
 
@@ -13,6 +13,7 @@ const token = localStorage.getItem('jwtToken');
 const userRole = localStorage.getItem('userRole');
 
 if (!token || userRole !== 'DISTRIBUTOR') {
+    console.log('[AUTH] Not authorized as DISTRIBUTOR, redirecting');
     window.location.href = '/login_page.html';
 }
 
@@ -21,11 +22,16 @@ window.addEventListener('load', () => {
     const token = getAuthToken();
     const userRole = localStorage.getItem('userRole');
 
+    console.log('[AUTH] Token present:', token ? true : false);
+    console.log('[AUTH] User role:', userRole);
+
     if (!token || userRole !== 'DISTRIBUTOR') {
+        console.log('[AUTH] Not authenticated, redirecting to login');
         window.location.href = '/login_page.html';
         return;
     }
 
+    console.log('[INIT] Loading distributor data');
     loadDistributorData();
     setupEventListeners();
     initializeFamilyForm();
@@ -77,19 +83,55 @@ function setupEventListeners() {
 
 async function loadDistributorData() {
     try {
+        // Get user data from localStorage
         const username = localStorage.getItem('username');
-        document.getElementById('distributorName').textContent = username || 'Distributor';
-        document.getElementById('distId').textContent = 'DIST/' + username?.substring(0, 3).toUpperCase() + '/001' || 'DIST/001';
-        document.getElementById('shopLocation').textContent = localStorage.getItem('stateDistrictCode') || 'District';
-        document.getElementById('shopName').textContent = 'FPS Shop - ' + (username || 'Shop');
+        const email = localStorage.getItem('email');
+        const stateDistrictCode = localStorage.getItem('stateDistrictCode');
+
+        console.log('[DATA] Username:', username);
+        console.log('[DATA] Email:', email);
+        console.log('[DATA] State/District:', stateDistrictCode);
+
+        // Update sidebar profile card
+        const distributorNameEl = document.getElementById('distributorName');
+        const distIdEl = document.getElementById('distId');
+        const shopLocationEl = document.getElementById('shopLocation');
+        const shopNameEl = document.getElementById('shopName');
+
+        if (distributorNameEl) {
+            distributorNameEl.textContent = username || 'Distributor';
+            console.log('[SIDEBAR] Updated distributor name:', username);
+        }
+
+        if (distIdEl) {
+            distIdEl.textContent = 'DIST/' + (username?.substring(0, 3).toUpperCase() || 'UNK') + '/001';
+            console.log('[SIDEBAR] Updated distributor ID');
+        }
+
+        if (shopLocationEl) {
+            shopLocationEl.textContent = stateDistrictCode || 'District';
+            console.log('[SIDEBAR] Updated shop location:', stateDistrictCode);
+        }
+
+        if (shopNameEl) {
+            shopNameEl.textContent = 'FPS Shop - ' + (username || 'Shop');
+            console.log('[SIDEBAR] Updated shop name');
+        }
 
         // Load today's summary
-        document.getElementById('beneficiariesServed').textContent = '0';
-        document.getElementById('rationDistributed').textContent = '0 kg';
-        document.getElementById('pendingVerifications').textContent = '0';
-        document.getElementById('stockAvailable').textContent = 'Wheat 0kg';
+        const beneficiariesServedEl = document.getElementById('beneficiariesServed');
+        const rationDistributedEl = document.getElementById('rationDistributed');
+        const pendingVerificationsEl = document.getElementById('pendingVerifications');
+        const stockAvailableEl = document.getElementById('stockAvailable');
+
+        if (beneficiariesServedEl) beneficiariesServedEl.textContent = '0';
+        if (rationDistributedEl) rationDistributedEl.textContent = '0 kg';
+        if (pendingVerificationsEl) pendingVerificationsEl.textContent = '0';
+        if (stockAvailableEl) stockAvailableEl.textContent = 'Wheat 0kg';
+
+        console.log('[DATA] Distributor data loaded successfully');
     } catch (error) {
-        console.error('Error loading distributor data:', error);
+        console.error('[DATA] Error loading distributor data:', error);
     }
 }
 
@@ -98,6 +140,7 @@ function initializeFamilyForm() {
     const container = document.getElementById('familyMembersContainer');
     if (!container) return;
 
+    console.log('[FORM] Initializing family form');
     container.innerHTML = '';
     addMemberForm(1, ' (Head)');
     memberCount = 1;
@@ -190,6 +233,8 @@ async function handleRegistration(e) {
     const password = document.getElementById('beneficiaryPassword').value;
     const annualIncome = parseInt(document.getElementById('annualIncome').value);
 
+    console.log('[REGISTER] Registering beneficiary:', username);
+
     // Collect family members
     const familyMembers = [];
     for (let i = 1; i <= memberCount; i++) {
@@ -231,17 +276,20 @@ async function handleRegistration(e) {
         });
 
         if (response && response.success) {
+            console.log('[REGISTER] Registration successful');
             alert('Beneficiary registered successfully!');
             document.getElementById('registrationForm').reset();
             memberCount = 1;
             initializeFamilyForm();
         } else {
+            console.log('[REGISTER] Registration failed:', response?.message);
             alert('Error: ' + (response?.message || 'Registration failed'));
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line"></i> Register Beneficiary';
     } catch (error) {
+        console.error('[REGISTER] Error:', error);
         alert('Error: ' + error.message);
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
@@ -256,6 +304,8 @@ async function handleDistributorComplaint(e) {
     const message = document.getElementById('distComplaintMessage').value;
     const priority = document.getElementById('distComplaintPriority').value;
 
+    console.log('[COMPLAINT] Submitting distributor complaint');
+
     try {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = true;
@@ -264,15 +314,18 @@ async function handleDistributorComplaint(e) {
         const response = await submitComplaint(subject, message, 'DISTRIBUTOR_ISSUE', priority);
 
         if (response && response.success) {
+            console.log('[COMPLAINT] Complaint submitted successfully');
             alert('Complaint submitted successfully!');
             document.getElementById('distributorComplaintForm').reset();
         } else {
+            console.log('[COMPLAINT] Failed:', response?.message);
             alert('Error: ' + (response?.message || 'Failed to submit'));
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit as Distributor';
     } catch (error) {
+        console.error('[COMPLAINT] Error:', error);
         alert('Error: ' + error.message);
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
@@ -288,6 +341,8 @@ async function handleBeneficiaryComplaint(e) {
     const message = document.getElementById('beneficiaryComplaintMessage').value;
     const priority = document.getElementById('beneficiaryComplaintPriority').value;
 
+    console.log('[COMPLAINT] Submitting beneficiary complaint for:', rcNumber);
+
     try {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = true;
@@ -296,15 +351,18 @@ async function handleBeneficiaryComplaint(e) {
         const response = await submitComplaint(category, message, category, priority);
 
         if (response && response.success) {
+            console.log('[COMPLAINT] Complaint submitted on behalf of beneficiary');
             alert('Complaint submitted on behalf of beneficiary!');
             document.getElementById('beneficiaryComplaintForm').reset();
         } else {
+            console.log('[COMPLAINT] Failed:', response?.message);
             alert('Error: ' + (response?.message || 'Failed to submit'));
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary';
     } catch (error) {
+        console.error('[COMPLAINT] Error:', error);
         alert('Error: ' + error.message);
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
@@ -314,14 +372,17 @@ async function handleBeneficiaryComplaint(e) {
 
 async function loadComplaints() {
     try {
+        console.log('[COMPLAINTS] Loading complaints');
         const response = await getDistributorComplaints();
+
+        console.log('[COMPLAINTS] Response:', response);
 
         if (response && Array.isArray(response)) {
             const container = document.getElementById('complaintHistoryContainer');
-            container.innerHTML = '';
+            if (container) container.innerHTML = '';
 
             if (response.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No complaints found</p>';
+                if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No complaints found</p>';
                 return;
             }
 
@@ -344,30 +405,31 @@ async function loadComplaints() {
                     </div>
                     <span class="status-badge ${statusClass}">${complaint.status}</span>
                 `;
-                container.appendChild(card);
+                if (container) container.appendChild(card);
             });
         }
     } catch (error) {
-        console.error('Error loading complaints:', error);
+        console.error('[COMPLAINTS] Error:', error);
     }
 }
 
 async function loadSchemes() {
     try {
+        console.log('[SCHEMES] Loading schemes');
         const container = document.getElementById('schemesContainer');
-        container.innerHTML = '';
+        if (container) container.innerHTML = '';
 
         // Mock schemes data
         const schemes = [
             {
                 name: 'Antyodaya Anna Yojana (AAY)',
-                eligibility: 'Poorest of the poor families, income < ₹15,000/year',
+                eligibility: 'Poorest of the poor families, income less than 15,000 per year',
                 items: ['Wheat 35 kg', 'Rice 20 kg', 'Sugar 3 kg'],
                 status: 'Active'
             },
             {
                 name: 'Priority Household (PHH)',
-                eligibility: 'Annual income between ₹15,000 - ₹3,00,000',
+                eligibility: 'Annual income between 15,000 - 3,00,000',
                 items: ['Wheat 10 kg', 'Rice 5 kg', 'Sugar 2 kg'],
                 status: 'Active'
             },
@@ -392,16 +454,18 @@ async function loadSchemes() {
                     ${scheme.items.map(item => `<div class="scheme-item">${item}</div>`).join('')}
                 </div>
             `;
-            container.appendChild(card);
+            if (container) container.appendChild(card);
         });
     } catch (error) {
-        console.error('Error loading schemes:', error);
+        console.error('[SCHEMES] Error:', error);
     }
 }
 
 function viewComplaintDetail(index) {
     const complaint = currentComplaints[index];
     if (!complaint) return;
+
+    console.log('[COMPLAINT] Viewing complaint:', complaint.id);
 
     const content = `
         <p><strong>Complaint ID:</strong> ${complaint.id || 'N/A'}</p>
@@ -412,8 +476,11 @@ function viewComplaintDetail(index) {
         ${complaint.resolutionNotes ? `<p><strong>Resolution Notes:</strong> ${complaint.resolutionNotes}</p>` : ''}
     `;
 
-    document.getElementById('complaintDetailContent').innerHTML = content;
-    document.getElementById('complaintModal').classList.add('active');
+    const contentEl = document.getElementById('complaintDetailContent');
+    if (contentEl) contentEl.innerHTML = content;
+
+    const modal = document.getElementById('complaintModal');
+    if (modal) modal.classList.add('active');
 }
 
 // ===== RATION ALLOCATION FUNCTIONS =====
@@ -437,32 +504,34 @@ async function processQRScan() {
     }
 
     try {
+        console.log('[QR] Processing QR scan');
         const response = await scanQRCode(qrData);
 
         if (response && response.success) {
+            console.log('[QR] QR scan successful');
             currentQRData = response;
             document.getElementById('verifiedRCNumber').textContent = qrData;
             document.getElementById('verifiedBeneficiaryName').textContent = response.beneficiaryName || 'N/A';
             document.getElementById('verifiedMemberCount').textContent = response.memberCount || '0';
 
-            // Load family members for selection
             loadFaceSelection(response.familyMembers || []);
-
             document.getElementById('verificationResult').style.display = 'block';
         } else {
+            console.log('[QR] QR scan failed:', response?.message);
             alert('Error: ' + (response?.message || 'QR verification failed'));
         }
     } catch (error) {
+        console.error('[QR] Error:', error);
         alert('Error: ' + error.message);
     }
 }
 
 function loadFaceSelection(members) {
     const container = document.getElementById('faceSelectionContainer');
-    container.innerHTML = '';
+    if (container) container.innerHTML = '';
 
     if (members.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--gray);">No family members found</p>';
+        if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray);">No family members found</p>';
         return;
     }
 
@@ -474,33 +543,38 @@ function loadFaceSelection(members) {
             <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%231E3A8A'/%3E%3Ccircle cx='40' cy='30' r='12' fill='%23F59E0B'/%3E%3C/svg%3E" alt="face">
             <p>${member.name || 'Member'}</p>
         `;
-        container.appendChild(option);
+        if (container) container.appendChild(option);
     });
 }
 
 function selectFace(name) {
-    document.getElementById('allocationSummary').style.display = 'block';
+    const allocationSummaryEl = document.getElementById('allocationSummary');
+    if (allocationSummaryEl) allocationSummaryEl.style.display = 'block';
 
-    // Load allocation details
     const details = `
-        <p><strong>Wheat:</strong> 10 kg (₹ 2/kg) - ₹ 20</p>
-        <p><strong>Rice:</strong> 5 kg (₹ 3/kg) - ₹ 15</p>
-        <p><strong>Sugar:</strong> 2 kg (₹ 15/kg) - ₹ 30</p>
-        <p><strong>Kerosene:</strong> 2 L (₹ 10/L) - ₹ 20</p>
+        <p><strong>Wheat:</strong> 10 kg (Rs 2/kg) - Rs 20</p>
+        <p><strong>Rice:</strong> 5 kg (Rs 3/kg) - Rs 15</p>
+        <p><strong>Sugar:</strong> 2 kg (Rs 15/kg) - Rs 30</p>
+        <p><strong>Kerosene:</strong> 2 L (Rs 10/L) - Rs 20</p>
         <hr style="margin: 10px 0;">
-        <p><strong>Total Payable:</strong> ₹ 85</p>
+        <p><strong>Total Payable:</strong> Rs 85</p>
         <button class="submit-btn" style="margin-top: 15px;" onclick="completeAllocation()">
             <i class="ri-check-double-line"></i> Complete Allocation
         </button>
     `;
-    document.getElementById('allocationDetails').innerHTML = details;
+    const detailsEl = document.getElementById('allocationDetails');
+    if (detailsEl) detailsEl.innerHTML = details;
 }
 
 function completeAllocation() {
     alert('Ration allocation completed successfully!');
-    document.getElementById('verificationResult').style.display = 'none';
-    document.getElementById('onlineSection').style.display = 'none';
-    document.getElementById('qrCodeInput').value = '';
+    const verificationResultEl = document.getElementById('verificationResult');
+    const onlineSectionEl = document.getElementById('onlineSection');
+    const qrCodeInputEl = document.getElementById('qrCodeInput');
+
+    if (verificationResultEl) verificationResultEl.style.display = 'none';
+    if (onlineSectionEl) onlineSectionEl.style.display = 'none';
+    if (qrCodeInputEl) qrCodeInputEl.value = '';
 }
 
 async function sendOTP() {
@@ -512,9 +586,12 @@ async function sendOTP() {
     }
 
     try {
+        console.log('[OTP] Sending OTP for:', beneficiaryId);
         alert('OTP sent to registered email: ' + beneficiaryId.substring(0, 2) + '***@gmail.com');
-        document.getElementById('otpSection').style.display = 'block';
+        const otpSectionEl = document.getElementById('otpSection');
+        if (otpSectionEl) otpSectionEl.style.display = 'block';
     } catch (error) {
+        console.error('[OTP] Error:', error);
         alert('Error: ' + error.message);
     }
 }
@@ -527,28 +604,34 @@ function verifyOTP() {
         return;
     }
 
-    // Mock OTP verification
+    console.log('[OTP] Verifying OTP');
     alert('OTP verified successfully!');
-    document.getElementById('offlineAllocation').style.display = 'block';
+    const offlineAllocationEl = document.getElementById('offlineAllocation');
+    if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
 
     const details = `
-        <p><strong>Wheat:</strong> 10 kg - ₹ 20</p>
-        <p><strong>Rice:</strong> 5 kg - ₹ 15</p>
-        <p><strong>Sugar:</strong> 2 kg - ₹ 30</p>
+        <p><strong>Wheat:</strong> 10 kg - Rs 20</p>
+        <p><strong>Rice:</strong> 5 kg - Rs 15</p>
+        <p><strong>Sugar:</strong> 2 kg - Rs 30</p>
         <hr>
-        <p><strong>Total:</strong> ₹ 85</p>
+        <p><strong>Total:</strong> Rs 85</p>
         <button class="submit-btn" style="margin-top: 15px;" onclick="completeOfflineAllocation()">
             <i class="ri-check-double-line"></i> Complete Transaction
         </button>
     `;
-    document.getElementById('offlineAllocationDetails').innerHTML = details;
+    const detailsEl = document.getElementById('offlineAllocationDetails');
+    if (detailsEl) detailsEl.innerHTML = details;
 }
 
 function completeOfflineAllocation() {
     alert('Offline transaction completed and will sync when online!');
-    document.getElementById('offlineSection').style.display = 'none';
-    document.getElementById('otpBeneficiaryId').value = '';
-    document.getElementById('otpInput').value = '';
+    const offlineSectionEl = document.getElementById('offlineSection');
+    const otpBeneficiaryIdEl = document.getElementById('otpBeneficiaryId');
+    const otpInputEl = document.getElementById('otpInput');
+
+    if (offlineSectionEl) offlineSectionEl.style.display = 'none';
+    if (otpBeneficiaryIdEl) otpBeneficiaryIdEl.value = '';
+    if (otpInputEl) otpInputEl.value = '';
 }
 
 async function handleChangePassword(e) {
@@ -569,22 +652,37 @@ async function handleChangePassword(e) {
     }
 
     try {
+        console.log('[PASSWORD] Changing password');
         alert('Password changed successfully! Please login again.');
         logout();
     } catch (error) {
+        console.error('[PASSWORD] Error:', error);
         alert('Error: ' + error.message);
     }
 }
 
 function openChangePwdModal() {
-    document.getElementById('changePwdModal').classList.add('active');
+    const modal = document.getElementById('changePwdModal');
+    if (modal) modal.classList.add('active');
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
 }
 
 function logout() {
+    console.log('[LOGOUT] Logging out');
     removeAuthToken();
     window.location.href = '/login_page.html';
 }
+
+// Add spin animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);

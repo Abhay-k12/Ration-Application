@@ -222,3 +222,24 @@ function getUserRole() {
 function getUsername() {
     return localStorage.getItem('username');
 }
+
+async function getBeneficiaryTransactions() {
+    return apiRequest('/beneficiary/getTransactions', 'GET');
+}
+
+async function getBeneficiaryComplaints() {
+    return apiRequest('/beneficiary/getComplaints', 'GET');
+}
+
+async function getBeneficiaryMembers() {
+    return apiRequest('/beneficiary/getMembers', 'GET');
+}
+
+async function submitComplaint(title, description, category, priority) {
+    return apiRequest('/beneficiary/submitComplaint', 'POST', {
+        complaintTitle: title,
+        description,
+        category,
+        priority
+    });
+}
