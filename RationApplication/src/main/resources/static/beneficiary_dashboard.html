@@ -162,16 +162,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Message body</label>
-                        <textarea id="complaintMessage" class="form-control" rows="4" placeholder="Describe your issue in detail" required></textarea>
+                        <label for="complaintMessage"></label><textarea id="complaintMessage" class="form-control" rows="4" placeholder="Describe your issue in detail" required></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Priority</label>
-                        <select id="complaintPriority" class="form-control" required>
-                            <option value="LOW">Low</option>
-                            <option value="MEDIUM" selected>Medium</option>
-                            <option value="HIGH">High</option>
-                            <option value="URGENT">Urgent</option>
-                        </select>
+                        <label class="form-label">Merged Document Link</label>
+                        <input type="text" id="complaintPriority" class="form-control" required>
                     </div>
                     <button type="submit" class="submit-btn"><i class="ri-send-plane-line"></i> Submit complaint</button>
                 </form>
@@ -180,15 +175,21 @@
 
         <!-- MODULE 4: Complaint history  -->
         <div id="module4" class="module">
-            <div id="complaintHistoryContainer">
-                <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
+            <div class="card">
+                <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
+                <div id="complaintHistoryContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
+                </div>
             </div>
         </div>
 
         <!-- MODULE 5: Transaction history -->
         <div id="module5" class="module">
-            <div id="transactionHistoryContainer">
-                <p style="text-align: center; color: var(--gray); padding: 40px;">Loading transactions...</p>
+            <div class="card">
+                <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
+                <div id="transactionHistoryContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading transactions...</p>
+                </div>
             </div>
         </div>
     </main>

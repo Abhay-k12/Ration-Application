@@ -243,3 +243,42 @@ async function submitComplaint(title, description, category, priority) {
         priority
     });
 }
+
+// ===== SCHEME ENDPOINTS =====
+async function createScheme(schemeName, schemeType, stateDistrictCode, suppliesName, suppliesCost, supplyPerPerson) {
+    return apiRequest('/scheme/create', 'POST', {
+        schemeName,
+        schemeType,
+        stateDistrictCode,
+        suppliesName,
+        suppliesCost,
+        supplyPerPerson
+    });
+}
+
+async function getSchemesByDistrict(stateDistrictCode) {
+    return apiRequest(`/scheme/getByDistrict?stateDistrictCode=${stateDistrictCode}`, 'GET');
+}
+
+async function getSchemeById(schemeId) {
+    return apiRequest(`/scheme/getById/${schemeId}`, 'GET');
+}
+
+async function getAllSchemes() {
+    return apiRequest('/scheme/getAll', 'GET');
+}
+
+async function updateScheme(schemeId, schemeName, schemeType, stateDistrictCode, suppliesName, suppliesCost, supplyPerPerson) {
+    return apiRequest(`/scheme/update/${schemeId}`, 'PUT', {
+        schemeName,
+        schemeType,
+        stateDistrictCode,
+        suppliesName,
+        suppliesCost,
+        supplyPerPerson
+    });
+}
+
+async function deleteScheme(schemeId) {
+    return apiRequest(`/scheme/delete/${schemeId}`, 'DELETE');
+}
