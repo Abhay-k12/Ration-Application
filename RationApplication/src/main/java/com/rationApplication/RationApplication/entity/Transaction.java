@@ -40,12 +40,10 @@ public class Transaction {
     private boolean isSynced;
     private boolean isUsed;
 
-    // QR Code and Verification
     private String qrCodeUsed;
     private boolean faceVerified;
     private String verificationMethod;    // FACIAL_RECOGNITION, QR_SCAN, MANUAL_BYPASS
 
-    // Ration Details
     private String schemeId;
     private double wheatQuantity;
     private double riceQuantity;

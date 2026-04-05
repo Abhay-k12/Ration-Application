@@ -214,10 +214,10 @@ async function generateQRCode() {
                 qrDisplay.innerHTML = `<img src="data:image/png;base64,${response.qrImageBase64}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
                 console.log('[QR] QR code generated successfully');
             }
-            alert('QR Code generated successfully!');
+            //alert('QR Code generated successfully!');
         } else {
             console.log('[QR] Failed:', response?.message);
-            alert('Error generating QR code: ' + (response?.message || 'Unknown error'));
+            //alert('Error generating QR code: ' + (response?.message || 'Unknown error'));
         }
 
         btn.disabled = false;

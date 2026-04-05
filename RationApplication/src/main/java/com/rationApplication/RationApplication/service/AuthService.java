@@ -78,7 +78,6 @@ public class AuthService {
 
             log.info("Processing registration for username: {} with roles: {}", request.getUsername(), roles);
 
-            // If registering as BENEFICIARY
             if (roles.contains("BENEFICIARY")) {
                 user.setUserType("BENEFICIARY");
 

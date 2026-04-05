@@ -216,34 +216,184 @@ async function handleAddMember(e) {
 async function handleSchemeForm(e) {
     e.preventDefault();
 
+    console.log('[SCHEME] Creating scheme');
+
+    const schemeType = document.getElementById('schemeType').value;
+    const schemeName = document.getElementById('schemeName')?.value || schemeType;
+    const stateDistrictCode = document.getElementById('stateDistrictCode').value;
+
+    if (!schemeType || !stateDistrictCode) {
+        alert('Please fill all required fields');
+        return;
+    }
+
     const supplies = [];
+    const suppliesNames = [];
+    const suppliesCosts = [];
+    const supplyPerPersons = [];
+
     document.querySelectorAll('.supply-row').forEach(row => {
         const inputs = row.querySelectorAll('input[type="text"], input[type="number"]');
         if (inputs[0].value && inputs[1].value && inputs[2].value) {
-            supplies.push({
-                name: inputs[0].value,
-                cost: parseFloat(inputs[1].value),
-                perPerson: parseFloat(inputs[2].value)
-            });
+            suppliesNames.push(inputs[0].value);
+            suppliesCosts.push(parseFloat(inputs[1].value));
+            supplyPerPersons.push(parseFloat(inputs[2].value));
         }
     });
 
-    const schemeData = {
-        schemeType: document.getElementById('schemeType').value,
-        schemeName: document.getElementById('schemeName')?.value || document.getElementById('schemeType').value,
-        stateDistrictCode: document.getElementById('stateDistrictCode').value,
-        supplies: supplies
-    };
-
-    console.log('[SCHEME] Creating scheme:', schemeData.schemeName);
+    if (suppliesNames.length === 0) {
+        alert('Please add at least one supply');
+        return;
+    }
 
     try {
-        alert('Scheme "' + schemeData.schemeName + '" created successfully!');
-        const formEl = document.getElementById('schemeForm');
-        if (formEl) formEl.reset();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Creating...';
+
+        const response = await createScheme(
+            schemeName,
+            schemeType,
+            stateDistrictCode,
+            suppliesNames,
+            suppliesCosts,
+            supplyPerPersons
+        );
+
+        console.log('[SCHEME] Response:', response);
+
+        if (response && response.success) {
+            console.log('[SCHEME] Scheme created successfully');
+            alert('Scheme "' + schemeName + '" created successfully!');
+            document.getElementById('schemeForm').reset();
+            loadSchemes();
+        } else {
+            console.log('[SCHEME] Failed:', response?.message);
+            alert('Error: ' + (response?.message || 'Failed to create scheme'));
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
     } catch (error) {
         console.error('[SCHEME] Error:', error);
         alert('Error: ' + error.message);
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
+    }
+}
+
+async function loadSchemes() {
+    try {
+        console.log('[SCHEMES] Loading schemes');
+        const stateDistrictCode = localStorage.getItem('stateDistrictCode');
+
+        const response = await getSchemesByDistrict(stateDistrictCode);
+
+        console.log('[SCHEMES] Response:', response);
+
+        if (response && Array.isArray(response)) {
+            const container = document.getElementById('schemesContainer');
+            if (container) container.innerHTML = '';
+
+            if (response.length === 0) {
+                if (container) {
+                    container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No schemes created yet</p>';
+                }
+                return;
+            }
+
+            response.forEach(scheme => {
+                const card = document.createElement('div');
+                card.className = 'scheme-card';
+                card.innerHTML = `
+                    <div class="scheme-header">
+                        <h4>${scheme.schemeName}</h4>
+                        <span class="status-badge status-approved">${scheme.schemeType}</span>
+                    </div>
+                    <p><strong>Type:</strong> ${scheme.schemeType}</p>
+                    <p><strong>District:</strong> ${scheme.stateDistrictCode}</p>
+                    <div class="scheme-items">
+                        ${scheme.suppliesName.map((name, idx) => `
+                            <div class="scheme-item">
+                                ${name}: ${scheme.supplyPerPerson[idx]} kg @ Rs ${scheme.suppliesCost[idx]}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="action-btn edit" onclick="editScheme('${scheme.id}')">
+                            <i class="ri-edit-line"></i> Edit
+                        </button>
+                        <button class="action-btn delete" onclick="deleteSchemeAction('${scheme.id}')">
+                            <i class="ri-delete-bin-line"></i> Delete
+                        </button>
+                    </div>
+                `;
+                if (container) container.appendChild(card);
+            });
+        }
+    } catch (error) {
+        console.error('[SCHEMES] Error:', error);
+    }
+}
+
+async function editScheme(schemeId) {
+    try {
+        console.log('[SCHEME] Editing scheme:', schemeId);
+        const response = await getSchemeById(schemeId);
+
+        if (response) {
+            console.log('[SCHEME] Loaded scheme for editing:', response);
+            // Pre-populate form with scheme data
+            document.getElementById('schemeType').value = response.schemeType;
+            document.getElementById('schemeName').value = response.schemeName;
+            document.getElementById('stateDistrictCode').value = response.stateDistrictCode;
+
+            // Clear and repopulate supplies
+            const container = document.getElementById('suppliesContainer');
+            container.innerHTML = '';
+
+            response.suppliesName.forEach((name, idx) => {
+                const row = document.createElement('div');
+                row.className = 'supply-row';
+                row.innerHTML = `
+                    <input type="text" class="form-control" value="${name}" placeholder="Supply name">
+                    <input type="number" class="form-control" value="${response.suppliesCost[idx]}" placeholder="Cost">
+                    <input type="number" class="form-control" value="${response.supplyPerPerson[idx]}" placeholder="Per person">
+                    <button type="button" class="remove-supply" onclick="this.parentElement.remove()">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+
+            // Store scheme ID for update
+            localStorage.setItem('editingSchemeId', schemeId);
+            alert('Form populated. Click "Create Scheme" to save changes (will update existing scheme)');
+        }
+    } catch (error) {
+        console.error('[SCHEME] Error:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+async function deleteSchemeAction(schemeId) {
+    if (confirm('Are you sure you want to delete this scheme?')) {
+        try {
+            console.log('[SCHEME] Deleting scheme:', schemeId);
+            const response = await deleteScheme(schemeId);
+
+            if (response && response.success) {
+                console.log('[SCHEME] Scheme deleted successfully');
+                alert('Scheme deleted successfully!');
+                loadSchemes();
+            } else {
+                alert('Error: ' + (response?.message || 'Failed to delete scheme'));
+            }
+        } catch (error) {
+            console.error('[SCHEME] Error:', error);
+            alert('Error: ' + error.message);
+        }
     }
 }
 
@@ -613,3 +763,4 @@ window.addEventListener('click', (e) => {
         e.target.classList.remove('active');
     }
 });
+
