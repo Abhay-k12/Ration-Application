@@ -94,41 +94,27 @@ async function loadBeneficiaryData() {
             console.log('[SIDEBAR] Updated location:', stateDistrictCode);
         }
 
-        // Fetch beneficiary details from backend
-        const response = await apiRequest('/beneficiary/getTransactions', 'GET');
+        // Fetch and setup basic UI components right away
+        const cardTypeEl = document.getElementById('cardType');
+        const issueDateEl = document.getElementById('issueDate');
+        const validDateEl = document.getElementById('validDate');
+        const districtInfoEl = document.getElementById('districtInfo');
 
-        console.log('[API] Transaction response:', response);
+        if (cardTypeEl) cardTypeEl.textContent = 'BPL (Antyodaya)';
+        if (issueDateEl) issueDateEl.textContent = '12 Mar 2020';
+        if (validDateEl) validDateEl.textContent = '31 Mar 2030';
+        if (districtInfoEl) districtInfoEl.textContent = stateDistrictCode || '--';
 
-        if (response && response.ok) {
-            // Set ration card details
-            const cardTypeEl = document.getElementById('cardType');
-            const issueDateEl = document.getElementById('issueDate');
-            const validDateEl = document.getElementById('validDate');
-            const districtInfoEl = document.getElementById('districtInfo');
+        const qrRationCardEl = document.getElementById('qrRationCard');
+        const qrValidDateEl = document.getElementById('qrValidDate');
+        const qrAddressEl = document.getElementById('qrAddress');
+        
+        if (qrRationCardEl) qrRationCardEl.textContent = username || '--';
+        if (qrValidDateEl) qrValidDateEl.textContent = '31/03/2030';
+        if (qrAddressEl) qrAddressEl.textContent = 'District: ' + (stateDistrictCode || 'Unknown');
 
-            if (cardTypeEl) cardTypeEl.textContent = 'BPL (Antyodaya)';
-            if (issueDateEl) issueDateEl.textContent = '12 Mar 2020';
-            if (validDateEl) validDateEl.textContent = '31 Mar 2030';
-            if (districtInfoEl) districtInfoEl.textContent = stateDistrictCode || '--';
-
-            // Set QR info
-            const qrBeneficiaryNameEl = document.getElementById('qrBeneficiaryName');
-            const qrRationCardEl = document.getElementById('qrRationCard');
-            const qrAddressEl = document.getElementById('qrAddress');
-            const qrFamilyCountEl = document.getElementById('qrFamilyCount');
-            const qrValidDateEl = document.getElementById('qrValidDate');
-
-            if (qrBeneficiaryNameEl) qrBeneficiaryNameEl.textContent = username || 'Beneficiary';
-            if (qrRationCardEl) qrRationCardEl.textContent = username || '--';
-            if (qrAddressEl) qrAddressEl.textContent = 'Lucknow, Uttar Pradesh - 226001';
-            if (qrFamilyCountEl) qrFamilyCountEl.textContent = '5';
-            if (qrValidDateEl) qrValidDateEl.textContent = '31/03/2030';
-
-            // Load family members
-            loadFamilyMembers();
-        } else {
-            console.log('[DATA] No transaction data available');
-        }
+        // Load family members, which also populates QR specific counts
+        loadFamilyMembers();
     } catch (error) {
         console.error('[DATA] Error loading beneficiary data:', error);
     }
@@ -176,6 +162,14 @@ async function loadFamilyMembers() {
 
                 console.log('[FAMILY] Added member:', member.name);
             });
+            
+            // Set derived UI
+            const qrFamilyCountEl = document.getElementById('qrFamilyCount');
+            if (qrFamilyCountEl) qrFamilyCountEl.textContent = response.length;
+            
+            const qrBeneficiaryNameEl = document.getElementById('qrBeneficiaryName');
+            if (qrBeneficiaryNameEl && response.length > 0) qrBeneficiaryNameEl.textContent = response[0].name;
+
         } else if (response && response.status === 403) {
             console.error('[FAMILY] Access denied (403)');
             const tbody = document.getElementById('familyTableBody');
@@ -206,12 +200,12 @@ async function generateQRCode() {
 
         console.log('[QR] Generating QR code');
 
-        const response = await generateQRCode();
+        const response = await apiRequest('/beneficiary/generateQR', 'POST');
 
-        if (response && response.success && response.qrImageBase64) {
+        if (response && response.success && response.qrCodeImage) {
             const qrDisplay = document.getElementById('qrCodeDisplay');
             if (qrDisplay) {
-                qrDisplay.innerHTML = `<img src="data:image/png;base64,${response.qrImageBase64}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
+                qrDisplay.innerHTML = `<img src="${response.qrCodeImage}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
                 console.log('[QR] QR code generated successfully');
             }
             //alert('QR Code generated successfully!');

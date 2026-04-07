@@ -157,6 +157,25 @@ async function getDistributorComplaints() {
     return apiRequest('/distributor/getComplaints', 'GET');
 }
 
+async function submitDistributorComplaint(title, description, category, priority) {
+    return apiRequest('/distributor/submitComplaint', 'POST', {
+        complaintTitle: title,
+        description,
+        category,
+        priority
+    });
+}
+
+async function submitDistributorBeneficiaryComplaint(beneficiaryUsername, title, description, category, priority) {
+    return apiRequest(`/distributor/submitBeneficiaryComplaint?beneficiaryUsername=${beneficiaryUsername}`, 'POST', {
+        complaintTitle: title,
+        description,
+        category,
+        priority
+    });
+}
+
+
 // ===== ADMIN ENDPOINTS =====
 async function addNewMember(cardNumber, aadhaarData) {
     return apiRequest(`/admin/addNewMember/${cardNumber}`, 'PUT', aadhaarData);
