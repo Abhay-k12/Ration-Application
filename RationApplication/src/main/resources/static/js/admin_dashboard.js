@@ -110,6 +110,7 @@ async function handleFreshRegistration(e) {
 
     const registerData = {
         username: document.getElementById('fresName').value.toLowerCase().replace(/\s+/g, '_'),
+        fullName: document.getElementById('fresName').value,
         password: 'default_password_' + Math.random().toString(36).slice(2, 8),
         email: document.getElementById('fresEmail').value,
         roles: ['BENEFICIARY'],
@@ -126,7 +127,8 @@ async function handleFreshRegistration(e) {
             registerData.email,
             registerData.roles,
             registerData.stateDistrictCode,
-            registerData.annualIncome
+            registerData.annualIncome,
+            registerData.fullName
         );
 
         if (response && response.success) {
@@ -190,7 +192,8 @@ async function handleAddMember(e) {
         aadhaarNumber: document.getElementById('memberAadhaar').value,
         name: document.getElementById('memberName').value,
         dateOfBirth: document.getElementById('memberDOB').value,
-        employmentStatus: document.getElementById('memberEmployment').value
+        employmentStatus: document.getElementById('memberEmployment').value,
+        photograph: document.getElementById('memberPhotograph').value
     };
 
     console.log('[MEMBER] Adding member to card:', cardNumber);
@@ -220,7 +223,8 @@ async function handleSchemeForm(e) {
 
     const schemeType = document.getElementById('schemeType').value;
     const schemeName = document.getElementById('schemeName')?.value || schemeType;
-    const stateDistrictCode = document.getElementById('stateDistrictCode').value;
+    const adminDistrict = localStorage.getItem('stateDistrictCode');
+    const stateDistrictCode = adminDistrict && adminDistrict.trim() !== '' ? adminDistrict : document.getElementById('stateDistrictCode').value;
 
     if (!schemeType || !stateDistrictCode) {
         alert('Please fill all required fields');
@@ -763,4 +767,95 @@ window.addEventListener('click', (e) => {
         e.target.classList.remove('active');
     }
 });
+
+// ==== CAMERA CAPTURE LOGIC ====
+let stream = null;
+
+async function openCameraModal() {
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.add('active');
+
+    const video = document.getElementById('cameraVideo');
+    const btnCapture = document.getElementById('btnCapture');
+    const btnRetake = document.getElementById('btnRetake');
+    const btnSavePhoto = document.getElementById('btnSavePhoto');
+    const preview = document.getElementById('cameraPreview');
+
+    btnCapture.style.display = 'inline-block';
+    btnRetake.style.display = 'none';
+    btnSavePhoto.style.display = 'none';
+    video.style.display = 'block';
+    preview.style.display = 'none';
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error("Camera access denied or unvailable:", err);
+        alert("Unable to access camera: " + err.message);
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    const preview = document.getElementById('cameraPreview');
+    
+    // Set canvas dimensions
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current frame
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get Base64
+    const base64Img = canvas.toDataURL('image/jpeg', 0.8);
+    preview.src = base64Img;
+    
+    // UI toggles
+    video.style.display = 'none';
+    preview.style.display = 'block';
+    
+    document.getElementById('btnCapture').style.display = 'none';
+    document.getElementById('btnRetake').style.display = 'inline-block';
+    document.getElementById('btnSavePhoto').style.display = 'inline-block';
+}
+
+function retakePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const preview = document.getElementById('cameraPreview');
+    
+    video.style.display = 'block';
+    preview.style.display = 'none';
+    
+    document.getElementById('btnCapture').style.display = 'inline-block';
+    document.getElementById('btnRetake').style.display = 'none';
+    document.getElementById('btnSavePhoto').style.display = 'none';
+}
+
+function saveCapturedPhoto() {
+    const preview = document.getElementById('cameraPreview');
+    const base64Img = preview.src;
+    
+    const inputField = document.getElementById('memberPhotograph');
+    const statusSpan = document.getElementById('photo-status');
+    if (inputField) inputField.value = base64Img;
+    if (statusSpan) {
+        statusSpan.style.color = "var(--secondary)";
+        statusSpan.textContent = "Photo captured successfully ✓";
+    }
+    
+    closeCameraModal();
+}
+
+function closeCameraModal() {
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.remove('active');
+    
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+}
 

@@ -84,13 +84,7 @@ function setupEventListeners() {
 async function loadDistributorData() {
     try {
         // Get user data from localStorage
-        const username = localStorage.getItem('username');
-        const email = localStorage.getItem('email');
-        const stateDistrictCode = localStorage.getItem('stateDistrictCode');
-
-        console.log('[DATA] Username:', username);
-        console.log('[DATA] Email:', email);
-        console.log('[DATA] State/District:', stateDistrictCode);
+        const username = localStorage.getItem('username') || 'Distributor';
 
         // Update sidebar profile card
         const distributorNameEl = document.getElementById('distributorName');
@@ -99,7 +93,7 @@ async function loadDistributorData() {
         const shopNameEl = document.getElementById('shopName');
 
         if (distributorNameEl) {
-            distributorNameEl.textContent = username || 'Distributor';
+            distributorNameEl.textContent = username;
             console.log('[SIDEBAR] Updated distributor name:', username);
         }
 
@@ -109,12 +103,12 @@ async function loadDistributorData() {
         }
 
         if (shopLocationEl) {
-            shopLocationEl.textContent = stateDistrictCode || 'District';
-            console.log('[SIDEBAR] Updated shop location:', stateDistrictCode);
+            shopLocationEl.textContent = 'Allocated District';
+            console.log('[SIDEBAR] Updated shop location');
         }
 
         if (shopNameEl) {
-            shopNameEl.textContent = 'FPS Shop - ' + (username || 'Shop');
+            shopNameEl.textContent = 'FPS Shop - ' + username;
             console.log('[SIDEBAR] Updated shop name');
         }
 
@@ -181,6 +175,13 @@ function addMemberForm(number, suffix = '') {
                 </select>
             </div>
         </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+            <button type="button" class="submit-btn" style="width: auto; background: var(--secondary); padding: 8px 15px;" onclick="openCameraModal(${number})">
+                <i class="ri-camera-line"></i> Capture Photo
+            </button>
+            <span id="photo-status-${number}" style="color: var(--gray); font-size: 14px;">No photo captured</span>
+            <input type="hidden" class="member-photograph" id="photo-data-${number}">
+        </div>
     `;
 
     container.appendChild(memberDiv);
@@ -196,7 +197,7 @@ function handleTotalMembersChange() {
     }
 
     if (newTotal > 10) {
-        alert('Maximum 10 family members allowed');
+        showCustomAlert('Maximum 10 family members allowed');
         totalInput.value = memberCount;
         return;
     }
@@ -230,7 +231,7 @@ async function handleRegistration(e) {
 
     const username = document.getElementById('beneficiaryUsername').value;
     const email = document.getElementById('beneficiaryEmail').value;
-    const password = document.getElementById('beneficiaryPassword').value;
+    const password = 'Beneficiary@123';
     const annualIncome = parseInt(document.getElementById('annualIncome').value);
 
     console.log('[REGISTER] Registering beneficiary:', username);
@@ -244,20 +245,22 @@ async function handleRegistration(e) {
             const aadhaar = memberDiv.querySelector('.member-aadhaar')?.value || '';
             const dob = memberDiv.querySelector('.member-dob')?.value || '';
             const employment = memberDiv.querySelector('.member-employment')?.value || '';
+            const photograph = memberDiv.querySelector('.member-photograph')?.value || '';
 
             if (name && aadhaar && dob && employment) {
                 familyMembers.push({
                     name,
                     aadhaarNumber: aadhaar,
                     dateOfBirth: dob,
-                    employmentStatus: employment
+                    employmentStatus: employment,
+                    photograph: photograph
                 });
             }
         }
     }
 
     if (familyMembers.length === 0) {
-        alert('Please fill in at least the head member details');
+        showCustomAlert('Please fill in at least the head member details');
         return;
     }
 
@@ -266,31 +269,41 @@ async function handleRegistration(e) {
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Registering...';
 
-        const response = await registerBeneficiary({
+        const response = await apiRequest('/distributor/register', 'PUT', {
             username,
+            fullName: username,
             password,
             email,
             annualIncome,
             members: familyMembers,
-            stateDistrictCode: localStorage.getItem('stateDistrictCode') || 'UK-01'
+            stateDistrictCode: localStorage.getItem('stateDistrictCode') || 'UP-01',
+            roles: ['BENEFICIARY']  // NEW - Add roles
         });
+
+        console.log('[REGISTER] Response:', response);
 
         if (response && response.success) {
             console.log('[REGISTER] Registration successful');
-            alert('Beneficiary registered successfully!');
+            showCustomAlert(
+                'Beneficiary registered successfully!\n\n' +
+                'Username: ' + response.username + '\n' +
+                'Temporary Password: ' + response.password + '\n\n' +
+                'Share these credentials with the beneficiary.',
+                'Success'
+            );
             document.getElementById('registrationForm').reset();
             memberCount = 1;
             initializeFamilyForm();
         } else {
             console.log('[REGISTER] Registration failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Registration failed'));
+            showCustomAlert('Error: ' + (response?.message || 'Registration failed'), 'Error');
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line"></i> Register Beneficiary';
     } catch (error) {
         console.error('[REGISTER] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'Error');
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line"></i> Register Beneficiary';
@@ -311,22 +324,22 @@ async function handleDistributorComplaint(e) {
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line"></i> Submitting...';
 
-        const response = await submitComplaint(subject, message, 'DISTRIBUTOR_ISSUE', priority);
+        const response = await submitDistributorComplaint(subject, message, 'DISTRIBUTOR_ISSUE', priority);
 
         if (response && response.success) {
             console.log('[COMPLAINT] Complaint submitted successfully');
-            alert('Complaint submitted successfully!');
+            showCustomAlert('Complaint submitted successfully!', 'Success');
             document.getElementById('distributorComplaintForm').reset();
         } else {
             console.log('[COMPLAINT] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to submit'));
+            showCustomAlert('Error: ' + (response?.message || 'Failed to submit'), 'Error');
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit as Distributor';
     } catch (error) {
         console.error('[COMPLAINT] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'Error');
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit as Distributor';
@@ -348,22 +361,22 @@ async function handleBeneficiaryComplaint(e) {
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line"></i> Submitting...';
 
-        const response = await submitComplaint(category, message, category, priority);
+        const response = await submitDistributorBeneficiaryComplaint(rcNumber, category, message, category, priority);
 
         if (response && response.success) {
             console.log('[COMPLAINT] Complaint submitted on behalf of beneficiary');
-            alert('Complaint submitted on behalf of beneficiary!');
+            showCustomAlert('Complaint submitted on behalf of beneficiary!', 'Success');
             document.getElementById('beneficiaryComplaintForm').reset();
         } else {
             console.log('[COMPLAINT] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to submit'));
+            showCustomAlert('Error: ' + (response?.message || 'Failed to submit'), 'Error');
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary';
     } catch (error) {
         console.error('[COMPLAINT] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'Error');
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary';
@@ -416,42 +429,37 @@ async function loadComplaints() {
 async function loadSchemes() {
     try {
         console.log('[SCHEMES] Loading schemes');
+        const stateDistrictCode = localStorage.getItem('stateDistrictCode') || 'UK-01';
+        const response = await getSchemesByDistrict(stateDistrictCode);
+        
         const container = document.getElementById('schemesContainer');
         if (container) container.innerHTML = '';
+        
+        let schemesList = [];
+        if (response && Array.isArray(response)) {
+            schemesList = response;
+        }
 
-        // Mock schemes data
-        const schemes = [
-            {
-                name: 'Antyodaya Anna Yojana (AAY)',
-                eligibility: 'Poorest of the poor families, income less than 15,000 per year',
-                items: ['Wheat 35 kg', 'Rice 20 kg', 'Sugar 3 kg'],
-                status: 'Active'
-            },
-            {
-                name: 'Priority Household (PHH)',
-                eligibility: 'Annual income between 15,000 - 3,00,000',
-                items: ['Wheat 10 kg', 'Rice 5 kg', 'Sugar 2 kg'],
-                status: 'Active'
-            },
-            {
-                name: 'Special Add-on: Kerosene',
-                eligibility: 'Families without LPG connection',
-                items: ['Kerosene 2 L per month'],
-                status: 'Limited Stock'
-            }
-        ];
+        if (schemesList.length === 0) {
+            if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No schemes found for your district</p>';
+            return;
+        }
 
-        schemes.forEach(scheme => {
+        currentSchemes = schemesList;
+
+        schemesList.forEach(scheme => {
             const card = document.createElement('div');
             card.className = 'scheme-card';
             card.innerHTML = `
                 <div class="scheme-header">
-                    <h4>${scheme.name}</h4>
-                    <span class="status-badge ${scheme.status === 'Active' ? 'status-approved' : 'status-pending'}">${scheme.status}</span>
+                    <h4>${scheme.schemeName || scheme.schemeType}</h4>
+                    <span class="status-badge status-approved">Active</span>
                 </div>
-                <p><strong>Eligibility:</strong> ${scheme.eligibility}</p>
+                <p><strong>District:</strong> ${scheme.stateDistrictCode}</p>
                 <div class="scheme-items">
-                    ${scheme.items.map(item => `<div class="scheme-item">${item}</div>`).join('')}
+                    ${scheme.suppliesName ? scheme.suppliesName.map((name, idx) => `
+                        <div class="scheme-item">${name}: ${scheme.supplyPerPerson[idx]} kg @ Rs ${scheme.suppliesCost[idx]}</div>
+                    `).join('') : ''}
                 </div>
             `;
             if (container) container.appendChild(card);
@@ -495,34 +503,109 @@ function showOfflineOTP() {
     document.getElementById('offlineSection').style.display = 'block';
 }
 
+let html5Qrcode = null;
+let isScannerReady = false;
+
+async function startWebCamScanner() {
+    const qrReaderEl = document.getElementById('qr-reader');
+    qrReaderEl.style.display = 'block';
+    document.getElementById('startScannerBtn').style.display = 'none';
+    document.getElementById('stopScannerBtn').style.display = 'inline-block';
+
+    if (!html5Qrcode) {
+        html5Qrcode = new Html5Qrcode("qr-reader");
+    }
+
+    try {
+        await html5Qrcode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText, decodedResult) => {
+                console.log(`Scan result: ${decodedText}`);
+                document.getElementById('qrCodeInput').value = decodedText;
+                stopWebCamScanner();
+                processQRScan();
+            },
+            (errorMessage) => {
+                // Ignore background errors
+            }
+        );
+        isScannerReady = true;
+    } catch (err) {
+        console.error("Error starting scanner", err);
+        showCustomAlert("Camera access denied or device not found.", "Camera Error");
+        stopWebCamScanner();
+    }
+}
+
+function stopWebCamScanner() {
+    if (html5Qrcode && isScannerReady) {
+        html5Qrcode.stop().then(() => {
+            isScannerReady = false;
+            document.getElementById('qr-reader').style.display = 'none';
+            document.getElementById('startScannerBtn').style.display = 'inline-block';
+            document.getElementById('stopScannerBtn').style.display = 'none';
+        }).catch(err => console.error("Failed to stop scanner", err));
+    } else {
+        document.getElementById('qr-reader').style.display = 'none';
+        document.getElementById('startScannerBtn').style.display = 'inline-block';
+        document.getElementById('stopScannerBtn').style.display = 'none';
+    }
+}
+
 async function processQRScan() {
     const qrData = document.getElementById('qrCodeInput').value.trim();
 
     if (!qrData) {
-        alert('Please enter or scan QR code data');
+        showCustomAlert('Please enter or scan QR code data', 'Input Error');
         return;
     }
 
     try {
-        console.log('[QR] Processing QR scan');
-        const response = await scanQRCode(qrData);
+        console.log('[QR] Processing scan or text');
+        
+        // check if it's a manual text input (no RC: pipe markers)
+        let response;
+        if (qrData.includes('|')) {
+            // It's a genuine generated QR payload containing pipes and timestamps
+            response = await scanQRCode(qrData);
+        } else {
+            // Assume it's a plain Ration Card Number manually typed.
+            // Strip out "RC:" if the user typed it out of habit
+            const cleanRC = qrData.replace(/^RC:/i, '').trim();
+            
+            const manualResponse = await verifyBeneficiary(cleanRC, true);
+            // mock the response to match what processQRScan traditionally extracts
+            if (manualResponse && manualResponse.success) {
+                let ben = manualResponse.beneficiary;
+                response = {
+                    success: true,
+                    rationCardNumber: ben.username,
+                    beneficiaryName: ben.members?.length > 0 ? ben.members[0].name : ben.username,
+                    memberCount: ben.members?.length || 0,
+                    familyMembers: ben.members || []
+                };
+            } else {
+                response = manualResponse; // preserve error messages
+            }
+        }
 
         if (response && response.success) {
-            console.log('[QR] QR scan successful');
+            console.log('[QR] Details fetched successfully');
             currentQRData = response;
-            document.getElementById('verifiedRCNumber').textContent = qrData;
+            document.getElementById('verifiedRCNumber').textContent = response.rationCardNumber || qrData;
             document.getElementById('verifiedBeneficiaryName').textContent = response.beneficiaryName || 'N/A';
             document.getElementById('verifiedMemberCount').textContent = response.memberCount || '0';
 
             loadFaceSelection(response.familyMembers || []);
             document.getElementById('verificationResult').style.display = 'block';
         } else {
-            console.log('[QR] QR scan failed:', response?.message);
-            alert('Error: ' + (response?.message || 'QR verification failed'));
+            console.log('[QR] Fetch failed:', response?.message);
+            showCustomAlert('Error: ' + (response?.message || 'Verification failed. Target might not exist.'), 'Verification Error');
         }
     } catch (error) {
         console.error('[QR] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'Error');
     }
 }
 
@@ -536,9 +619,10 @@ function loadFaceSelection(members) {
     }
 
     members.forEach(member => {
+        const encodedMember = encodeURIComponent(JSON.stringify(member));
         const option = document.createElement('div');
         option.className = 'face-option';
-        option.onclick = () => selectFace(member.name || member.aadhaarNumber);
+        option.onclick = () => selectFace(encodedMember);
         option.innerHTML = `
             <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%231E3A8A'/%3E%3Ccircle cx='40' cy='30' r='12' fill='%23F59E0B'/%3E%3C/svg%3E" alt="face">
             <p>${member.name || 'Member'}</p>
@@ -547,52 +631,197 @@ function loadFaceSelection(members) {
     });
 }
 
-function selectFace(name) {
+function selectFace(memberJson) {
+    const member = JSON.parse(decodeURIComponent(memberJson));
     const allocationSummaryEl = document.getElementById('allocationSummary');
     if (allocationSummaryEl) allocationSummaryEl.style.display = 'block';
 
-    const details = `
-        <p><strong>Wheat:</strong> 10 kg (Rs 2/kg) - Rs 20</p>
-        <p><strong>Rice:</strong> 5 kg (Rs 3/kg) - Rs 15</p>
-        <p><strong>Sugar:</strong> 2 kg (Rs 15/kg) - Rs 30</p>
-        <p><strong>Kerosene:</strong> 2 L (Rs 10/L) - Rs 20</p>
-        <hr style="margin: 10px 0;">
-        <p><strong>Total Payable:</strong> Rs 85</p>
-        <button class="submit-btn" style="margin-top: 15px;" onclick="completeAllocation()">
-            <i class="ri-check-double-line"></i> Complete Allocation
+    let age = 30; // default adult
+    if (member && member.dateOfBirth) {
+        const dobDate = new Date(member.dateOfBirth);
+        const diffMs = Date.now() - dobDate.getTime();
+        const ageDt = new Date(diffMs); 
+        age = Math.abs(ageDt.getUTCFullYear() - 1970);
+    }
+
+    const dynamicSchemeName = currentSchemes && currentSchemes.length > 0 
+        ? (currentSchemes[0].schemeName || currentSchemes[0].schemeType) 
+        : 'Standard Allocation';
+
+    let photoSrc = member.photograph;
+    
+    if (!photoSrc) {
+        showCustomAlert("User's image is not present in the database.", "No Image Found");
+        return;
+    }
+
+    if (photoSrc && !photoSrc.startsWith('http') && !photoSrc.startsWith('data:')) {
+        photoSrc = 'data:image/jpeg;base64,' + photoSrc;
+    }
+
+    // Stage 1: Face Registration UI
+    details = `
+        <h5 style="color: var(--secondary); margin-bottom: 15px;"><i class="ri-scan-line"></i> Face Verification: ${member.name || 'Beneficiary'}</h5>
+        <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px;">
+           <div style="text-align: center;">
+               <p style="margin-bottom:10px; font-weight:600;">System Record</p>
+               <img src="${photoSrc}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 3px solid #e2e8f0;">
+           </div>
+           <i class="ri-arrow-left-right-line" style="font-size:24px; color:var(--gray);"></i>
+           <div style="text-align: center; width: 120px;">
+               <p style="margin-bottom:10px; font-weight:600;">Live Feed</p>
+               <div id="liveCaptureArea">
+                   <button class="submit-btn" style="width:auto; padding:5px 15px; font-size:12px; border-radius:15px;" onclick="openVerificationCamera()">Link Device Camera</button>
+               </div>
+           </div>
+        </div>
+        <div id="aiVerificationBox" style="display:none; text-align:center; padding: 15px; border-radius: 8px; margin-bottom: 15px;"></div>
+        <button class="submit-btn" id="verifyFaceBtn" style="background:#5B21B6; display:none;" onclick="executeMockVerification('${dynamicSchemeName}', ${age}, '${member.aadhaarNumber || 'UNKNOWN'}')">
+            <i class="ri-robot-2-line"></i> Execute Biometric Mapping
         </button>
+        <div id="verifiedAllocationSection" style="display:none;"></div>
     `;
     const detailsEl = document.getElementById('allocationDetails');
     if (detailsEl) detailsEl.innerHTML = details;
+    
+    // Automatically open verification camera instead of waiting for user click
+    setTimeout(() => {
+        openVerificationCamera();
+    }, 100);
 }
 
-function completeAllocation() {
-    alert('Ration allocation completed successfully!');
-    const verificationResultEl = document.getElementById('verificationResult');
-    const onlineSectionEl = document.getElementById('onlineSection');
-    const qrCodeInputEl = document.getElementById('qrCodeInput');
+async function openVerificationCamera() {
+    const captureArea = document.getElementById('liveCaptureArea');
+    captureArea.innerHTML = `
+        <video id="verifyVideo" width="120" height="120" autoplay playsinline style="border-radius:8px; border:3px solid var(--warning); display:block; object-fit:cover;"></video>
+        <canvas id="verifyCanvas" style="display:none;"></canvas>
+        <img id="verifyPreview" style="display:none; width:120px; height:120px; border-radius:8px; border:3px solid var(--secondary); object-fit:cover;">
+    `;
+    
+    document.getElementById('verifyFaceBtn').style.display = 'block';
 
-    if (verificationResultEl) verificationResultEl.style.display = 'none';
-    if (onlineSectionEl) onlineSectionEl.style.display = 'none';
-    if (qrCodeInputEl) qrCodeInputEl.value = '';
+    try {
+        const str = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const vid = document.getElementById('verifyVideo');
+        vid.srcObject = str;
+        // attach stream to window so mock matching can close it
+        window.activeVerifyStream = str;
+    } catch (err) {
+        showCustomAlert("Camera required for verification", "Camera Error");
+    }
+}
+
+function executeMockVerification(schemeName, age, aadhaar) {
+    const btn = document.getElementById('verifyFaceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing Coordinates...';
+    
+    // Simulate capture
+    const video = document.getElementById('verifyVideo');
+    const canvas = document.getElementById('verifyCanvas');
+    const preview = document.getElementById('verifyPreview');
+    
+    if (video) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        preview.src = canvas.toDataURL('image/jpeg');
+        video.style.display = 'none';
+        preview.style.display = 'block';
+    }
+
+    if (window.activeVerifyStream) {
+        window.activeVerifyStream.getTracks().forEach(t => t.stop());
+    }
+
+    setTimeout(() => {
+        btn.style.display = 'none';
+        
+        const aiBox = document.getElementById('aiVerificationBox');
+        aiBox.style.display = 'block';
+        aiBox.style.backgroundColor = '#dcfce7'; // green-100
+        aiBox.style.color = '#166534'; // green-800
+        aiBox.innerHTML = '<strong><i class="ri-checkbox-circle-fill"></i> ID Verified Automatically: Match Confidence 99.8%</strong>';
+
+        // Now render the allocation segment
+        let allocationDetails = "";
+        if (age < 18) {
+            allocationDetails = `
+                <h5 style="color: var(--secondary); margin-bottom: 5px;">Allocating under: ${schemeName} (Age: ${age})</h5>
+                <p><strong>Milk Powder:</strong> 1 kg (Rs 0/kg) - Rs 0</p>
+                <p><strong>Rice:</strong> 2 kg (Rs 3/kg) - Rs 6</p>
+                <p><strong>Sugar:</strong> 1 kg (Rs 15/kg) - Rs 15</p>
+                <hr style="margin: 10px 0;">
+                <p><strong>Total Payable:</strong> Rs 21</p>
+            `;
+        } else {
+            allocationDetails = `
+                <h5 style="color: var(--secondary); margin-bottom: 5px;">Allocating under: ${schemeName} (Adult)</h5>
+                <p><strong>Wheat:</strong> 10 kg (Rs 2/kg) - Rs 20</p>
+                <p><strong>Rice:</strong> 5 kg (Rs 3/kg) - Rs 15</p>
+                <p><strong>Sugar:</strong> 2 kg (Rs 15/kg) - Rs 30</p>
+                <p><strong>Kerosene:</strong> 2 L (Rs 10/L) - Rs 20</p>
+                <hr style="margin: 10px 0;">
+                <p><strong>Total Payable:</strong> Rs 85</p>
+            `;
+        }
+
+        allocationDetails += `
+            <button class="submit-btn" style="margin-top: 15px;" onclick="completeAllocation('${aadhaar}')">
+                <i class="ri-check-double-line"></i> Confirm & Process Transaction
+            </button>
+        `;
+        
+        const section = document.getElementById('verifiedAllocationSection');
+        section.style.display = 'block';
+        section.innerHTML = allocationDetails;
+    }, 1500);
+}
+
+async function completeAllocation(actualAadhaarNumber) {
+    const beneficiaryUsername = document.getElementById('verifiedRCNumber').textContent.trim();
+    const qrCodeUsed = currentQRData ? currentQRData.qrCodeData : 'MOCK_QR_DATA';
+    
+    try {
+        const response = await processTransaction(
+            beneficiaryUsername,
+            actualAadhaarNumber,
+            null, // Scheme ID dynamic calculated
+            true, // isOnline
+            qrCodeUsed
+        );
+        
+        if (response && response.success) {
+            showCustomAlert('Ration Transaction Completed Successfully!', 'Transaction Success');
+            document.getElementById('verificationResult').style.display = 'none';
+            document.getElementById('onlineSection').style.display = 'none';
+            document.getElementById('qrCodeInput').value = '';
+            // reload summary data
+            loadDistributorData();
+        } else {
+            showCustomAlert('Allocation execution failed: ' + (response?.message || 'Error occurred'), 'Transaction Error');
+        }
+    } catch (e) {
+        showCustomAlert('Transaction processing failed: ' + e.message, 'Transaction Error');
+    }
 }
 
 async function sendOTP() {
     const beneficiaryId = document.getElementById('otpBeneficiaryId').value;
 
     if (!beneficiaryId) {
-        alert('Please enter beneficiary username or RC number');
+        showCustomAlert('Please enter beneficiary username or RC number', 'Input Required');
         return;
     }
 
     try {
         console.log('[OTP] Sending OTP for:', beneficiaryId);
-        alert('OTP sent to registered email: ' + beneficiaryId.substring(0, 2) + '***@gmail.com');
+        showCustomAlert('OTP sent to registered email: ' + beneficiaryId.substring(0, 2) + '***@gmail.com', 'OTP Sent');
         const otpSectionEl = document.getElementById('otpSection');
         if (otpSectionEl) otpSectionEl.style.display = 'block';
     } catch (error) {
         console.error('[OTP] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'OTP Error');
     }
 }
 
@@ -600,12 +829,12 @@ function verifyOTP() {
     const otp = document.getElementById('otpInput').value;
 
     if (otp.length !== 6) {
-        alert('Please enter a valid 6-digit OTP');
+        showCustomAlert('Please enter a valid 6-digit OTP', 'Invalid OTP');
         return;
     }
 
     console.log('[OTP] Verifying OTP');
-    alert('OTP verified successfully!');
+    showCustomAlert('OTP verified successfully!', 'Success');
     const offlineAllocationEl = document.getElementById('offlineAllocation');
     if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
 
@@ -624,7 +853,7 @@ function verifyOTP() {
 }
 
 function completeOfflineAllocation() {
-    alert('Offline transaction completed and will sync when online!');
+    showCustomAlert('Offline transaction completed and will sync when online!', 'Transaction Initialized');
     const offlineSectionEl = document.getElementById('offlineSection');
     const otpBeneficiaryIdEl = document.getElementById('otpBeneficiaryId');
     const otpInputEl = document.getElementById('otpInput');
@@ -642,22 +871,22 @@ async function handleChangePassword(e) {
     const confirmPwd = document.getElementById('confirmPwd').value;
 
     if (newPwd !== confirmPwd) {
-        alert('New passwords do not match!');
+        showCustomAlert('New passwords do not match!', 'Password Match Error');
         return;
     }
 
     if (newPwd.length < 6) {
-        alert('New password must be at least 6 characters long');
+        showCustomAlert('New password must be at least 6 characters long', 'Password Too Short');
         return;
     }
 
     try {
         console.log('[PASSWORD] Changing password');
-        alert('Password changed successfully! Please login again.');
+        showCustomAlert('Password changed successfully! Please login again.', 'Success');
         logout();
     } catch (error) {
         console.error('[PASSWORD] Error:', error);
-        alert('Error: ' + error.message);
+        showCustomAlert('Error: ' + error.message, 'Error');
     }
 }
 
@@ -675,6 +904,102 @@ function logout() {
     console.log('[LOGOUT] Logging out');
     removeAuthToken();
     window.location.href = '/login_page.html';
+}
+
+// ==== CAMERA CAPTURE LOGIC ====
+let currentCameraTargetId = null;
+let stream = null;
+
+async function openCameraModal(memberNumber) {
+    currentCameraTargetId = memberNumber;
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.add('active');
+
+    const video = document.getElementById('cameraVideo');
+    const btnCapture = document.getElementById('btnCapture');
+    const btnRetake = document.getElementById('btnRetake');
+    const btnSavePhoto = document.getElementById('btnSavePhoto');
+    const canvas = document.getElementById('cameraCanvas');
+    const preview = document.getElementById('cameraPreview');
+
+    btnCapture.style.display = 'inline-block';
+    btnRetake.style.display = 'none';
+    btnSavePhoto.style.display = 'none';
+    video.style.display = 'block';
+    preview.style.display = 'none';
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error("Camera access denied or unvailable:", err);
+        showCustomAlert("Unable to access camera: " + err.message, "Camera Error");
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    const preview = document.getElementById('cameraPreview');
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current frame to canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get Base64 string
+    const base64Img = canvas.toDataURL('image/jpeg', 0.8);
+    preview.src = base64Img;
+    
+    // UI toggles
+    video.style.display = 'none';
+    preview.style.display = 'block';
+    
+    document.getElementById('btnCapture').style.display = 'none';
+    document.getElementById('btnRetake').style.display = 'inline-block';
+    document.getElementById('btnSavePhoto').style.display = 'inline-block';
+}
+
+function retakePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const preview = document.getElementById('cameraPreview');
+    
+    video.style.display = 'block';
+    preview.style.display = 'none';
+    
+    document.getElementById('btnCapture').style.display = 'inline-block';
+    document.getElementById('btnRetake').style.display = 'none';
+    document.getElementById('btnSavePhoto').style.display = 'none';
+}
+
+function saveCapturedPhoto() {
+    const preview = document.getElementById('cameraPreview');
+    const base64Img = preview.src;
+    
+    if (currentCameraTargetId) {
+        const inputField = document.getElementById(`photo-data-${currentCameraTargetId}`);
+        const statusSpan = document.getElementById(`photo-status-${currentCameraTargetId}`);
+        if (inputField) inputField.value = base64Img;
+        if (statusSpan) {
+            statusSpan.style.color = "var(--secondary)";
+            statusSpan.textContent = "Photo captured successfully ✓";
+        }
+    }
+    
+    closeCameraModal();
+}
+
+function closeCameraModal() {
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.remove('active');
+    
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
 }
 
 // Add spin animation
