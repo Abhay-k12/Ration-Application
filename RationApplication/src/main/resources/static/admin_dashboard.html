@@ -415,7 +415,14 @@
                     <option value="HOUSE_WIFE">Homemaker</option>
                 </select>
             </div>
-            <button type="submit" class="submit-btn">Add Member</button>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="submit-btn" style="width: auto; background: var(--secondary); padding: 8px 15px;" onclick="openCameraModal()">
+                    <i class="ri-camera-line"></i> Capture Photo
+                </button>
+                <span id="photo-status" style="color: var(--gray); font-size: 14px;">No photo captured</span>
+                <input type="hidden" id="memberPhotograph">
+            </div>
+            <button type="submit" class="submit-btn" style="margin-top: 15px;">Add Member</button>
         </form>
     </div>
 </div>
@@ -429,6 +436,24 @@
         <button class="submit-btn" style="margin-top: 20px;" onclick="removeMemberAction()">
             <i class="ri-delete-bin-line"></i> Remove Member
         </button>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal" id="cameraModal">
+    <div class="modal-content" style="max-width: 500px; text-align: center;">
+        <span class="close-modal" onclick="closeCameraModal()">&times;</span>
+        <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
+        <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+            <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
+            <canvas id="cameraCanvas" style="display: none;"></canvas>
+            <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i class="ri-camera-fill"></i> Capture</button>
+            <button id="btnRetake" class="submit-btn" style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i class="ri-refresh-line"></i> Retake</button>
+            <button id="btnSavePhoto" class="submit-btn" style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i class="ri-save-line"></i> Save</button>
+        </div>
     </div>
 </div>
 
