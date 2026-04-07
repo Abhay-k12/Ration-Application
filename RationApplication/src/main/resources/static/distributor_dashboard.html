@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link rel="stylesheet" href="css/distributor_dashboard.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 <!-- Header -->
@@ -78,18 +79,13 @@
                 <div class="card-title"><i class="ri-user-add-line"></i> Register New Beneficiary</div>
                 <form id="registrationForm">
                     <div class="form-group">
-                        <label class="form-label">Username</label>
+                        <label class="form-label">Username / Ration Card Number</label>
                         <input type="text" id="beneficiaryUsername" class="form-control" placeholder="Choose a username" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
                         <input type="email" id="beneficiaryEmail" class="form-control" placeholder="Enter email address" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input type="password" id="beneficiaryPassword" class="form-control" placeholder="Create password" required>
                     </div>
 
                     <div class="form-group">
@@ -112,7 +108,7 @@
                         <i class="ri-add-line"></i> Add Another Family Member
                     </button>
 
-                    <button type="submit" class="submit-btn">
+                    <button type="submit" class="submit-btn" style="margin-top: 15px;">
                         <i class="ri-save-line"></i> Register Beneficiary
                     </button>
                 </form>
@@ -138,7 +134,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Merged Document Link</label>
-                            <input type="text" id="complaintPriority" class="form-control" required>
+                            <input type="text" id="distComplaintPriority" class="form-control" required>
                         </div>
                         <button type="submit" class="submit-btn" style="background: var(--primary);">
                             <i class="ri-send-plane-line"></i> Submit as Distributor
@@ -215,12 +211,31 @@
                 <div id="onlineSection" style="display: none;">
                     <div class="qr-scanner-area">
                         <i class="ri-qr-scan-line" style="font-size: 60px; margin-bottom: 20px;"></i>
-                        <h3>Scan Beneficiary QR Code</h3>
-                        <p>Position the QR code within the frame</p>
-                        <input type="text" id="qrCodeInput" class="form-control" placeholder="Paste QR code data here or scan" style="margin: 20px 0;">
-                        <button class="submit-btn" style="width: auto; margin-top: 20px; background: var(--primary);" onclick="processQRScan()">
-                            <i class="ri-search-line"></i> Verify QR Code
-                        </button>
+                        <h3>Scan Beneficiary QR Code or Enter RC Number</h3>
+                        <p>Use your device camera to scan the QR code automatically, or manually type the Ration Card number.</p>
+                        
+                        <!-- Camera Target Area -->
+                        <div id="qr-reader" style="width:100%; max-width:300px; margin: 15px auto; display: none; border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; background: black;"></div>
+                        
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+                            <button class="submit-btn" id="startScannerBtn" style="width: auto; background: var(--secondary); margin: 0;" onclick="startWebCamScanner()">
+                                <i class="ri-camera-lens-line"></i> Open Camera to Scan
+                            </button>
+                            <button class="submit-btn" id="stopScannerBtn" style="width: auto; background: var(--danger); margin: 0; display: none;" onclick="stopWebCamScanner()">
+                                <i class="ri-close-circle-line"></i> Stop Scanning
+                            </button>
+                        </div>
+
+                        <div style="margin: 25px 0; border-top: 1px dashed var(--gray); position: relative; max-width: 400px; margin-left: auto; margin-right: auto;">
+                            <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: var(--gray); font-size: 14px; font-weight: bold;">OR</span>
+                        </div>
+
+                        <div style="display: flex; justify-content: center; gap: 10px; align-items: center; max-width: 500px; margin: 0 auto 20px auto;">
+                            <input type="text" id="qrCodeInput" class="form-control" placeholder="Enter Ration Card No. or pasted QR string" style="flex: 1; padding: 12px; border-radius: 6px; text-align: left; margin: 0;">
+                            <button class="submit-btn" id="verifyQrBtn" style="width: auto; background: var(--primary); margin: 0; padding: 12px 20px;" onclick="processQRScan()">
+                                <i class="ri-search-line"></i> Verify
+                            </button>
+                        </div>
                     </div>
 
                     <div id="verificationResult" class="verification-result" style="display: none;">
@@ -320,6 +335,45 @@
         </form>
     </div>
 </div>
+
+<!-- Camera Modal -->
+<div class="modal" id="cameraModal">
+    <div class="modal-content" style="max-width: 500px; text-align: center;">
+        <span class="close-modal" onclick="closeCameraModal()">&times;</span>
+        <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
+        <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+            <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
+            <canvas id="cameraCanvas" style="display: none;"></canvas>
+            <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i class="ri-camera-fill"></i> Capture</button>
+            <button id="btnRetake" class="submit-btn" style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i class="ri-refresh-line"></i> Retake</button>
+            <button id="btnSavePhoto" class="submit-btn" style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i class="ri-save-line"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Global Message Modal -->
+<div class="modal" id="messageModal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <span class="close-modal" onclick="closeModal('messageModal')">&times;</span>
+        <h3 id="messageModalTitle" style="color: var(--primary); margin-bottom: 15px;">Message</h3>
+        <p id="messageModalText" style="margin-bottom: 20px; color: var(--gray);">Something happened.</p>
+        <button class="submit-btn" style="width: auto; padding: 8px 20px;" onclick="closeModal('messageModal')">OK</button>
+    </div>
+</div>
+
+<script>
+    function showCustomAlert(message, title = 'Information') {
+        const modal = document.getElementById('messageModal');
+        const titleEl = document.getElementById('messageModalTitle');
+        const textEl = document.getElementById('messageModalText');
+        if (titleEl) titleEl.textContent = title;
+        if (textEl) textEl.textContent = message;
+        if (modal) modal.classList.add('active');
+    }
+</script>
 
 <script src="js/api_client.js"></script>
 <script src="js/distributor_dashboard.js"></script>
