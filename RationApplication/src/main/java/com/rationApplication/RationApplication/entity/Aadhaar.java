@@ -22,6 +22,8 @@ public class Aadhaar {
     private String aadhaarNumber;
 
     private String name;
+    
+    private String photograph;
 
     private LocalDate dateOfBirth;
 
