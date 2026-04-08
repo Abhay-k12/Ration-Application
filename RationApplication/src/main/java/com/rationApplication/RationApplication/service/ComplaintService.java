@@ -26,17 +26,22 @@ public class ComplaintService {
 
     @Transactional
     public void registerComplaint(Complaint complaint) {
+        complaint.setStatus(Status.PROCESSING);
+        complaint.setCreatedAt(System.currentTimeMillis());
+
         User user = userRepository.findByUsername(complaint.getApplicantUsername());
         if (user != null) {
-            user.getComplaints().add(complaint);
             complaint.setStateDistrictCode(user.getStateDistrictCode());
+        }
+
+        Complaint savedComplaint = complaintRepository.save(complaint);
+
+        if (user != null) {
+            user.addComplaint(savedComplaint);
             userRepository.save(user);
         }
 
-        complaint.setStatus(Status.PROCESSING);
-        complaint.setCreatedAt(System.currentTimeMillis());
-        complaintRepository.save(complaint);
-        log.info("Complaint registered in region: {}", complaint.getStateDistrictCode());
+        log.info("Complaint registered in region: {}", savedComplaint.getStateDistrictCode());
     }
 
     public void resolveComplaint(ObjectId complaintId, String resolutionNotes) {
