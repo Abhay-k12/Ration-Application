@@ -61,6 +61,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .csrf()
                 .disable()
+                .httpBasic()
+                .disable()
                 .exceptionHandling()
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 .and()
@@ -73,6 +75,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/").permitAll()
                 .antMatchers("/index.html").permitAll()
                 .antMatchers("/login_page.html").permitAll()
+                .antMatchers("/error").permitAll()
 
                 // DASHBOARD HTML FILES - No authentication required (client-side auth check)
                 .antMatchers("/beneficiary_dashboard.html").permitAll()
@@ -122,9 +125,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
                 // SCHEME ENDPOINTS - Require ADMIN role
                 .antMatchers(HttpMethod.POST, "/scheme/create").hasRole("ADMIN")
-                .antMatchers(HttpMethod.GET, "/scheme/getByDistrict").hasRole("ADMIN")
-                .antMatchers(HttpMethod.GET, "/scheme/getById/**").hasRole("ADMIN")
-                .antMatchers(HttpMethod.GET, "/scheme/getAll").hasRole("ADMIN")
+                .antMatchers(HttpMethod.GET, "/scheme/getByDistrict").hasAnyRole("ADMIN", "DISTRIBUTOR", "BENEFICIARY")
+                .antMatchers(HttpMethod.GET, "/scheme/getById/**").hasAnyRole("ADMIN", "DISTRIBUTOR", "BENEFICIARY")
+                .antMatchers(HttpMethod.GET, "/scheme/getAll").hasAnyRole("ADMIN", "DISTRIBUTOR", "BENEFICIARY")
                 .antMatchers(HttpMethod.PUT, "/scheme/update/**").hasRole("ADMIN")
                 .antMatchers(HttpMethod.DELETE, "/scheme/delete/**").hasRole("ADMIN")
 
