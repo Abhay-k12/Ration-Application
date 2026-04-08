@@ -79,7 +79,8 @@ public class QRCodeService {
                             ? beneficiary.getMembers().get(0).getName()
                             : beneficiary.getUsername(),
                     beneficiary.getUsername(),  // This IS the rationCardNumber
-                    Calendar.getInstance().getTime().toString()
+                    Calendar.getInstance().getTime().toString(),
+                    beneficiary.getMembers()
             );
 
             log.info("QR code scanned successfully: RC={}", beneficiary.getUsername());
@@ -123,7 +124,8 @@ public class QRCodeService {
                             ? beneficiary.getMembers().get(0).getName()
                             : username,
                     beneficiary.getUsername(),  // This IS the rationCardNumber
-                    Calendar.getInstance().getTime().toString()
+                    Calendar.getInstance().getTime().toString(),
+                    beneficiary.getMembers()
             );
 
             log.info("QR code generated successfully for beneficiary: {}", username);
