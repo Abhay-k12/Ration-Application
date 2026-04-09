@@ -6,6 +6,7 @@ import com.rationApplication.RationApplication.service.BeneficiaryService;
 import com.rationApplication.RationApplication.service.ComplaintService;
 import com.rationApplication.RationApplication.service.QRCodeService;
 import com.rationApplication.RationApplication.service.TransactionService;
+import com.rationApplication.RationApplication.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -37,14 +38,31 @@ public class DistributorController {
     @Autowired
     private ComplaintService complaintService;
 
+    @Autowired
+    private UserService userService;
+
     @PutMapping("/register")
     @Transactional
-    public ResponseEntity<Map<String, Object>> addNewBeneficiary(@RequestBody Beneficiary beneficiary) {
+    public ResponseEntity<Map<String, Object>> addNewBeneficiary(@RequestBody Beneficiary beneficiary, Authentication authentication) {
         try {
-            beneficiaryService.addNewBeneficiary(beneficiary);
+            String distributorUsername = authentication.getName();
+            User distributor = userService.getUserByUsername(distributorUsername);
+
+            if (distributor != null) {
+                beneficiary.setStateDistrictCode(distributor.getStateDistrictCode());
+                log.info("[REGISTER] Setting beneficiary district to: {}", distributor.getStateDistrictCode());
+            }
+
+            beneficiaryService.addNewBeneficiaryWithUser(beneficiary);
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Beneficiary registered successfully");
+            response.put("username", beneficiary.getUsername());
+            response.put("password", "Beneficiary@123");
+
+            log.info("[REGISTER] Beneficiary registered successfully: RC={}", beneficiary.getUsername());
+
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
             log.error("Error adding beneficiary: {}", e.toString());
@@ -126,8 +144,19 @@ public class DistributorController {
             Authentication authentication) {
         try {
             String distributorUsername = authentication.getName();
+            User distributor = userService.getUserByUsername(distributorUsername);
 
             log.info("Processing transaction for beneficiary RC: {}", beneficiaryUsername);
+
+            Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
+            if (beneficiary != null && distributor != null) {
+                if (!distributor.getStateDistrictCode().equals(beneficiary.getStateDistrictCode())) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Action restricted: Beneficiary belongs to a different district");
+                    return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+                }
+            }
 
             if (transactionService.hasClaimedThisMonth(beneficiaryUsername)) {
                 Map<String, Object> response = new HashMap<>();
@@ -181,6 +210,63 @@ public class DistributorController {
         } catch (Exception e) {
             log.error("ERROR IN TRACKING THE COMPLAINTS: {}", e.toString());
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+    }
+
+    @PostMapping("/submitComplaint")
+    public ResponseEntity<Map<String, Object>> submitComplaint(
+            @RequestBody Complaint complaint,
+            Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            complaint.setApplicantUsername(username);
+
+            log.info("Submitting complaint for distributor: {}", username);
+            complaintService.registerComplaint(complaint);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Complaint submitted successfully");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            log.error("Error submitting complaint: {}", e.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error submitting complaint");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/submitBeneficiaryComplaint")
+    public ResponseEntity<Map<String, Object>> submitBeneficiaryComplaint(
+            @RequestBody Complaint complaint,
+            @RequestParam String beneficiaryUsername,
+            Authentication authentication) {
+        try {
+            Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
+            if (beneficiary == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Beneficiary not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            // Set the beneficiary as the applicant
+            complaint.setApplicantUsername(beneficiaryUsername);
+
+            log.info("Distributor {} submitting complaint on behalf of beneficiary: {}", authentication.getName(), beneficiaryUsername);
+            complaintService.registerComplaint(complaint);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Complaint submitted on behalf of beneficiary successfully");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            log.error("Error submitting beneficiary complaint: {}", e.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error submitting complaint");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
