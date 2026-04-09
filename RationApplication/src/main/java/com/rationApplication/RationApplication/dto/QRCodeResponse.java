@@ -1,7 +1,11 @@
 package com.rationApplication.RationApplication.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.rationApplication.RationApplication.entity.Aadhaar;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -19,7 +23,21 @@ public class QRCodeResponse {
     private String generatedAt;
     private boolean success;
     private String message;
+    private List<Aadhaar> familyMembers;
 
+
+    public QRCodeResponse(String qrCodeData, String qrCodeImage, String rationCardNumber,
+                          String beneficiaryName, String username, String generatedAt, List<Aadhaar> familyMembers) {
+        this.qrCodeData = qrCodeData;
+        this.qrCodeImage = qrCodeImage;
+        this.rationCardNumber = rationCardNumber;
+        this.beneficiaryName = beneficiaryName;
+        this.username = username;
+        this.generatedAt = generatedAt;
+        this.familyMembers = familyMembers;
+        this.success = true;
+        this.message = "QR code generated successfully";
+    }
 
     public QRCodeResponse(String qrCodeData, String qrCodeImage, String rationCardNumber,
                           String beneficiaryName, String username, String generatedAt) {
