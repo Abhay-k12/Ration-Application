@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -132,9 +133,20 @@ public class AdminController {
     }
 
     @GetMapping("/getAllComplaints")
-    public ResponseEntity<?> getAllComplaints() {
+    public ResponseEntity<?> getAllComplaints(Authentication authentication) {
         try {
-            List<Complaint> complaints = complaintService.getAllComplaintsWithStatus(
+            String adminUsername = authentication.getName();
+            User admin = userService.getUserByUsername(adminUsername);
+            
+            if (admin == null || admin.getStateDistrictCode() == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Admin region not found");
+                return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+            }
+
+            List<Complaint> complaints = complaintService.getComplaintsByRegionAndStatus(
+                    admin.getStateDistrictCode(),
                     com.rationApplication.RationApplication.enums.Status.PROCESSING);
             return new ResponseEntity<>(complaints, HttpStatus.OK);
         } catch (Exception e) {
