@@ -62,8 +62,7 @@ public class BeneficiaryController {
         } catch (Exception e) {
             log.error("Error generating QR code: {}", e.getMessage());
             return new ResponseEntity<>(
-                    new QRCodeResponse(null, null, null, null, null, null, false,
-                            "Error generating QR code: " + e.getMessage()),
+                    new QRCodeResponse("Error generating QR code: " + e.getMessage(), false),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
