@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -24,58 +25,34 @@ public class Transaction {
     @Indexed
     private String beneficiaryUsername;
 
-    @DBRef
-    private Beneficiary beneficiary;
-
     private String aadhaarNumber;
 
-    private String receiptNumber;
-
-    @Indexed
     private YearMonth transactionMonth;
 
     private LocalDateTime dateOfTransaction;
 
-    private boolean isOnlineTransaction;
     private boolean isSynced;
-    private boolean isUsed;
 
-    private String qrCodeUsed;
     private boolean faceVerified;
-    private String verificationMethod;    // FACIAL_RECOGNITION, QR_SCAN, MANUAL_BYPASS
 
-    private String schemeId;
-    private double wheatQuantity;
-    private double riceQuantity;
-    private double sugarQuantity;
-    private double keroseineQuantity;
-    private double totalAmount;
+    List<String> suppliesName;
 
-    // Distributor Info
+    List<Float> suppliesWeight;
+
+    List<Float> costPerSupplies;
+
     @Indexed
     private String distributorUsername;
 
-    private String distributorShopId;
-
-
-    @Indexed
-    private String stateDistrictCode;
-
     private Long createdAt;
-    private Long updatedAt;
 
-    private String notes;
     private Status status;
 
-
-    public Transaction(String beneficiaryUsername, Beneficiary beneficiary,
-                       LocalDateTime dateOfTransaction, YearMonth transactionMonth) {
+    public Transaction(String beneficiaryUsername, LocalDateTime dateOfTransaction, YearMonth transactionMonth) {
         this.beneficiaryUsername = beneficiaryUsername;
-        this.beneficiary = beneficiary;
         this.dateOfTransaction = dateOfTransaction;
         this.transactionMonth = transactionMonth;
         this.createdAt = System.currentTimeMillis();
-        this.isUsed = true;
         this.status = Status.COMPLETED;
     }
 
@@ -84,10 +61,8 @@ public class Transaction {
         return "Transaction{" +
                 "id='" + id + '\'' +
                 ", beneficiaryUsername='" + beneficiaryUsername + '\'' +
-                ", receiptNumber='" + receiptNumber + '\'' +
                 ", transactionMonth=" + transactionMonth +
                 ", dateOfTransaction=" + dateOfTransaction +
-                ", isOnlineTransaction=" + isOnlineTransaction +
                 ", isSynced=" + isSynced +
                 ", faceVerified=" + faceVerified +
                 ", status='" + status + '\'' +
@@ -98,11 +73,4 @@ public class Transaction {
         this.isSynced = true;
     }
 
-    public void setIsUsed(boolean b) {
-        this.isUsed = true;
-    }
-
-    public void setIsOnlineTransaction(boolean isOnline) {
-        this.isOnlineTransaction = true;
-    }
 }
