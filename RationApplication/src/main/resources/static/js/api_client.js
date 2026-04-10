@@ -143,14 +143,11 @@ async function verifyBeneficiary(beneficiaryUsername, isApproved) {
     );
 }
 
-async function processTransaction(beneficiaryUsername, aadhaarNumber, schemeId, isOnline, qrCodeUsed) {
-    return apiRequest('/distributor/processTransaction', 'POST', {
-        beneficiaryUsername,
-        aadhaarNumber,
-        schemeId,
-        isOnline,
-        qrCodeUsed
-    });
+async function processTransaction(beneficiaryUsername, aadhaarNumber, useOthersScheme) {
+    return apiRequest(
+        `/distributor/processTransaction?beneficiaryUsername=${beneficiaryUsername}&aadhaarNumber=${aadhaarNumber}&useOthersScheme=${useOthersScheme}`,
+        'POST'
+    );
 }
 
 async function getDistributorComplaints() {
