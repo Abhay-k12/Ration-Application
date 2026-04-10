@@ -631,65 +631,6 @@ function loadFaceSelection(members) {
     });
 }
 
-function selectFace(memberJson) {
-    const member = JSON.parse(decodeURIComponent(memberJson));
-    const allocationSummaryEl = document.getElementById('allocationSummary');
-    if (allocationSummaryEl) allocationSummaryEl.style.display = 'block';
-
-    let age = 30; // default adult
-    if (member && member.dateOfBirth) {
-        const dobDate = new Date(member.dateOfBirth);
-        const diffMs = Date.now() - dobDate.getTime();
-        const ageDt = new Date(diffMs); 
-        age = Math.abs(ageDt.getUTCFullYear() - 1970);
-    }
-
-    const dynamicSchemeName = currentSchemes && currentSchemes.length > 0 
-        ? (currentSchemes[0].schemeName || currentSchemes[0].schemeType) 
-        : 'Standard Allocation';
-
-    let photoSrc = member.photograph;
-    
-    if (!photoSrc) {
-        showCustomAlert("User's image is not present in the database.", "No Image Found");
-        return;
-    }
-
-    if (photoSrc && !photoSrc.startsWith('http') && !photoSrc.startsWith('data:')) {
-        photoSrc = 'data:image/jpeg;base64,' + photoSrc;
-    }
-
-    // Stage 1: Face Registration UI
-    details = `
-        <h5 style="color: var(--secondary); margin-bottom: 15px;"><i class="ri-scan-line"></i> Face Verification: ${member.name || 'Beneficiary'}</h5>
-        <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px;">
-           <div style="text-align: center;">
-               <p style="margin-bottom:10px; font-weight:600;">System Record</p>
-               <img src="${photoSrc}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 3px solid #e2e8f0;">
-           </div>
-           <i class="ri-arrow-left-right-line" style="font-size:24px; color:var(--gray);"></i>
-           <div style="text-align: center; width: 120px;">
-               <p style="margin-bottom:10px; font-weight:600;">Live Feed</p>
-               <div id="liveCaptureArea">
-                   <button class="submit-btn" style="width:auto; padding:5px 15px; font-size:12px; border-radius:15px;" onclick="openVerificationCamera()">Link Device Camera</button>
-               </div>
-           </div>
-        </div>
-        <div id="aiVerificationBox" style="display:none; text-align:center; padding: 15px; border-radius: 8px; margin-bottom: 15px;"></div>
-        <button class="submit-btn" id="verifyFaceBtn" style="background:#5B21B6; display:none;" onclick="executeMockVerification('${dynamicSchemeName}', ${age}, '${member.aadhaarNumber || 'UNKNOWN'}')">
-            <i class="ri-robot-2-line"></i> Execute Biometric Mapping
-        </button>
-        <div id="verifiedAllocationSection" style="display:none;"></div>
-    `;
-    const detailsEl = document.getElementById('allocationDetails');
-    if (detailsEl) detailsEl.innerHTML = details;
-    
-    // Automatically open verification camera instead of waiting for user click
-    setTimeout(() => {
-        openVerificationCamera();
-    }, 100);
-}
-
 async function openVerificationCamera() {
     const captureArea = document.getElementById('liveCaptureArea');
     captureArea.innerHTML = `
@@ -711,16 +652,68 @@ async function openVerificationCamera() {
     }
 }
 
-function executeMockVerification(schemeName, age, aadhaar) {
+function selectFace(memberJson) {
+    const member = JSON.parse(decodeURIComponent(memberJson));
+    const allocationSummaryEl = document.getElementById('allocationSummary');
+    if (allocationSummaryEl) allocationSummaryEl.style.display = 'block';
+
+    let photoSrc = member.photograph;
+
+    if (!photoSrc) {
+        showCustomAlert("User's image is not present in the database.", "No Image Found");
+        return;
+    }
+
+    if (photoSrc && !photoSrc.startsWith('http') && !photoSrc.startsWith('data:')) {
+        photoSrc = 'data:image/jpeg;base64,' + photoSrc;
+    }
+
+    const hasOthersScheme = currentSchemes && currentSchemes.some(s => s.schemeType === 'OTHERS');
+
+    const schemeBox = document.getElementById('schemeSelectionBox');
+    if (schemeBox) {
+        schemeBox.style.display = hasOthersScheme ? 'block' : 'none';
+    }
+
+    let details = `
+        <h5 style="color: var(--secondary); margin-bottom: 15px;"><i class="ri-scan-line"></i> Face Verification: ${member.name || 'Beneficiary'}</h5>
+        <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px;">
+           <div style="text-align: center;">
+               <p style="margin-bottom:10px; font-weight:600;">System Record</p>
+               <img src="${photoSrc}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 3px solid #e2e8f0;">
+           </div>
+           <i class="ri-arrow-left-right-line" style="font-size:24px; color:var(--gray);"></i>
+           <div style="text-align: center; width: 120px;">
+               <p style="margin-bottom:10px; font-weight:600;">Live Feed</p>
+               <div id="liveCaptureArea">
+                   <button class="submit-btn" style="width:auto; padding:5px 15px; font-size:12px; border-radius:15px;" onclick="openVerificationCamera()">Link Device Camera</button>
+               </div>
+           </div>
+        </div>
+        <div id="aiVerificationBox" style="display:none; text-align:center; padding: 15px; border-radius: 8px; margin-bottom: 15px;"></div>
+        <button class="submit-btn" id="verifyFaceBtn" style="background:#5B21B6; display:none;" onclick="executeMockVerification('${member.aadhaarNumber || 'UNKNOWN'}')">
+            <i class="ri-robot-2-line"></i> Execute Biometric Mapping
+        </button>
+        <div id="verifiedAllocationSection" style="display:none;"></div>
+    `;
+
+    const detailsEl = document.getElementById('allocationDetails');
+    if (detailsEl) detailsEl.innerHTML = details;
+
+    setTimeout(() => {
+        openVerificationCamera();
+    }, 100);
+}
+
+function executeMockVerification(aadhaar) {
     const btn = document.getElementById('verifyFaceBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing Coordinates...';
-    
-    // Simulate capture
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing...';
+
     const video = document.getElementById('verifyVideo');
     const canvas = document.getElementById('verifyCanvas');
     const preview = document.getElementById('verifyPreview');
-    
+
     if (video) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -736,74 +729,150 @@ function executeMockVerification(schemeName, age, aadhaar) {
 
     setTimeout(() => {
         btn.style.display = 'none';
-        
+
         const aiBox = document.getElementById('aiVerificationBox');
         aiBox.style.display = 'block';
-        aiBox.style.backgroundColor = '#dcfce7'; // green-100
-        aiBox.style.color = '#166534'; // green-800
-        aiBox.innerHTML = '<strong><i class="ri-checkbox-circle-fill"></i> ID Verified Automatically: Match Confidence 99.8%</strong>';
+        aiBox.style.backgroundColor = '#dcfce7';
+        aiBox.style.color = '#166534';
+        aiBox.innerHTML = '<strong><i class="ri-checkbox-circle-fill"></i> ID Verified: 99.8% Match</strong>';
 
-        // Now render the allocation segment
-        let allocationDetails = "";
-        if (age < 18) {
-            allocationDetails = `
-                <h5 style="color: var(--secondary); margin-bottom: 5px;">Allocating under: ${schemeName} (Age: ${age})</h5>
-                <p><strong>Milk Powder:</strong> 1 kg (Rs 0/kg) - Rs 0</p>
-                <p><strong>Rice:</strong> 2 kg (Rs 3/kg) - Rs 6</p>
-                <p><strong>Sugar:</strong> 1 kg (Rs 15/kg) - Rs 15</p>
-                <hr style="margin: 10px 0;">
-                <p><strong>Total Payable:</strong> Rs 21</p>
-            `;
-        } else {
-            allocationDetails = `
-                <h5 style="color: var(--secondary); margin-bottom: 5px;">Allocating under: ${schemeName} (Adult)</h5>
-                <p><strong>Wheat:</strong> 10 kg (Rs 2/kg) - Rs 20</p>
-                <p><strong>Rice:</strong> 5 kg (Rs 3/kg) - Rs 15</p>
-                <p><strong>Sugar:</strong> 2 kg (Rs 15/kg) - Rs 30</p>
-                <p><strong>Kerosene:</strong> 2 L (Rs 10/L) - Rs 20</p>
-                <hr style="margin: 10px 0;">
-                <p><strong>Total Payable:</strong> Rs 85</p>
-            `;
-        }
-
-        allocationDetails += `
-            <button class="submit-btn" style="margin-top: 15px;" onclick="completeAllocation('${aadhaar}')">
-                <i class="ri-check-double-line"></i> Confirm & Process Transaction
-            </button>
-        `;
-        
-        const section = document.getElementById('verifiedAllocationSection');
-        section.style.display = 'block';
-        section.innerHTML = allocationDetails;
+        renderAllocationDetails(aadhaar);
     }, 1500);
 }
 
-async function completeAllocation(actualAadhaarNumber) {
+async function renderAllocationDetails(aadhaarNumber) {
     const beneficiaryUsername = document.getElementById('verifiedRCNumber').textContent.trim();
-    const qrCodeUsed = currentQRData ? currentQRData.qrCodeData : 'MOCK_QR_DATA';
-    
+
+    const useOthersScheme = document.getElementById('useOthersSchemeCheckbox')?.checked || false;
+
     try {
+        console.log('[TRANSACTION] useOthersScheme:', useOthersScheme);
+
         const response = await processTransaction(
             beneficiaryUsername,
-            actualAadhaarNumber,
-            null, // Scheme ID dynamic calculated
-            true, // isOnline
-            qrCodeUsed
+            aadhaarNumber,
+            useOthersScheme
         );
-        
-        if (response && response.success) {
-            showCustomAlert('Ration Transaction Completed Successfully!', 'Transaction Success');
-            document.getElementById('verificationResult').style.display = 'none';
-            document.getElementById('onlineSection').style.display = 'none';
-            document.getElementById('qrCodeInput').value = '';
-            // reload summary data
-            loadDistributorData();
+
+        console.log('[TRANSACTION] Response:', response);
+
+        if (response && response.success && response.transaction) {
+            const tx = response.transaction;
+
+            let allocationHTML = `
+                <h5 style="color: var(--secondary); margin-bottom: 15px;"><i class="ri-gift-line"></i> Ration Allocation</h5>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            `;
+
+            let totalCost = 0;
+
+            if (tx.suppliesName && tx.suppliesName.length > 0) {
+                for (let i = 0; i < tx.suppliesName.length; i++) {
+                    const supplyName = tx.suppliesName[i];
+                    const quantity = tx.suppliesWeight[i] || 0;
+                    const cost = tx.costPerSupplies[i] || 0;
+
+                    allocationHTML += `
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                            <span><strong>${supplyName}</strong></span>
+                            <span>${quantity.toFixed(2)} kg</span>
+                            <span style="color: var(--secondary); font-weight: bold;">Rs ${cost.toFixed(2)}</span>
+                        </div>
+                    `;
+
+                    totalCost += cost;
+                }
+            }
+
+            allocationHTML += `
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid var(--primary); margin-top: 10px; font-weight: bold;">
+                        <span>Total:</span>
+                        <span style="color: var(--secondary); font-size: 18px;">Rs ${totalCost.toFixed(2)}</span>
+                    </div>
+                </div>
+                <button class="submit-btn" style="margin-top: 15px; background: var(--secondary); width: 100%;" onclick="completeAllocationSuccess()">
+                    <i class="ri-check-double-line"></i> Confirm & Complete
+                </button>
+            `;
+
+            const section = document.getElementById('verifiedAllocationSection');
+            section.style.display = 'block';
+            section.innerHTML = allocationHTML;
+
         } else {
-            showCustomAlert('Allocation execution failed: ' + (response?.message || 'Error occurred'), 'Transaction Error');
+            showCustomAlert('Error: ' + (response?.message || 'Failed'), 'Error');
         }
-    } catch (e) {
-        showCustomAlert('Transaction processing failed: ' + e.message, 'Transaction Error');
+    } catch (error) {
+        console.error('[TRANSACTION] Error:', error);
+        showCustomAlert('Error: ' + error.message, 'Error');
     }
+}
+
+function verifyOTP() {
+    const otp = document.getElementById('otpInput').value;
+
+    if (otp.length !== 6) {
+        showCustomAlert('Please enter a valid 6-digit OTP', 'Invalid OTP');
+        return;
+    }
+
+    console.log('[OTP] Verifying OTP');
+    showCustomAlert('OTP verified successfully!', 'Success');
+
+    const offlineAllocationEl = document.getElementById('offlineAllocation');
+    if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
+
+    // Show scheme selection for offline too
+    const schemeBox = document.getElementById('schemeSelectionBox');
+    if (schemeBox) {
+        const hasOthersScheme = currentSchemes && currentSchemes.some(s => s.schemeType === 'OTHERS');
+        schemeBox.style.display = hasOthersScheme ? 'block' : 'none';
+    }
+
+    const details = `
+        <p><strong>Note:</strong> Select "Others" scheme if needed above, then click Complete</p>
+        <p style="color: var(--gray); font-size: 12px; margin-top: 10px;">Actual allocation will be calculated by backend</p>
+        <button class="submit-btn" style="margin-top: 15px;" onclick="completeOfflineAllocation()">
+            <i class="ri-check-double-line"></i> Complete Transaction
+        </button>
+    `;
+    const detailsEl = document.getElementById('offlineAllocationDetails');
+    if (detailsEl) detailsEl.innerHTML = details;
+}
+
+function completeOfflineAllocation() {
+    const useOthersScheme = document.getElementById('useOthersSchemeCheckbox')?.checked || false;
+
+    console.log('[OFFLINE] useOthersScheme:', useOthersScheme);
+
+    showCustomAlert('Offline transaction will be processed when online!', 'Transaction Initialized');
+
+    const offlineSectionEl = document.getElementById('offlineSection');
+    const otpBeneficiaryIdEl = document.getElementById('otpBeneficiaryId');
+    const otpInputEl = document.getElementById('otpInput');
+    const schemeBox = document.getElementById('schemeSelectionBox');
+    const checkbox = document.getElementById('useOthersSchemeCheckbox');
+
+    if (offlineSectionEl) offlineSectionEl.style.display = 'none';
+    if (otpBeneficiaryIdEl) otpBeneficiaryIdEl.value = '';
+    if (otpInputEl) otpInputEl.value = '';
+    if (schemeBox) schemeBox.style.display = 'none';
+    if (checkbox) checkbox.checked = false;
+}
+
+function completeAllocationSuccess() {
+    showCustomAlert('Transaction Completed Successfully!', 'Success');
+    document.getElementById('verificationResult').style.display = 'none';
+    document.getElementById('onlineSection').style.display = 'none';
+    document.getElementById('qrCodeInput').value = '';
+
+    const checkbox = document.getElementById('useOthersSchemeCheckbox');
+    if (checkbox) checkbox.checked = false;
+
+    const schemeBox = document.getElementById('schemeSelectionBox');
+    if (schemeBox) schemeBox.style.display = 'none';
+
+    loadDistributorData();
 }
 
 async function sendOTP() {
@@ -825,43 +894,7 @@ async function sendOTP() {
     }
 }
 
-function verifyOTP() {
-    const otp = document.getElementById('otpInput').value;
 
-    if (otp.length !== 6) {
-        showCustomAlert('Please enter a valid 6-digit OTP', 'Invalid OTP');
-        return;
-    }
-
-    console.log('[OTP] Verifying OTP');
-    showCustomAlert('OTP verified successfully!', 'Success');
-    const offlineAllocationEl = document.getElementById('offlineAllocation');
-    if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
-
-    const details = `
-        <p><strong>Wheat:</strong> 10 kg - Rs 20</p>
-        <p><strong>Rice:</strong> 5 kg - Rs 15</p>
-        <p><strong>Sugar:</strong> 2 kg - Rs 30</p>
-        <hr>
-        <p><strong>Total:</strong> Rs 85</p>
-        <button class="submit-btn" style="margin-top: 15px;" onclick="completeOfflineAllocation()">
-            <i class="ri-check-double-line"></i> Complete Transaction
-        </button>
-    `;
-    const detailsEl = document.getElementById('offlineAllocationDetails');
-    if (detailsEl) detailsEl.innerHTML = details;
-}
-
-function completeOfflineAllocation() {
-    showCustomAlert('Offline transaction completed and will sync when online!', 'Transaction Initialized');
-    const offlineSectionEl = document.getElementById('offlineSection');
-    const otpBeneficiaryIdEl = document.getElementById('otpBeneficiaryId');
-    const otpInputEl = document.getElementById('otpInput');
-
-    if (offlineSectionEl) offlineSectionEl.style.display = 'none';
-    if (otpBeneficiaryIdEl) otpBeneficiaryIdEl.value = '';
-    if (otpInputEl) otpInputEl.value = '';
-}
 
 async function handleChangePassword(e) {
     e.preventDefault();
