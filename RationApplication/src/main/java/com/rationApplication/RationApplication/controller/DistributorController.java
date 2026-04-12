@@ -102,7 +102,6 @@ public class DistributorController {
             Map<String, Object> response = new HashMap<>();
 
             if (isApproved) {
-                // beneficiaryUsername is the rationCardNumber
                 Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
 
                 if (beneficiary == null) {
@@ -136,54 +135,37 @@ public class DistributorController {
     @PostMapping("/processTransaction")
     @Transactional
     public ResponseEntity<Map<String, Object>> processTransaction(
-            @RequestParam String beneficiaryUsername,  // This is rationCardNumber
+            @RequestParam String beneficiaryUsername,
             @RequestParam String aadhaarNumber,
-            @RequestParam(required = false) String schemeId,
-            @RequestParam(defaultValue = "true") boolean isOnline,
-            @RequestParam String qrCodeUsed,
+            @RequestParam boolean useOthersScheme,
             Authentication authentication) {
         try {
             String distributorUsername = authentication.getName();
-            User distributor = userService.getUserByUsername(distributorUsername);
 
-            log.info("Processing transaction for beneficiary RC: {}", beneficiaryUsername);
+            log.info("[TRANSACTION] useOthersScheme: {}", useOthersScheme);
 
             Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
-            if (beneficiary != null && distributor != null) {
-                if (!distributor.getStateDistrictCode().equals(beneficiary.getStateDistrictCode())) {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("success", false);
-                    response.put("message", "Action restricted: Beneficiary belongs to a different district");
-                    return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
-                }
-            }
-
-            if (transactionService.hasClaimedThisMonth(beneficiaryUsername)) {
+            if (beneficiary == null) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
-                response.put("message", "Beneficiary has already claimed ration for this month");
-                response.put("rationCardNumber", beneficiaryUsername);
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                response.put("message", "Beneficiary not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             }
 
             Transaction transaction = transactionService.processTransaction(
-                    beneficiaryUsername,  // This is rationCardNumber
+                    beneficiaryUsername,
                     aadhaarNumber,
-                    schemeId,
-                    isOnline,
-                    qrCodeUsed,
+                    useOthersScheme,
+                    beneficiary.getStateDistrictCode(),
                     distributorUsername);
-
-            qrCodeService.markQRAsUsed(qrCodeUsed);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Transaction processed successfully");
             response.put("transaction", transaction);
-            response.put("receiptNumber", transaction.getReceiptNumber());
-            response.put("rationCardNumber", beneficiaryUsername);
 
             return new ResponseEntity<>(response, HttpStatus.OK);
+
         } catch (IllegalArgumentException e) {
             log.warn("Validation error: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
@@ -251,7 +233,6 @@ public class DistributorController {
                 return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             }
 
-            // Set the beneficiary as the applicant
             complaint.setApplicantUsername(beneficiaryUsername);
 
             log.info("Distributor {} submitting complaint on behalf of beneficiary: {}", authentication.getName(), beneficiaryUsername);
