@@ -1,463 +1,594 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard · Smart-Ration TPDS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link rel="stylesheet" href="css/admin_dashboard.css">
 </head>
+
 <body>
-<header id="header">
-    <div class="logo">
-        <div class="logo-icon"><i class="ri-government-line"></i></div>
-        <div class="logo-text">
-            <h1>Smart-Ration</h1>
-            <span>Govt of India · TPDS</span>
-        </div>
-    </div>
-    <nav>
-        <ul>
-            <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
-            <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
-            <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
-            <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i> Logout</a></li>
-        </ul>
-    </nav>
-    <div class="mobile-menu"><i class="ri-menu-line"></i></div>
-</header>
-
-<!-- Main Dashboard -->
-<div class="dashboard-container">
-    <!-- Sidebar Having Admin Info -->
-    <aside class="sidebar">
-        <div class="profile-card">
-            <div class="avatar"><i class="ri-admin-line"></i></div>
-            <h3 id="adminName">Admin</h3>
-            <div class="admin-id"><i class="ri-fingerprint-line"></i><span id="adminId">ADM/001</span></div>
-            <div class="info-row"><i class="ri-map-pin-line"></i><span id="adminLocation">District</span></div>
-            <div class="info-row"><i class="ri-user-star-line"></i><span>District Admin · Grade A</span></div>
-        </div>
-
-        <div class="district-info">
-            <h4><i class="ri-bar-chart-line"></i> District Summary</h4>
-            <div class="district-detail"><span>Total PDS Shops:</span> <strong id="totalShops">0</strong></div>
-            <div class="district-detail"><span>Total Beneficiaries:</span> <strong id="totalBeneficiaries">0</strong></div>
-            <div class="district-detail"><span>Pending Complaints:</span> <strong id="pendingComplaints">0</strong></div>
-            <div class="district-detail"><span>Active Schemes:</span> <strong id="activeSchemes">0</strong></div>
-        </div>
-
-        <div class="logout-btn" onclick="logout()">
-            <i class="ri-logout-box-line"></i> Logout
-        </div>
-        <div class="change-pwd" onclick="openChangePwdModal()">
-            <i class="ri-lock-line"></i> Change Password
-        </div>
-    </aside>
-
-    <!-- Main Content (70%) -->
-    <main class="main-content">
-        <div class="dash-header">
-            <h2>Admin Dashboard</h2>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <div class="nav-item active" data-module="module1"><i class="ri-file-copy-line"></i> Issue Ration Card</div>
-            <div class="nav-item" data-module="module2"><i class="ri-error-warning-line"></i> Complaints</div>
-            <div class="nav-item" data-module="module3"><i class="ri-customer-service-line"></i> Card Service</div>
-            <div class="nav-item" data-module="module4"><i class="ri-calendar-line"></i> Schemes</div>
-            <div class="nav-item" data-module="module5"><i class="ri-team-line"></i> Manage Users</div>
-        </div>
-
-        <!-- MODULE 1: Issue New Ration Card -->
-        <div id="module1" class="module active">
-            <div class="card">
-                <div class="card-title"><i class="ri-file-copy-line"></i> Issue New Ration Card</div>
-
-                <!-- Case 1: Fresh Registration -->
-                <div class="case-card">
-                    <div class="case-header">
-                        <div class="case-icon"><i class="ri-user-add-line"></i></div>
-                        <h3>Fresh Registration</h3>
-                    </div>
-                    <form id="freshRegistrationForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" id="fresName" class="form-control" placeholder="Enter full name" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Aadhaar Number</label>
-                                <input type="text" id="fresAadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Email</label>
-                                <input type="email" id="fresEmail" class="form-control" placeholder="email@example.com" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Mobile Number</label>
-                                <input type="tel" id="fresMobile" class="form-control" placeholder="10 digit mobile number" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Annual Income (₹)</label>
-                                <input type="number" id="fresIncome" class="form-control" placeholder="Enter annual income" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">State District Code</label>
-                                <input type="text" id="fresDistrictCode" class="form-control" placeholder="e.g., UK-01" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Address</label>
-                            <textarea id="fresAddress" class="form-control" rows="2" placeholder="Complete address" required></textarea>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Family Members Count</label>
-                                <input type="number" id="fresFamilyCount" class="form-control" min="1" max="10" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Scheme Type</label>
-                                <select id="fresSchemeType" class="form-control" required>
-                                    <option value="">Select Scheme</option>
-                                    <option value="BPL">BPL (Below Poverty Line)</option>
-                                    <option value="APL">APL (Above Poverty Line)</option>
-                                    <option value="AAY">AAY (Antyodaya Anna Yojana)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit" class="submit-btn">
-                            <i class="ri-save-line"></i> Generate Ration Card
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Case 2: Separation from Existing Card -->
-                <div class="case-card">
-                    <div class="case-header">
-                        <div class="case-icon"><i class="ri-group-line"></i></div>
-                        <h3>Separation from Existing Card</h3>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Old Ration Card Number</label>
-                            <input type="text" id="oldCardNumber" class="form-control" placeholder="Enter RC number">
-                        </div>
-                        <button type="button" class="submit-btn" style="margin-top: 22px;" onclick="fetchFamilyMembers()">
-                            <i class="ri-search-line"></i> Fetch Members
-                        </button>
-                    </div>
-
-                    <div id="familyMembersList" style="display: none; margin-top: 20px;">
-                        <h4 style="margin-bottom: 15px;">Family Members</h4>
-                        <table class="family-table">
-                            <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Aadhaar</th>
-                                <th>Employment Status</th>
-                                <th>Action</th>
-                            </tr>
-                            </thead>
-                            <tbody id="familyMembersTable">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <header id="header">
+        <div class="logo">
+            <div class="logo-icon"><i class="ri-government-line"></i></div>
+            <div class="logo-text">
+                <h1>Smart-Ration</h1>
+                <span>Govt of India · TPDS</span>
             </div>
         </div>
+        <nav>
+            <ul>
+                <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
+                <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
+                <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
+                <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i>
+                        Logout</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-menu"><i class="ri-menu-line"></i></div>
+    </header>
 
-        <!-- MODULE 2: Complaint Section -->
-        <div id="module2" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-error-warning-line"></i> Complaint Management</div>
-
-                <table class="complaint-table">
-                    <thead>
-                    <tr>
-                        <th>Complaint ID</th>
-                        <th>Beneficiary</th>
-                        <th>Subject</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    </thead>
-                    <tbody id="complaintTableBody">
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--gray);">Loading complaints...</td>
-                    </tr>
-                    </tbody>
-                </table>
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Sidebar Having Admin Info -->
+        <aside class="sidebar">
+            <div class="profile-card">
+                <div class="avatar"><i class="ri-admin-line"></i></div>
+                <h3 id="adminName">Admin</h3>
+                <div class="admin-id"><i class="ri-fingerprint-line"></i><span id="adminId">ADM/001</span></div>
+                <div class="info-row"><i class="ri-map-pin-line"></i><span id="adminLocation">District</span></div>
+                <div class="info-row"><i class="ri-user-star-line"></i><span>District Admin · Grade A</span></div>
             </div>
-        </div>
 
-        <!-- MODULE 3: Ration Card Service -->
-        <div id="module3" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-customer-service-line"></i> Ration Card Service</div>
-
-                <div class="search-section">
-                    <input type="text" class="form-control" id="searchCardNumber" placeholder="Enter Ration Card Number">
-                    <button class="search-btn" onclick="searchRationCard()">
-                        <i class="ri-search-line"></i> Search
-                    </button>
+            <div class="district-info">
+                <h4><i class="ri-bar-chart-line"></i> District Summary</h4>
+                <div class="district-detail"><span>Total PDS Shops:</span> <strong id="totalShops">0</strong></div>
+                <div class="district-detail"><span>Total Beneficiaries:</span> <strong
+                        id="totalBeneficiaries">0</strong></div>
+                <div class="district-detail"><span>Pending Complaints:</span> <strong id="pendingComplaints">0</strong>
                 </div>
-
-                <div id="cardDetails" style="display: none;">
-                    <div style="background: #f0fdf4; border-radius: 16px; padding: 20px; margin: 20px 0; border: 2px solid var(--secondary);">
-                        <h4 style="color: var(--secondary); margin-bottom: 10px;">
-                            <i class="ri-checkbox-circle-line"></i> Card Found: <span id="displayCardNumber"></span>
-                        </h4>
-                        <p><strong>Head of Family:</strong> <span id="cardHeadName"></span></p>
-                        <p><strong>Total Members:</strong> <span id="cardTotalMembers"></span></p>
-                        <p><strong>Annual Income:</strong> ₹<span id="cardAnnualIncome"></span></p>
-                    </div>
-
-                    <div class="quick-actions">
-                        <button class="quick-btn" onclick="showAddMemberModal()">
-                            <i class="ri-user-add-line"></i> Add Member
-                        </button>
-                        <button class="quick-btn" onclick="showRemoveMemberModal()">
-                            <i class="ri-user-unfollow-line"></i> Remove Member
-                        </button>
-                    </div>
-
-                    <h4 style="margin: 20px 0 15px;">Members List</h4>
-                    <div id="membersList"></div>
-                </div>
+                <div class="district-detail"><span>Active Schemes:</span> <strong id="activeSchemes">0</strong></div>
             </div>
-        </div>
 
-        <!-- MODULE 4: Set Scheme of the Month -->
-        <div id="module4" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-calendar-line"></i> Set Scheme of the Month</div>
+            <div class="logout-btn" onclick="logout()">
+                <i class="ri-logout-box-line"></i> Logout
+            </div>
+            <div class="change-pwd" onclick="openChangePwdModal()">
+                <i class="ri-lock-line"></i> Change Password
+            </div>
+        </aside>
 
-                <div class="scheme-form">
-                    <form id="schemeForm">
-                        <div class="form-group">
-                            <label class="form-label">Scheme Type</label>
-                            <select id="schemeType" class="form-control" onchange="toggleSchemeName()" required>
-                                <option value="">Select Scheme Type</option>
-                                <option value="CHILD_SCHEME">Child Scheme</option>
-                                <option value="ANNUAL_INCOME_LESS_THAN_3_LAKH">Annual Income < 3 Lakh</option>
-                                <option value="ANNUAL_INCOME_IN_BETWEEN_3_AND_6">Annual Income 3-6 Lakh</option>
-                                <option value="ANNUAL_INCOME_MORE_THAN_6">Annual Income > 6 Lakh</option>
-                                <option value="OTHERS">Others</option>
-                            </select>
+        <!-- Main Content (70%) -->
+        <main class="main-content">
+            <div class="dash-header">
+                <h2>Admin Dashboard</h2>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <div class="nav-item active" data-module="module1"><i class="ri-file-copy-line"></i> Issue Ration Card
+                </div>
+                <div class="nav-item" data-module="module2"><i class="ri-error-warning-line"></i> Complaints</div>
+                <div class="nav-item" data-module="module3"><i class="ri-customer-service-line"></i> Card Service</div>
+                <div class="nav-item" data-module="module4"><i class="ri-calendar-line"></i> Schemes</div>
+                <div class="nav-item" data-module="module5"><i class="ri-team-line"></i> Manage Users</div>
+            </div>
+
+            <!-- MODULE 1: Issue New Ration Card -->
+            <div id="module1" class="module active">
+                <div class="card">
+                    <div class="card-title"><i class="ri-file-copy-line"></i> Issue New Ration Card</div>
+
+                    <!-- Case 1: Fresh Registration -->
+                    <div class="case-card">
+                        <div class="case-header">
+                            <div class="case-icon"><i class="ri-user-add-line"></i></div>
+                            <h3>Fresh Registration</h3>
                         </div>
-
-                        <div id="customSchemeNameGroup" style="display: none;">
-                            <div class="form-group">
-                                <label class="form-label">Scheme Name</label>
-                                <input type="text" id="schemeName" class="form-control" placeholder="Enter scheme name">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">State District Code</label>
-                            <input type="text" id="stateDistrictCode" class="form-control" placeholder="e.g., UK-01" required>
-                        </div>
-
-                        <div id="suppliesSection">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <label class="form-label">Supplies List</label>
-                                <button type="button" class="add-supply-btn" onclick="addSupplyRow()">
-                                    <i class="ri-add-line"></i> Add Supply
-                                </button>
-                            </div>
-                            <div id="suppliesContainer">
-                                <div class="supply-row">
-                                    <input type="text" class="form-control" placeholder="Supply name (e.g., Wheat)">
-                                    <input type="number" class="form-control" placeholder="Cost (₹)">
-                                    <input type="number" class="form-control" placeholder="Per person (kg)">
-                                    <button type="button" class="remove-supply" onclick="this.parentElement.remove()">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
+                        <form id="freshRegistrationForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" id="fresName" class="form-control" placeholder="Enter full name"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Aadhaar Number</label>
+                                    <input type="text" id="fresAadhaar" class="form-control"
+                                        placeholder="XXXX-XXXX-XXXX" required>
                                 </div>
                             </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="fresEmail" class="form-control"
+                                        placeholder="email@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Mobile Number</label>
+                                    <input type="tel" id="fresMobile" class="form-control"
+                                        placeholder="10 digit mobile number" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Annual Income (₹)</label>
+                                    <input type="number" id="fresIncome" class="form-control"
+                                        placeholder="Enter annual income" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">State District Code</label>
+                                    <input type="text" id="fresDistrictCode" class="form-control"
+                                        placeholder="e.g., UK-01" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Address</label>
+                                <textarea id="fresAddress" class="form-control" rows="2" placeholder="Complete address"
+                                    required></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Family Members Count</label>
+                                    <input type="number" id="fresFamilyCount" class="form-control" min="1" max="10"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Scheme Type</label>
+                                    <select id="fresSchemeType" class="form-control" required>
+                                        <option value="">Select Scheme</option>
+                                        <option value="BPL">BPL (Below Poverty Line)</option>
+                                        <option value="APL">APL (Above Poverty Line)</option>
+                                        <option value="AAY">AAY (Antyodaya Anna Yojana)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="submit-btn">
+                                <i class="ri-save-line"></i> Generate Ration Card
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Case 2: Separation from Existing Card -->
+                    <div class="case-card">
+                        <div class="case-header">
+                            <div class="case-icon"><i class="ri-group-line"></i></div>
+                            <h3>Separation from Existing Card</h3>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Old Ration Card Number</label>
+                                <input type="text" id="oldCardNumber" class="form-control"
+                                    placeholder="Enter RC number">
+                            </div>
+                            <button type="button" class="submit-btn" style="margin-top: 22px;"
+                                onclick="fetchFamilyMembers()">
+                                <i class="ri-search-line"></i> Fetch Members
+                            </button>
                         </div>
 
-                        <button type="submit" class="submit-btn">
-                            <i class="ri-save-line"></i> Create Scheme
-                        </button>
-                    </form>
+                        <div id="familyMembersList" style="display: none; margin-top: 20px;">
+                            <h4 style="margin-bottom: 15px;">Family Members</h4>
+                            <p style="font-size: 13px; color: var(--gray); margin-bottom: 15px;">Select the members you
+                                wish to migrate to a new Ration Card.</p>
+                            <table class="family-table">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Name</th>
+                                        <th>Aadhaar</th>
+                                        <th>Employment Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="familyMembersTable">
+                                </tbody>
+                            </table>
+
+                            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                                <h4 style="margin-bottom: 15px;">New Card Details</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">New Beneficiary Email</label>
+                                        <input type="email" id="sepNewEmail" class="form-control"
+                                            placeholder="email@example.com" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">State District Code</label>
+                                        <input type="text" id="sepDistrictCode" class="form-control"
+                                            placeholder="e.g., UK-01" required>
+                                    </div>
+                                </div>
+                                <button type="button" class="submit-btn" style="background: var(--success);"
+                                    onclick="submitSeparationCase()">
+                                    <i class="ri-git-branch-line"></i> Finalize Separation
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- MODULE 5: Manage Users -->
-        <div id="module5" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-team-line"></i> Manage Users</div>
+            <!-- MODULE 2: Complaint Section -->
+            <div id="module2" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-error-warning-line"></i> Complaint Management</div>
 
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Create New Distributor</h4>
-                    <form id="createDistributorForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Username</label>
-                                <input type="text" id="distUsername" class="form-control" placeholder="Distributor username" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Email</label>
-                                <input type="email" id="distEmail" class="form-control" placeholder="email@example.com" required>
-                            </div>
+                    <table class="complaint-table">
+                        <thead>
+                            <tr>
+                                <th>Complaint ID</th>
+                                <th>Beneficiary</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--gray);">Loading complaints...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE 3: Ration Card Service -->
+            <div id="module3" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-customer-service-line"></i> Ration Card Service</div>
+
+                    <div class="search-section">
+                        <input type="text" class="form-control" id="searchCardNumber"
+                            placeholder="Enter Ration Card Number">
+                        <button class="search-btn" onclick="searchRationCard()">
+                            <i class="ri-search-line"></i> Search
+                        </button>
+                    </div>
+
+                    <div id="cardDetails" style="display: none;">
+                        <div
+                            style="background: #f0fdf4; border-radius: 16px; padding: 20px; margin: 20px 0; border: 2px solid var(--secondary);">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">
+                                <i class="ri-checkbox-circle-line"></i> Card Found: <span id="displayCardNumber"></span>
+                            </h4>
+                            <p><strong>Head of Family:</strong> <span id="cardHeadName"></span></p>
+                            <p><strong>Total Members:</strong> <span id="cardTotalMembers"></span></p>
+                            <p><strong>Annual Income:</strong> ₹<span id="cardAnnualIncome"></span></p>
                         </div>
-                        <div class="form-row">
+
+                        <div class="quick-actions">
+                            <button class="quick-btn" onclick="showAddMemberModal()">
+                                <i class="ri-user-add-line"></i> Add Member
+                            </button>
+                        </div>
+
+                        <div class="nav-tabs" style="margin-top: 20px; font-size: 14px;">
+                            <div class="nav-item active" style="padding: 10px 15px;"
+                                onclick="switchCardTab(event, 'members')"><i class="ri-group-line"></i> Members</div>
+                            <div class="nav-item" style="padding: 10px 15px;"
+                                onclick="switchCardTab(event, 'transactions')"><i class="ri-exchange-dollar-line"></i>
+                                Transactions</div>
+                            <div class="nav-item" style="padding: 10px 15px;"
+                                onclick="switchCardTab(event, 'complaints')"><i class="ri-error-warning-line"></i>
+                                Complaints</div>
+                        </div>
+
+                        <div id="cardTabMembers">
+                            <div id="membersList"></div>
+                        </div>
+
+                        <div id="cardTabTransactions" style="display: none;">
+                            <table class="complaint-table">
+                                <thead>
+                                    <tr>
+                                        <th>Receipt No</th>
+                                        <th>Date</th>
+                                        <th>Amount (₹)</th>
+                                        <th>Distributor</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rcTransactionsTableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="cardTabComplaints" style="display: none;">
+                            <table class="complaint-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rcComplaintsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 4: Set Scheme of the Month -->
+            <div id="module4" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-calendar-line"></i> Set Scheme of the Month</div>
+
+                    <div class="scheme-form">
+                        <form id="schemeForm">
                             <div class="form-group">
-                                <label class="form-label">Password</label>
-                                <input type="password" id="distPassword" class="form-control" placeholder="Password" required>
+                                <label class="form-label">Scheme Type</label>
+                                <select id="schemeType" class="form-control" onchange="toggleSchemeName()" required>
+                                    <option value="">Select Scheme Type</option>
+                                    <option value="CHILD_SCHEME">Child Scheme</option>
+                                    <option value="ANNUAL_INCOME_LESS_THAN_3_LAKH">Annual Income < 3 Lakh</option>
+                                    <option value="ANNUAL_INCOME_IN_BETWEEN_3_AND_6">Annual Income 3-6 Lakh</option>
+                                    <option value="ANNUAL_INCOME_MORE_THAN_6">Annual Income > 6 Lakh</option>
+                                    <option value="OTHERS">Others</option>
+                                </select>
                             </div>
+
+                            <div id="customSchemeNameGroup" style="display: none;">
+                                <div class="form-group">
+                                    <label class="form-label">Scheme Name</label>
+                                    <input type="text" id="schemeName" class="form-control"
+                                        placeholder="Enter scheme name">
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label class="form-label">State District Code</label>
-                                <input type="text" id="distDistrictCode" class="form-control" placeholder="e.g., UK-01" required>
+                                <input type="text" id="stateDistrictCode" class="form-control" placeholder="e.g., UK-01"
+                                    required>
                             </div>
-                        </div>
-                        <button type="submit" class="submit-btn">
-                            <i class="ri-user-add-line"></i> Create Distributor
-                        </button>
-                    </form>
+
+                            <div id="suppliesSection">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <label class="form-label">Supplies List</label>
+                                    <button type="button" class="add-supply-btn" onclick="addSupplyRow()">
+                                        <i class="ri-add-line"></i> Add Supply
+                                    </button>
+                                </div>
+                                <div id="suppliesContainer">
+                                    <div class="supply-row">
+                                        <input type="text" class="form-control" placeholder="Supply name (e.g., Wheat)">
+                                        <input type="number" class="form-control" placeholder="Cost (₹)">
+                                        <input type="number" class="form-control" placeholder="Per person (kg)">
+                                        <button type="button" class="remove-supply"
+                                            onclick="this.parentElement.remove()">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="submit-btn">
+                                <i class="ri-save-line"></i> Create Scheme
+                            </button>
+                        </form>
+                    </div>
                 </div>
-
-                <h4 style="margin: 30px 0 15px;">Active Distributors</h4>
-                <table class="complaint-table">
-                    <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>District</th>
-                        <th>Status</th>
-                    </tr>
-                    </thead>
-                    <tbody id="distributorsTableBody">
-                    <tr>
-                        <td colspan="4" style="text-align: center; color: var(--gray);">No distributors yet</td>
-                    </tr>
-                    </tbody>
-                </table>
             </div>
-        </div>
-    </main>
-</div>
 
-<!-- Complaint Detail Modal -->
-<div class="modal" id="complaintModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
-        <h3 style="color: var(--primary); margin-bottom: 20px;">Complaint Details</h3>
-        <div id="complaintDetailContent"></div>
-        <div class="modal-actions">
-            <button class="resolve-btn" onclick="resolveComplaintAction()">
-                <i class="ri-check-line"></i> Resolve
-            </button>
-            <button class="reject-btn" onclick="rejectComplaintAction()">
-                <i class="ri-close-line"></i> Reject
-            </button>
-        </div>
+            <!-- MODULE 5: Manage Users -->
+            <div id="module5" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-team-line"></i> Manage Users</div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="margin-bottom: 15px;">Create New Distributor</h4>
+                        <form id="createDistributorForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" id="distUsername" class="form-control"
+                                        placeholder="Distributor username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="distEmail" class="form-control"
+                                        placeholder="email@example.com" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" id="distPassword" class="form-control" placeholder="Password"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">State District Code</label>
+                                    <input type="text" id="distDistrictCode" class="form-control"
+                                        placeholder="e.g., UK-01" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="submit-btn">
+                                <i class="ri-user-add-line"></i> Create Distributor
+                            </button>
+                        </form>
+                    </div>
+
+                    <h4 style="margin: 30px 0 15px;">Active Distributors</h4>
+                    <table class="complaint-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>District</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distributorsTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--gray);">No distributors yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
     </div>
-</div>
 
-<!-- Change Password Modal -->
-<div class="modal" id="changePwdModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('changePwdModal')">&times;</span>
-        <h3 style="color: var(--primary); margin-bottom: 20px;">Change Password</h3>
-        <form id="changePwdForm">
-            <div class="form-group">
-                <label class="form-label">Current Password</label>
-                <input type="password" id="currentPwd" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">New Password</label>
-                <input type="password" id="newPwd" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Confirm New Password</label>
-                <input type="password" id="confirmPwd" class="form-control" required>
-            </div>
-            <button type="submit" class="submit-btn">Update Password</button>
-        </form>
-    </div>
-</div>
+    <!-- Complaint Detail Modal -->
+    <div class="modal" id="complaintModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Complaint Details</h3>
 
-<!-- Add Member Modal -->
-<div class="modal" id="addMemberModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('addMemberModal')">&times;</span>
-        <h3 style="color: var(--primary); margin-bottom: 20px;">Add Family Member</h3>
-        <form id="addMemberForm">
-            <div class="form-group">
-                <label class="form-label">Full Name</label>
-                <input type="text" id="memberName" class="form-control" required>
+            <div id="complaintDetailContent" style="text-align: left;"></div>
+
+            <!-- Resolution/Rejection Notes Input -->
+            <div class="form-group" style="margin-top: 20px; text-align: left;">
+                <label class="form-label" style="color: var(--primary); font-weight: 600;">Resolution / Rejection Notes <span style="color: red;">*</span></label>
+                <textarea id="adminResolutionNotes" class="form-control" rows="3" placeholder="Enter your remarks here before resolving or rejecting..."></textarea>
             </div>
-            <div class="form-group">
-                <label class="form-label">Aadhaar Number</label>
-                <input type="text" id="memberAadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Date of Birth</label>
-                <input type="date" id="memberDOB" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Employment Status</label>
-                <select id="memberEmployment" class="form-control" required>
-                    <option value="GOVERNMENT">Government Employee</option>
-                    <option value="PRIVATE">Private Employee</option>
-                    <option value="STUDENT">Student</option>
-                    <option value="HOUSE_WIFE">Homemaker</option>
-                </select>
-            </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                <button type="button" class="submit-btn" style="width: auto; background: var(--secondary); padding: 8px 15px;" onclick="openCameraModal()">
-                    <i class="ri-camera-line"></i> Capture Photo
+
+            <div class="modal-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="resolve-btn" id="resolveBtn" onclick="resolveComplaintAction()">
+                    <i class="ri-check-line"></i> Resolve
                 </button>
-                <span id="photo-status" style="color: var(--gray); font-size: 14px;">No photo captured</span>
-                <input type="hidden" id="memberPhotograph">
+                <button class="reject-btn" id="rejectBtn" onclick="rejectComplaintAction()">
+                    <i class="ri-close-line"></i> Reject
+                </button>
             </div>
-            <button type="submit" class="submit-btn" style="margin-top: 15px;">Add Member</button>
-        </form>
-    </div>
-</div>
-
-<!-- Remove Member Modal -->
-<div class="modal" id="removeMemberModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('removeMemberModal')">&times;</span>
-        <h3 style="color: var(--primary); margin-bottom: 20px;">Remove Family Member</h3>
-        <div id="removeSelectMembersContainer"></div>
-        <button class="submit-btn" style="margin-top: 20px;" onclick="removeMemberAction()">
-            <i class="ri-delete-bin-line"></i> Remove Member
-        </button>
-    </div>
-</div>
-
-<!-- Camera Modal -->
-<div class="modal" id="cameraModal">
-    <div class="modal-content" style="max-width: 500px; text-align: center;">
-        <span class="close-modal" onclick="closeCameraModal()">&times;</span>
-        <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
-        <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
-            <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
-            <canvas id="cameraCanvas" style="display: none;"></canvas>
-            <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-            <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i class="ri-camera-fill"></i> Capture</button>
-            <button id="btnRetake" class="submit-btn" style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i class="ri-refresh-line"></i> Retake</button>
-            <button id="btnSavePhoto" class="submit-btn" style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i class="ri-save-line"></i> Save</button>
         </div>
     </div>
-</div>
 
-<script src="js/api_client.js"></script>
-<script src="js/admin_dashboard.js"></script>
+    <!-- Change Password Modal -->
+    <div class="modal" id="changePwdModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('changePwdModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Change Password</h3>
+            <form id="changePwdForm">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" id="currentPwd" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" id="newPwd" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" id="confirmPwd" class="form-control" required>
+                </div>
+                <button type="submit" class="submit-btn">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div class="modal" id="addMemberModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('addMemberModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Add Family Member</h3>
+            <form id="addMemberForm">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="memberName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Aadhaar Number</label>
+                    <input type="text" id="memberAadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" id="memberDOB" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Employment Status</label>
+                    <select id="memberEmployment" class="form-control" required>
+                        <option value="GOVERNMENT">Government Employee</option>
+                        <option value="PRIVATE">Private Employee</option>
+                        <option value="STUDENT">Student</option>
+                        <option value="HOUSE_WIFE">Homemaker</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <button type="button" class="submit-btn"
+                        style="width: auto; background: var(--secondary); padding: 8px 15px;"
+                        onclick="openCameraModal()">
+                        <i class="ri-camera-line"></i> Capture Photo
+                    </button>
+                    <span id="photo-status" style="color: var(--gray); font-size: 14px;">No photo captured</span>
+                    <input type="hidden" id="memberPhotograph">
+                </div>
+                <button type="submit" class="submit-btn" style="margin-top: 15px;">Add Member</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Member Modal -->
+    <div class="modal" id="removeMemberModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('removeMemberModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Remove Family Member</h3>
+            <p>Aadhaar ending in: <strong id="removeAadhaarMask"></strong></p>
+            <input type="hidden" id="removeAadhaarValue">
+            <button class="submit-btn" style="margin-top: 20px; background: var(--danger);"
+                onclick="removeMemberAction()">
+                <i class="ri-delete-bin-line"></i> Confirm Removal
+            </button>
+        </div>
+    </div>
+
+    <!-- Compose Mail Modal -->
+    <div class="modal" id="composeMailModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeModal('composeMailModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Compose Email to User</h3>
+            <form id="composeMailForm">
+                <div class="form-group">
+                    <label class="form-label">To:</label>
+                    <input type="email" id="composeMailTo" class="form-control" readonly style="background: #f1f5f9;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject:</label>
+                    <input type="text" id="composeMailSubject" class="form-control" placeholder="Enter Subject"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message:</label>
+                    <textarea id="composeMailBody" class="form-control" rows="8" placeholder="Type your message here..."
+                        required></textarea>
+                </div>
+                <button type="submit" class="submit-btn"><i class="ri-send-plane-fill"></i> Send Email</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="modal" id="cameraModal">
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <span class="close-modal" onclick="closeCameraModal()">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
+            <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+                <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+                <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i
+                        class="ri-camera-fill"></i> Capture</button>
+                <button id="btnRetake" class="submit-btn"
+                    style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i
+                        class="ri-refresh-line"></i> Retake</button>
+                <button id="btnSavePhoto" class="submit-btn"
+                    style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i
+                        class="ri-save-line"></i> Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api_client.js"></script>
+    <script src="js/admin_dashboard.js"></script>
 </body>
+
 </html>
