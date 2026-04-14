@@ -30,7 +30,6 @@ window.addEventListener('load', () => {
 });
 
 function setupEventListeners() {
-    // Module navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -41,21 +40,18 @@ function setupEventListeners() {
             const moduleEl = document.getElementById(moduleId);
             if (moduleEl) moduleEl.classList.add('active');
 
-            // Load module-specific data
             if (moduleId === 'module2') {
                 loadComplaints();
             }
         });
     });
 
-    // Form submissions
     document.getElementById('freshRegistrationForm')?.addEventListener('submit', handleFreshRegistration);
     document.getElementById('createDistributorForm')?.addEventListener('submit', handleCreateDistributor);
     document.getElementById('schemeForm')?.addEventListener('submit', handleSchemeForm);
     document.getElementById('addMemberForm')?.addEventListener('submit', handleAddMember);
     document.getElementById('changePwdForm')?.addEventListener('submit', handleChangePassword);
 
-    // Header scroll effect
     window.addEventListener('scroll', function() {
         const header = document.getElementById('header');
         if (window.scrollY > 50) {
@@ -68,7 +64,6 @@ function setupEventListeners() {
 
 async function loadAdminData() {
     try {
-        // Get user data from localStorage
         const username = localStorage.getItem('username');
         const email = localStorage.getItem('email');
         const stateDistrictCode = localStorage.getItem('stateDistrictCode');
@@ -77,7 +72,6 @@ async function loadAdminData() {
         console.log('[DATA] Email:', email);
         console.log('[DATA] State/District:', stateDistrictCode);
 
-        // Update sidebar profile card
         const adminNameEl = document.getElementById('adminName');
         const adminIdEl = document.getElementById('adminId');
         const adminLocationEl = document.getElementById('adminLocation');
@@ -97,9 +91,21 @@ async function loadAdminData() {
             console.log('[SIDEBAR] Updated admin location:', stateDistrictCode);
         }
 
-        // Load complaints count
+        try {
+            const statsResp = await apiRequest('/admin/getDashboardStats', 'GET');
+            if (statsResp) {
+                document.getElementById('totalShops').textContent = statsResp.totalShops || '0';
+                document.getElementById('totalBeneficiaries').textContent = statsResp.totalBeneficiaries || '0';
+                document.getElementById('pendingComplaints').textContent = statsResp.pendingComplaints || '0';
+                document.getElementById('activeSchemes').textContent = statsResp.activeSchemes || '0';
+            }
+        } catch (e) {
+            console.error('Failed to load stats:', e);
+        }
+
         console.log('[DATA] Admin data loaded successfully');
         loadComplaints();
+        loadDistributors();
     } catch (error) {
         console.error('[DATA] Error loading admin data:', error);
     }
@@ -109,9 +115,9 @@ async function handleFreshRegistration(e) {
     e.preventDefault();
 
     const registerData = {
-        username: document.getElementById('fresName').value.toLowerCase().replace(/\s+/g, '_'),
+        username: document.getElementById('fresName').value.toLowerCase().replace(/\s+/g, '_') + Math.floor(Math.random() * 1000),
         fullName: document.getElementById('fresName').value,
-        password: 'default_password_' + Math.random().toString(36).slice(2, 8),
+        password: 'Beneficiary@123',
         email: document.getElementById('fresEmail').value,
         roles: ['BENEFICIARY'],
         stateDistrictCode: document.getElementById('fresDistrictCode').value,
@@ -133,16 +139,16 @@ async function handleFreshRegistration(e) {
 
         if (response && response.success) {
             console.log('[REGISTER] Registration successful');
-            alert('Ration Card generated successfully!\nCard Number: RC-' + Date.now() + '\nTemporary Password: ' + registerData.password);
+            await showCustomModal('Ration Card generated successfully!\nCard Number: RC-' + Date.now() + '\nTemporary Password: ' + registerData.password);
             const formEl = document.getElementById('freshRegistrationForm');
             if (formEl) formEl.reset();
         } else {
             console.log('[REGISTER] Registration failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Registration failed'));
+            await showCustomModal('Error: ' + (response?.message || 'Registration failed'));
         }
     } catch (error) {
         console.error('[REGISTER] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -170,17 +176,17 @@ async function handleCreateDistributor(e) {
 
         if (response && response.success) {
             console.log('[DISTRIBUTOR] Distributor created successfully');
-            alert('Distributor created successfully!');
+            await showCustomModal('Distributor created successfully!');
             const formEl = document.getElementById('createDistributorForm');
             if (formEl) formEl.reset();
             loadDistributors();
         } else {
             console.log('[DISTRIBUTOR] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to create distributor'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to create distributor'));
         }
     } catch (error) {
         console.error('[DISTRIBUTOR] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -203,16 +209,16 @@ async function handleAddMember(e) {
 
         if (response && response.success) {
             console.log('[MEMBER] Member added successfully');
-            alert('Member added successfully!');
+            await showCustomModal('Member added successfully!');
             closeModal('addMemberModal');
             searchRationCard();
         } else {
             console.log('[MEMBER] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to add member'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to add member'));
         }
     } catch (error) {
         console.error('[MEMBER] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -227,7 +233,7 @@ async function handleSchemeForm(e) {
     const stateDistrictCode = adminDistrict && adminDistrict.trim() !== '' ? adminDistrict : document.getElementById('stateDistrictCode').value;
 
     if (!schemeType || !stateDistrictCode) {
-        alert('Please fill all required fields');
+        await showCustomModal('Please fill all required fields');
         return;
     }
 
@@ -246,7 +252,7 @@ async function handleSchemeForm(e) {
     });
 
     if (suppliesNames.length === 0) {
-        alert('Please add at least one supply');
+        await showCustomModal('Please add at least one supply');
         return;
     }
 
@@ -268,19 +274,19 @@ async function handleSchemeForm(e) {
 
         if (response && response.success) {
             console.log('[SCHEME] Scheme created successfully');
-            alert('Scheme "' + schemeName + '" created successfully!');
+            await showCustomModal('Scheme "' + schemeName + '" created successfully!');
             document.getElementById('schemeForm').reset();
             loadSchemes();
         } else {
             console.log('[SCHEME] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to create scheme'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to create scheme'));
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
     } catch (error) {
         console.error('[SCHEME] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
@@ -348,12 +354,10 @@ async function editScheme(schemeId) {
 
         if (response) {
             console.log('[SCHEME] Loaded scheme for editing:', response);
-            // Pre-populate form with scheme data
             document.getElementById('schemeType').value = response.schemeType;
             document.getElementById('schemeName').value = response.schemeName;
             document.getElementById('stateDistrictCode').value = response.stateDistrictCode;
 
-            // Clear and repopulate supplies
             const container = document.getElementById('suppliesContainer');
             container.innerHTML = '';
 
@@ -371,32 +375,31 @@ async function editScheme(schemeId) {
                 container.appendChild(row);
             });
 
-            // Store scheme ID for update
             localStorage.setItem('editingSchemeId', schemeId);
-            alert('Form populated. Click "Create Scheme" to save changes (will update existing scheme)');
+            await showCustomModal('Form populated. Click "Create Scheme" to save changes (will update existing scheme)');
         }
     } catch (error) {
         console.error('[SCHEME] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
 async function deleteSchemeAction(schemeId) {
-    if (confirm('Are you sure you want to delete this scheme?')) {
+    if (await showCustomConfirm('Are you sure you want to delete this scheme?')) {
         try {
             console.log('[SCHEME] Deleting scheme:', schemeId);
             const response = await deleteScheme(schemeId);
 
             if (response && response.success) {
                 console.log('[SCHEME] Scheme deleted successfully');
-                alert('Scheme deleted successfully!');
+                await showCustomModal('Scheme deleted successfully!');
                 loadSchemes();
             } else {
-                alert('Error: ' + (response?.message || 'Failed to delete scheme'));
+                await showCustomModal('Error: ' + (response?.message || 'Failed to delete scheme'));
             }
         } catch (error) {
             console.error('[SCHEME] Error:', error);
-            alert('Error: ' + error.message);
+            await showCustomModal('Error: ' + error.message);
         }
     }
 }
@@ -409,20 +412,20 @@ async function handleChangePassword(e) {
     const confirmPwd = document.getElementById('confirmPwd').value;
 
     if (newPwd !== confirmPwd) {
-        alert('Passwords do not match!');
+        await showCustomModal('Passwords do not match!');
         return;
     }
 
     console.log('[PASSWORD] Changing password');
 
     try {
-        alert('Password changed successfully!');
+        await showCustomModal('Password changed successfully!');
         closeModal('changePwdModal');
         const formEl = document.getElementById('changePwdForm');
         if (formEl) formEl.reset();
     } catch (error) {
         console.error('[PASSWORD] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -434,6 +437,8 @@ async function loadComplaints() {
         console.log('[COMPLAINTS] Response:', response);
 
         if (response && Array.isArray(response)) {
+            window.loadedAdminComplaints = response;
+
             const tbody = document.getElementById('complaintTableBody');
             if (tbody) tbody.innerHTML = '';
 
@@ -445,15 +450,36 @@ async function loadComplaints() {
                 const pendingEl = document.getElementById('pendingComplaints');
                 if (pendingEl) pendingEl.textContent = response.length;
 
-                response.forEach(complaint => {
+                response.forEach((complaint, index) => {
+                    const displayId = complaint.id || 'N/A';
+
+                    let statusColor = '#475569';
+                    let statusBg = '#f1f5f9';
+                    const status = complaint.status ? complaint.status.toUpperCase() : 'PENDING';
+
+                    if (status === 'PROCESSING') {
+                        statusColor = '#d97706';
+                        statusBg = '#fef3c7';
+                    } else if (status === 'PROCESSED' || status === 'RESOLVED') {
+                        statusColor = '#16a34a';
+                        statusBg = '#dcfce7';
+                    } else if (status === 'REJECTED') {
+                        statusColor = '#dc2626';
+                        statusBg = '#fee2e2';
+                    }
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td><strong>${complaint.id || 'N/A'}</strong></td>
+                        <td><strong>${displayId}</strong></td>
                         <td>${complaint.applicantUsername || 'N/A'}</td>
                         <td>${complaint.complaintTitle || 'N/A'}</td>
                         <td>${new Date(complaint.createdAt).toLocaleDateString()}</td>
-                        <td><span class="status-badge status-${complaint.status?.toLowerCase() || 'pending'}">${complaint.status || 'PENDING'}</span></td>
-                        <td><button class="action-btn edit" onclick="viewComplaintDetail('${complaint.id}')">View</button></td>
+                        <td>
+                            <span class="status-badge" style="color: ${statusColor}; background-color: ${statusBg}; border-radius: 4px; padding: 4px 8px; font-weight: 500; font-size: 12px;">
+                                ${status}
+                            </span>
+                        </td>
+                        <td><button class="action-btn edit" onclick="viewComplaintDetail(${index})">View</button></td>
                     `;
                     if (tbody) tbody.appendChild(row);
                 });
@@ -464,32 +490,72 @@ async function loadComplaints() {
     }
 }
 
-async function loadDistributors() {
-    try {
-        console.log('[DISTRIBUTORS] Loading distributors');
-        const tbody = document.getElementById('distributorsTableBody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray);">No distributors created yet</td></tr>';
-    } catch (error) {
-        console.error('[DISTRIBUTORS] Error:', error);
+function showGlobalLoader(message = 'Processing...') {
+    let loader = document.getElementById('globalLoaderOverlay');
+    if (!loader) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="globalLoaderOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(2px);">
+                <i class="ri-loader-4-line" style="font-size: 48px; animation: global-spin 1s linear infinite;"></i>
+                <p id="globalLoaderMsg" style="margin-top: 15px; font-size: 16px; font-weight: 500; letter-spacing: 0.5px;">${message}</p>
+            </div>
+            <style>@keyframes global-spin { 100% { transform: rotate(360deg); } }</style>
+        `);
+    } else {
+        document.getElementById('globalLoaderMsg').textContent = message;
+        loader.style.display = 'flex';
     }
 }
 
-async function viewComplaintDetail(complaintId) {
+function hideGlobalLoader() {
+    const loader = document.getElementById('globalLoaderOverlay');
+    if (loader) loader.style.display = 'none';
+}
+
+async function viewComplaintDetail(index) {
     try {
-        console.log('[COMPLAINT] Viewing complaint:', complaintId);
+        console.log('[COMPLAINT] Viewing complaint at index:', index);
+
+        const complaint = window.loadedAdminComplaints[index];
         const modal = document.getElementById('complaintModal');
         const contentEl = document.getElementById('complaintDetailContent');
+        const notesInput = document.getElementById('adminResolutionNotes');
 
         if (modal) modal.classList.add('active');
-        if (contentEl) {
+
+        // Clear previous notes
+        if (notesInput) notesInput.value = '';
+
+        if (contentEl && complaint) {
             contentEl.innerHTML = `
-                <p><strong>Complaint ID:</strong> ${complaintId}</p>
-                <p><strong>Status:</strong> Pending</p>
-                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                <p><strong>Description:</strong> Loading...</p>
+                <div style="font-size: 14px; line-height: 1.6;">
+                    <p><strong>Complaint ID:</strong> ${complaint.id}</p>
+                    <p><strong>Applicant:</strong> ${complaint.applicantUsername || 'N/A'}</p>
+                    <p><strong>Subject:</strong> ${complaint.complaintTitle || 'N/A'}</p>
+                    <p><strong>Category:</strong> ${complaint.category || 'N/A'}</p>
+                    <p><strong>Status:</strong> <span style="font-weight:600; color: var(--primary);">${complaint.status || 'PENDING'}</span></p>
+                    <p><strong>Date:</strong> ${new Date(complaint.createdAt).toLocaleDateString()}</p>
+
+                    <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: var(--secondary);">Description:</strong>
+                        <p style="margin-top: 8px; white-space: pre-wrap;">${complaint.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div style="margin-top: 15px; padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+                        <strong style="color: #16a34a;"><i class="ri-links-line"></i> Document Link:</strong>
+                        <p style="margin-top: 8px; word-break: break-all;">
+                            ${complaint.documentLink
+                                ? `<a href="${complaint.documentLink}" target="_blank" style="color: #2563eb; text-decoration: underline;">View Attached Document</a>`
+                                : 'No document attached.'}
+                        </p>
+                    </div>
+                </div>
             `;
+
+            localStorage.setItem('currentComplaintId', complaint.id);
+
+        } else if (contentEl) {
+            contentEl.innerHTML = `<p style="color: var(--danger);">Error loading complaint details.</p>`;
         }
-        localStorage.setItem('currentComplaintId', complaintId);
     } catch (error) {
         console.error('[COMPLAINT] Error:', error);
     }
@@ -497,51 +563,166 @@ async function viewComplaintDetail(complaintId) {
 
 async function resolveComplaintAction() {
     const complaintId = localStorage.getItem('currentComplaintId');
-    const notes = prompt('Enter resolution notes:');
+    const notesInput = document.getElementById('adminResolutionNotes');
+    const notes = notesInput ? notesInput.value.trim() : '';
 
-    if (notes) {
-        try {
-            console.log('[COMPLAINT] Resolving complaint:', complaintId);
-            const response = await resolveComplaint(complaintId, notes);
-            if (response && response.success) {
-                console.log('[COMPLAINT] Complaint resolved successfully');
-                alert('Complaint resolved successfully!');
-                closeModal('complaintModal');
-                loadComplaints();
-            }
-        } catch (error) {
-            console.error('[COMPLAINT] Error:', error);
-            alert('Error: ' + error.message);
+    if (!notes) {
+        await showCustomModal('Please enter resolution notes before proceeding.');
+        return;
+    }
+
+    const btn = document.getElementById('resolveBtn');
+    const rejectBtn = document.getElementById('rejectBtn');
+
+    try {
+        console.log('[COMPLAINT] Resolving complaint:', complaintId);
+
+        // Show spinning loader inside the button
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing...';
         }
+        if (rejectBtn) rejectBtn.disabled = true;
+
+        const response = await resolveComplaint(complaintId, notes);
+
+        if (response && response.success) {
+            console.log('[COMPLAINT] Complaint resolved successfully');
+            await showCustomModal('Complaint resolved successfully!');
+            closeModal('complaintModal');
+            loadComplaints();
+        } else {
+            await showCustomModal('Error: ' + (response?.message || 'Failed to resolve complaint'));
+        }
+    } catch (error) {
+        console.error('[COMPLAINT] Error:', error);
+        await showCustomModal('Error: ' + error.message);
+    } finally {
+        // Restore buttons
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-check-line"></i> Resolve';
+        }
+        if (rejectBtn) rejectBtn.disabled = false;
     }
 }
 
 async function rejectComplaintAction() {
     const complaintId = localStorage.getItem('currentComplaintId');
-    const notes = prompt('Enter rejection reason:');
+    const notesInput = document.getElementById('adminResolutionNotes');
+    const notes = notesInput ? notesInput.value.trim() : '';
 
-    if (notes) {
-        try {
-            console.log('[COMPLAINT] Rejecting complaint:', complaintId);
-            const response = await rejectComplaint(complaintId, notes);
-            if (response && response.success) {
-                console.log('[COMPLAINT] Complaint rejected successfully');
-                alert('Complaint rejected successfully!');
-                closeModal('complaintModal');
-                loadComplaints();
-            }
-        } catch (error) {
-            console.error('[COMPLAINT] Error:', error);
-            alert('Error: ' + error.message);
+    if (!notes) {
+        await showCustomModal('Please enter a rejection reason before proceeding.');
+        return;
+    }
+
+    const btn = document.getElementById('rejectBtn');
+    const resolveBtn = document.getElementById('resolveBtn');
+
+    try {
+        console.log('[COMPLAINT] Rejecting complaint:', complaintId);
+
+        // Show spinning loader inside the button
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing...';
         }
+        if (resolveBtn) resolveBtn.disabled = true;
+
+        const response = await rejectComplaint(complaintId, notes);
+
+        if (response && response.success) {
+            console.log('[COMPLAINT] Complaint rejected successfully');
+            await showCustomModal('Complaint rejected successfully!');
+            closeModal('complaintModal');
+            loadComplaints();
+        } else {
+            await showCustomModal('Error: ' + (response?.message || 'Failed to reject complaint'));
+        }
+    } catch (error) {
+        console.error('[COMPLAINT] Error:', error);
+        await showCustomModal('Error: ' + error.message);
+    } finally {
+        // Restore buttons
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-close-line"></i> Reject';
+        }
+        if (resolveBtn) resolveBtn.disabled = false;
     }
 }
+
+async function loadDistributors() {
+    try {
+        console.log('[DISTRIBUTORS] Loading distributors');
+        const response = await apiRequest('/admin/getAllDistributors', 'GET');
+        const tbody = document.getElementById('distributorsTableBody');
+
+        if (tbody) tbody.innerHTML = '';
+
+        if (!response || response.length === 0) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray);">No distributors created yet</td></tr>';
+        } else {
+            response.forEach(dist => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${dist.username}</strong></td>
+                    <td>${dist.email}</td>
+                    <td>${dist.stateDistrictCode}</td>
+                    <td>
+                        <button class="shift-btn" onclick="openComposeMail('${dist.email}')">
+                            <i class="ri-mail-send-line"></i> Compose Email
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (error) {
+        console.error('[DISTRIBUTORS] Error:', error);
+    }
+}
+
+function openComposeMail(email) {
+    document.getElementById('composeMailTo').value = email;
+    document.getElementById('composeMailSubject').value = '';
+    document.getElementById('composeMailBody').value = '';
+    const modal = document.getElementById('composeMailModal');
+    if (modal) modal.classList.add('active');
+}
+
+document.getElementById('composeMailForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('.submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Sending...';
+
+    try {
+        const payload = {
+            email: document.getElementById('composeMailTo').value,
+            subject: document.getElementById('composeMailSubject').value,
+            body: document.getElementById('composeMailBody').value
+        };
+        const response = await apiRequest('/admin/sendMailToDistributor', 'POST', payload);
+        if(response && response.success) {
+            await showCustomModal('Email sent successfully!');
+            closeModal('composeMailModal');
+        } else {
+            await showCustomModal('Error: ' + (response.message || 'Failed to send'));
+        }
+    } catch (err) {
+        await showCustomModal('Error sending email: ' + err.message);
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ri-send-plane-fill"></i> Send Email';
+});
 
 async function searchRationCard() {
     const cardNumber = document.getElementById('searchCardNumber').value;
 
     if (!cardNumber) {
-        alert('Please enter a ration card number');
+        await showCustomModal('Please enter a ration card number');
         return;
     }
 
@@ -564,7 +745,7 @@ async function searchRationCard() {
         loadCardMembers(cardNumber);
     } catch (error) {
         console.error('[CARD] Error:', error);
-        alert('Error searching card: ' + error.message);
+        await showCustomModal('Error searching card: ' + error.message);
     }
 }
 
@@ -578,6 +759,11 @@ async function loadCardMembers(cardNumber) {
         if (response && Array.isArray(response)) {
             const membersList = document.getElementById('membersList');
             if (membersList) membersList.innerHTML = '';
+
+            document.getElementById('cardHeadName').textContent = response.length > 0 ? response[0].name : 'N/A';
+            document.getElementById('cardTotalMembers').textContent = response.length;
+
+            loadCardTransactionsAndComplaints(cardNumber);
 
             response.forEach(member => {
                 const memberCard = document.createElement('div');
@@ -601,11 +787,71 @@ async function loadCardMembers(cardNumber) {
     }
 }
 
+function switchCardTab(tabName) {
+    document.querySelectorAll('#module3 .nav-item').forEach(el => el.classList.remove('active'));
+
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('active');
+    }
+
+    document.getElementById('cardTabMembers').style.display = 'none';
+    document.getElementById('cardTabTransactions').style.display = 'none';
+    document.getElementById('cardTabComplaints').style.display = 'none';
+
+    if (tabName === 'members') document.getElementById('cardTabMembers').style.display = 'block';
+    if (tabName === 'transactions') document.getElementById('cardTabTransactions').style.display = 'block';
+    if (tabName === 'complaints') document.getElementById('cardTabComplaints').style.display = 'block';
+}
+
+async function loadCardTransactionsAndComplaints(cardNumber) {
+    try {
+        const tResp = await apiRequest(`/admin/getBeneficiaryTransactions/${cardNumber}`, 'GET');
+        const cResp = await apiRequest(`/admin/getBeneficiaryComplaints/${cardNumber}`, 'GET');
+
+        const tb = document.getElementById('rcTransactionsTableBody');
+        tb.innerHTML = '';
+        if (tResp && tResp.length > 0) {
+            tResp.forEach(tx => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${tx.id || 'N/A'}</td>
+                    <td>${new Date(tx.dateOfTransaction).toLocaleDateString()}</td>
+                    <td>Rs ${(tx.costPerSupplies || []).reduce((a,b)=>a+b,0)}</td>
+                    <td>${tx.distributorUsername}</td>
+                    <td><span class="status-badge status-approved">SUCCESS</span></td>
+                `;
+                tb.appendChild(row);
+            });
+        } else {
+            tb.innerHTML = '<tr><td colspan="5" style="text-align:center">No transactions</td></tr>';
+        }
+
+        const cb = document.getElementById('rcComplaintsTableBody');
+        cb.innerHTML = '';
+        if (cResp && cResp.length > 0) {
+            cResp.forEach(cx => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${cx.id || 'N/A'}</td>
+                    <td>${cx.complaintTitle}</td>
+                    <td>${new Date(cx.createdAt).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${cx.status?.toLowerCase() || 'pending'}">${cx.status}</span></td>
+                `;
+                cb.appendChild(row);
+            });
+        } else {
+            cb.innerHTML = '<tr><td colspan="4" style="text-align:center">No complaints</td></tr>';
+        }
+    } catch(err) {
+        console.error('Error fetching card Tx/Cx', err);
+    }
+}
+
 async function fetchFamilyMembers() {
     const cardNumber = document.getElementById('oldCardNumber').value;
 
     if (!cardNumber) {
-        alert('Please enter a card number');
+        await showCustomModal('Please enter a card number');
         return;
     }
 
@@ -620,14 +866,10 @@ async function fetchFamilyMembers() {
             response.forEach(member => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td><input type="checkbox" class="sep-check" value="${member.aadhaarNumber}"></td>
                     <td>${member.name || 'N/A'}</td>
                     <td>${member.aadhaarNumber || 'N/A'}</td>
                     <td>${member.employmentStatus || 'N/A'}</td>
-                    <td>
-                        <button class="shift-btn" onclick="promptNewCard('${cardNumber}', '${member.aadhaarNumber}')">
-                            Shift to New Card
-                        </button>
-                    </td>
                 `;
                 if (tbody) tbody.appendChild(row);
             });
@@ -637,32 +879,50 @@ async function fetchFamilyMembers() {
         }
     } catch (error) {
         console.error('[FAMILY] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
-function promptNewCard(oldCard, aadhaarNumber) {
-    const newCardNumber = prompt('Enter new ration card number:');
-    if (newCardNumber) {
-        performSeparation(oldCard, newCardNumber, aadhaarNumber);
-    }
-}
+async function submitSeparationCase() {
+    const oldCardNumber = document.getElementById('oldCardNumber').value;
+    const newEmail = document.getElementById('sepNewEmail').value;
+    const districtCode = document.getElementById('sepDistrictCode').value;
 
-async function performSeparation(oldCard, newCard, aadhaarNumber) {
-    try {
-        console.log('[SEPARATION] Migrating from card:', oldCard, 'to:', newCard);
-        const response = await migrateAadhaarFromCurrentCardToNewCard(oldCard, newCard, aadhaarNumber);
-        if (response && response.success) {
-            console.log('[SEPARATION] Migration successful');
-            alert('Aadhaar migrated successfully!');
-            fetchFamilyMembers();
-        } else {
-            console.log('[SEPARATION] Migration failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Migration failed'));
+    const checkboxes = document.querySelectorAll('.sep-check:checked');
+    const aadhaarNumbers = Array.from(checkboxes).map(cb => cb.value);
+
+    if (aadhaarNumbers.length === 0) {
+        await showCustomModal("Please select at least one member to separate.");
+        return;
+    }
+
+    if (!newEmail || !districtCode) {
+        await showCustomModal("Please fill the new card email and district code.");
+        return;
+    }
+
+    if (await showCustomConfirm("Are you sure you want to separate these " + aadhaarNumbers.length + " members into a new Ration Card?")) {
+        try {
+            const payload = {
+                oldCardNumber: oldCardNumber,
+                email: newEmail,
+                stateDistrictCode: districtCode,
+                aadhaarNumbers: aadhaarNumbers
+            };
+
+            const response = await apiRequest('/admin/createNewCardFromOld', 'POST', payload);
+            if (response && response.success) {
+                await showCustomModal('Separation successful! An email has been sent to the new beneficiary containing their new RC Number and password.');
+                document.getElementById('familyMembersList').style.display = 'none';
+                document.getElementById('sepNewEmail').value = '';
+                document.getElementById('sepDistrictCode').value = '';
+                document.getElementById('oldCardNumber').value = '';
+            } else {
+                await showCustomModal('Error: ' + (response.message || 'Separation failed'));
+            }
+        } catch (e) {
+            await showCustomModal('System Error: ' + e.message);
         }
-    } catch (error) {
-        console.error('[SEPARATION] Error:', error);
-        alert('Error: ' + error.message);
     }
 }
 
@@ -677,31 +937,21 @@ async function showRemoveMemberModal() {
 
     const response = await getAllBeneficiary(cardNumber);
 
-    if (response && Array.isArray(response)) {
-        const container = document.getElementById('removeSelectMembersContainer');
-        if (container) container.innerHTML = '<label class="form-label">Select Member to Remove:</label>';
+    if (response && Array.isArray(response) && response.length > 0) {
+        const firstMember = response[0];
+        document.getElementById('removeAadhaarMask').textContent = '...' + firstMember.aadhaarNumber.slice(-4);
+        document.getElementById('removeAadhaarValue').value = firstMember.aadhaarNumber;
 
-        const select = document.createElement('select');
-        select.className = 'form-control';
-        select.id = 'memberToRemove';
-
-        response.forEach(member => {
-            const option = document.createElement('option');
-            option.value = member.aadhaarNumber;
-            option.textContent = member.name + ' (' + member.aadhaarNumber + ')';
-            select.appendChild(option);
-        });
-
-        if (container) container.appendChild(select);
+        const modal = document.getElementById('removeMemberModal');
+        if (modal) modal.classList.add('active');
+    } else {
+        await showCustomModal("No members available to remove.");
     }
-
-    const modal = document.getElementById('removeMemberModal');
-    if (modal) modal.classList.add('active');
 }
 
 async function removeMemberAction() {
     const cardNumber = localStorage.getItem('currentCardNumber');
-    const aadhaarNumber = document.getElementById('memberToRemove').value;
+    const aadhaarNumber = document.getElementById('removeAadhaarValue').value;
 
     console.log('[REMOVE] Removing member:', aadhaarNumber, 'from card:', cardNumber);
 
@@ -709,16 +959,16 @@ async function removeMemberAction() {
         const response = await removeMember(cardNumber, aadhaarNumber);
         if (response && response.success) {
             console.log('[REMOVE] Member removed successfully');
-            alert('Member removed successfully!');
+            await showCustomModal('Member removed successfully!');
             closeModal('removeMemberModal');
             searchRationCard();
         } else {
             console.log('[REMOVE] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to remove member'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to remove member'));
         }
     } catch (error) {
         console.error('[REMOVE] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -761,14 +1011,12 @@ function logout() {
     window.location.href = '/login_page.html';
 }
 
-// Close modal when clicking outside
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
 });
 
-// ==== CAMERA CAPTURE LOGIC ====
 let stream = null;
 
 async function openCameraModal() {
@@ -792,7 +1040,7 @@ async function openCameraModal() {
         video.srcObject = stream;
     } catch (err) {
         console.error("Camera access denied or unvailable:", err);
-        alert("Unable to access camera: " + err.message);
+        await showCustomModal("Unable to access camera: " + err.message);
     }
 }
 
@@ -800,23 +1048,19 @@ function capturePhoto() {
     const video = document.getElementById('cameraVideo');
     const canvas = document.getElementById('cameraCanvas');
     const preview = document.getElementById('cameraPreview');
-    
-    // Set canvas dimensions
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
-    // Draw current frame
+
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Get Base64
+
     const base64Img = canvas.toDataURL('image/jpeg', 0.8);
     preview.src = base64Img;
-    
-    // UI toggles
+
     video.style.display = 'none';
     preview.style.display = 'block';
-    
+
     document.getElementById('btnCapture').style.display = 'none';
     document.getElementById('btnRetake').style.display = 'inline-block';
     document.getElementById('btnSavePhoto').style.display = 'inline-block';
@@ -825,10 +1069,10 @@ function capturePhoto() {
 function retakePhoto() {
     const video = document.getElementById('cameraVideo');
     const preview = document.getElementById('cameraPreview');
-    
+
     video.style.display = 'block';
     preview.style.display = 'none';
-    
+
     document.getElementById('btnCapture').style.display = 'inline-block';
     document.getElementById('btnRetake').style.display = 'none';
     document.getElementById('btnSavePhoto').style.display = 'none';
@@ -837,25 +1081,24 @@ function retakePhoto() {
 function saveCapturedPhoto() {
     const preview = document.getElementById('cameraPreview');
     const base64Img = preview.src;
-    
+
     const inputField = document.getElementById('memberPhotograph');
     const statusSpan = document.getElementById('photo-status');
     if (inputField) inputField.value = base64Img;
     if (statusSpan) {
         statusSpan.style.color = "var(--secondary)";
-        statusSpan.textContent = "Photo captured successfully ✓";
+        statusSpan.textContent = "Photo captured successfully";
     }
-    
+
     closeCameraModal();
 }
 
 function closeCameraModal() {
     const modal = document.getElementById('cameraModal');
     if (modal) modal.classList.remove('active');
-    
+
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
 }
-
