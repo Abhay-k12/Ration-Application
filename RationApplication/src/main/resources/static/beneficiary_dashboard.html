@@ -1,223 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beneficiary Dashboard · Smart-Ration TPDS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link rel="stylesheet" href="css/beneficiary_dashboard.css">
 </head>
+
 <body>
-<header id="header">
-    <div class="logo">
-        <div class="logo-icon"><i class="ri-government-line"></i></div>
-        <div class="logo-text">
-            <h1>Smart-Ration</h1>
-            <span>Govt of India · TPDS</span>
+    <header id="header">
+        <div class="logo">
+            <div class="logo-icon"><i class="ri-government-line"></i></div>
+            <div class="logo-text">
+                <h1>Smart-Ration</h1>
+                <span>Govt of India · TPDS</span>
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
+                <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
+                <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
+                <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i>
+                        Logout</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-menu"><i class="ri-menu-line"></i></div>
+    </header>
+
+    <!-- Central dashboard -->
+    <div class="dashboard-container">
+        <!-- sidebar containing user information -->
+        <aside class="sidebar">
+            <div class="profile-card">
+                <div class="avatar"><i class="ri-user-line"></i></div>
+                <h3 id="beneficiaryName">Loading...</h3>
+                <div class="rc-number"><i class="ri-number-1"></i> RC: <span id="rcNumber">--</span></div>
+                <div class="info-row"><i class="ri-map-pin-line"></i><span id="locationInfo">--</span></div>
+                <div class="info-row"><i class="ri-group-line"></i><span>Family members : <span
+                            id="memberCount">0</span></span></div>
+            </div>
+
+            <div class="family-members">
+                <h4 style="margin-bottom: 15px;"><i class="ri-group-line"></i> Family members</h4>
+                <div id="familyMembersList">
+                    <p style="color: rgba(255,255,255,0.7); font-size: 14px; text-align: center;">Loading...</p>
+                </div>
+            </div>
+
+            <div class="logout-btn" onclick="logout()">
+                <i class="ri-logout-box-line"></i> Logout
+            </div>
+        </aside>
+
+        <!-- main content of the beneficiary dashboard -->
+        <main class="main-content">
+            <div class="dash-header">
+                <h2>Beneficiary Dashboard</h2>
+            </div>
+
+            <!-- navigation tabs -->
+            <div class="nav-tabs">
+                <div class="nav-item active" data-module="module1"><i class="ri-profile-line"></i> Ration details</div>
+                <div class="nav-item" data-module="module2"><i class="ri-qr-code-line"></i> Generate QR</div>
+                <div class="nav-item" data-module="module3"><i class="ri-alert-line"></i> Register complaint</div>
+                <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> Complaint history</div>
+                <div class="nav-item" data-module="module5"><i class="ri-file-list-3-line"></i> Transaction history
+                </div>
+            </div>
+
+            <!-- MODULE 1: Ration card details + profile Management Section -->
+            <div id="module1" class="module active">
+                <div class="card">
+                    <div class="card-title"><i class="ri-profile-line"></i> Ration card details</div>
+                    <div class="grid-2">
+                        <div><strong>User Name:</strong> <span id="cardType">--</span></div>
+                        <div><strong>User Email:</strong> <span id="issueDate">--</span></div>
+                        <div><strong>User Active Status:</strong> <span id="validDate">--</span></div>
+                        <div><strong>Card Issued Date:</strong> <span id="districtInfo">--</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="ri-group-line"></i> Family composition</div>
+                    <table style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #e2e8f0">
+                                <th>Name</th>
+                                <th>Aadhaar</th>
+                                <th>Employment Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="familyTableBody">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--gray);">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="ri-lock-line"></i> Change password</div>
+                    <form id="changePwdForm">
+                        <div class="form-group">
+                            <input type="password" id="currentPwd" class="form-control" placeholder="Current password"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="newPwd" class="form-control" placeholder="New password" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="confirmPwd" class="form-control" placeholder="Confirm password"
+                                required>
+                        </div>
+                        <button type="submit" class="submit-btn">Update password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- MODULE 2: Generate QR Through Ration Card of the beneficiary-->
+            <div id="module2" class="module">
+                <div class="ration-card">
+                    <div class="ration-header">
+                        <div class="govt-emblem">
+                            <i class="ri-government-line" style="font-size:32px;"></i>
+                            <div><strong>Government of India</strong><br>Ministry of Food</div>
+                        </div>
+                        <div class="qr-code-placeholder" id="qrCodeDisplay">
+                            <i class="ri-qr-code-line" style="font-size:32px;"></i>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 25px; align-items: center;">
+                        <div class="photo-placeholder" id="qrPhotoPlaceholder">
+                            <i class="ri-user-face-line"></i>
+                        </div>
+                        <div style="flex:1">
+                            <h3 style="color:var(--primary);" id="qrBeneficiaryName">Loading...</h3>
+                            <p><i class="ri-number-1"></i> <strong>RC:</strong> <span id="qrRationCard">--</span></p>
+                            <p><i class="ri-map-pin-line"></i> <strong>Address:</strong> <span id="qrAddress">--</span>
+                            </p>
+                            <p><i class="ri-group-line"></i> <strong>Family members:</strong> <span
+                                    id="qrFamilyCount">--</span></p>
+                            <p><i class="ri-calendar-line"></i> <strong>Valid until:</strong> <span
+                                    id="qrValidDate">--</span></p>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px; background:#fef3c7; padding:15px; border-radius:16px;">
+                        <i class="ri-information-line"></i> Show this QR code at the PDS shop to receive your monthly
+                        ration.
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button class="submit-btn" onclick="generateQRCode()" style="flex: 1;">
+                            <i class="ri-refresh-line"></i> Generate QR Code
+                        </button>
+                        <button class="submit-btn" onclick="downloadQR()" style="flex: 1; background: #6B7280;">
+                            <i class="ri-download-line"></i> Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: Register complaint -->
+            <div id="module3" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-alert-line"></i> Register a new complaint</div>
+                    <form id="complaintForm">
+                        <div class="form-group">
+                            <label class="form-label">Subject type</label>
+                            <select id="complaintCategory" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="ADD_MEMBER">Add new member</option>
+                                <option value="REMOVE_MEMBER">Remove member</option>
+                                <option value="TRANSFER_MEMBER">Transfer member</option>
+                                <option value="FAMILY_SEPARATION">Family separation</option>
+                                <option value="RATION_NOT_RECEIVED">Ration not received</option>
+                                <option value="WRONG_QUANTITY">Wrong quantity</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Message body</label>
+                            <label for="complaintMessage"></label><textarea id="complaintMessage" class="form-control"
+                                rows="4" placeholder="Describe your issue in detail" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Merged Document Link</label>
+                            <input type="text" id="complaintPriority" class="form-control" required>
+                        </div>
+                        <button type="submit" class="submit-btn"><i class="ri-send-plane-line"></i> Submit
+                            complaint</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- MODULE 4: Complaint history  -->
+            <div id="module4" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
+                    <div id="complaintHistoryContainer">
+                        <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 5: Transaction history -->
+            <div id="module5" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-history-line"></i> My Transaction History</div>
+                    <div id="transactionHistoryContainer">
+                        <p style="text-align: center; color: var(--gray); padding: 40px;">Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL for complaint detail -->
+    <div class="modal" id="complaintModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
+            <h3 style="color:var(--primary);">Complaint details</h3>
+            <div id="complaintDetailContent">
+                <p>Loading...</p>
+            </div>
         </div>
     </div>
-    <nav>
-        <ul>
-            <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
-            <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
-            <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
-            <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i> Logout</a></li>
-        </ul>
-    </nav>
-    <div class="mobile-menu"><i class="ri-menu-line"></i></div>
-</header>
 
-<!-- Central dashboard -->
-<div class="dashboard-container">
-    <!-- sidebar containing user information -->
-    <aside class="sidebar">
-        <div class="profile-card">
-            <div class="avatar"><i class="ri-user-line"></i></div>
-            <h3 id="beneficiaryName">Loading...</h3>
-            <div class="rc-number"><i class="ri-number-1"></i> RC: <span id="rcNumber">--</span></div>
-            <div class="info-row"><i class="ri-map-pin-line"></i><span id="locationInfo">--</span></div>
-            <div class="info-row"><i class="ri-group-line"></i><span>Family members : <span id="memberCount">0</span></span></div>
-        </div>
-
-        <div class="family-members">
-            <h4 style="margin-bottom: 15px;"><i class="ri-group-line"></i> Family members</h4>
-            <div id="familyMembersList">
-                <p style="color: rgba(255,255,255,0.7); font-size: 14px; text-align: center;">Loading...</p>
+    <!-- MODAL for transaction detail -->
+    <div class="modal" id="txnModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('txnModal')">&times;</span>
+            <h3 style="color:var(--primary);">Transaction receipt</h3>
+            <div id="txnDetailContent">
+                <p>Loading...</p>
             </div>
-        </div>
-
-        <div class="logout-btn" onclick="logout()">
-            <i class="ri-logout-box-line"></i> Logout
-        </div>
-    </aside>
-
-    <!-- main content of the beneficiary dashboard -->
-    <main class="main-content">
-        <div class="dash-header">
-            <h2>Beneficiary Dashboard</h2>
-        </div>
-
-        <!-- navigation tabs -->
-        <div class="nav-tabs">
-            <div class="nav-item active" data-module="module1"><i class="ri-profile-line"></i> Ration details</div>
-            <div class="nav-item" data-module="module2"><i class="ri-qr-code-line"></i> Generate QR</div>
-            <div class="nav-item" data-module="module3"><i class="ri-alert-line"></i> Register complaint</div>
-            <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> Complaint history</div>
-            <div class="nav-item" data-module="module5"><i class="ri-file-list-3-line"></i> Transaction history</div>
-        </div>
-
-        <!-- MODULE 1: Ration card details + profile Management Section -->
-        <div id="module1" class="module active">
-            <div class="card">
-                <div class="card-title"><i class="ri-profile-line"></i> Ration card details</div>
-                <div class="grid-2">
-                    <div><strong>Card type:</strong> <span id="cardType">--</span></div>
-                    <div><strong>Issue date:</strong> <span id="issueDate">--</span></div>
-                    <div><strong>Valid upto:</strong> <span id="validDate">--</span></div>
-                    <div><strong>District:</strong> <span id="districtInfo">--</span></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><i class="ri-group-line"></i> Family composition</div>
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead><tr style="border-bottom:2px solid #e2e8f0"><th>Name</th><th>Aadhaar</th><th>Employment Status</th></tr></thead>
-                    <tbody id="familyTableBody">
-                    <tr><td colspan="3" style="text-align: center; color: var(--gray);">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><i class="ri-lock-line"></i> Change password</div>
-                <form id="changePwdForm">
-                    <div class="form-group">
-                        <input type="password" id="currentPwd" class="form-control" placeholder="Current password" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="password" id="newPwd" class="form-control" placeholder="New password" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="password" id="confirmPwd" class="form-control" placeholder="Confirm password" required>
-                    </div>
-                    <button type="submit" class="submit-btn">Update password</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- MODULE 2: Generate QR Through Ration Card of the beneficiary-->
-        <div id="module2" class="module">
-            <div class="ration-card">
-                <div class="ration-header">
-                    <div class="govt-emblem">
-                        <i class="ri-government-line" style="font-size:32px;"></i>
-                        <div><strong>Government of India</strong><br>Ministry of Food</div>
-                    </div>
-                    <div class="qr-code-placeholder" id="qrCodeDisplay">
-                        <i class="ri-qr-code-line" style="font-size:32px;"></i>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 25px; align-items: center;">
-                    <div class="photo-placeholder"><i class="ri-user-face-line"></i></div>
-                    <div style="flex:1">
-                        <h3 style="color:var(--primary);" id="qrBeneficiaryName">Loading...</h3>
-                        <p><i class="ri-number-1"></i> <strong>RC:</strong> <span id="qrRationCard">--</span></p>
-                        <p><i class="ri-map-pin-line"></i> <strong>Address:</strong> <span id="qrAddress">--</span></p>
-                        <p><i class="ri-group-line"></i> <strong>Family members:</strong> <span id="qrFamilyCount">--</span></p>
-                        <p><i class="ri-calendar-line"></i> <strong>Valid until:</strong> <span id="qrValidDate">--</span></p>
-                    </div>
-                </div>
-                <div style="margin-top:20px; background:#fef3c7; padding:15px; border-radius:16px;">
-                    <i class="ri-information-line"></i> Show this QR code at the PDS shop to receive your monthly ration.
-                </div>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button class="submit-btn" onclick="generateQRCode()" style="flex: 1;">
-                        <i class="ri-refresh-line"></i> Generate QR Code
-                    </button>
-                    <button class="submit-btn" onclick="downloadQR()" style="flex: 1; background: #6B7280;">
-                        <i class="ri-download-line"></i> Download
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODULE 3: Register complaint -->
-        <div id="module3" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-alert-line"></i> Register a new complaint</div>
-                <form id="complaintForm">
-                    <div class="form-group">
-                        <label class="form-label">Subject type</label>
-                        <select id="complaintCategory" class="form-control" required>
-                            <option value="">Select Category</option>
-                            <option value="ADD_MEMBER">Add new member</option>
-                            <option value="REMOVE_MEMBER">Remove member</option>
-                            <option value="TRANSFER_MEMBER">Transfer member</option>
-                            <option value="FAMILY_SEPARATION">Family separation</option>
-                            <option value="RATION_NOT_RECEIVED">Ration not received</option>
-                            <option value="WRONG_QUANTITY">Wrong quantity</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Message body</label>
-                        <label for="complaintMessage"></label><textarea id="complaintMessage" class="form-control" rows="4" placeholder="Describe your issue in detail" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Merged Document Link</label>
-                        <input type="text" id="complaintPriority" class="form-control" required>
-                    </div>
-                    <button type="submit" class="submit-btn"><i class="ri-send-plane-line"></i> Submit complaint</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- MODULE 4: Complaint history  -->
-        <div id="module4" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
-                <div id="complaintHistoryContainer">
-                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODULE 5: Transaction history -->
-        <div id="module5" class="module">
-            <div class="card">
-                <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
-                <div id="transactionHistoryContainer">
-                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading transactions...</p>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
-<!-- MODAL for complaint detail -->
-<div class="modal" id="complaintModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
-        <h3 style="color:var(--primary);">Complaint details</h3>
-        <div id="complaintDetailContent">
-            <p>Loading...</p>
         </div>
     </div>
-</div>
 
-<!-- MODAL for transaction detail -->
-<div class="modal" id="txnModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('txnModal')">&times;</span>
-        <h3 style="color:var(--primary);">Transaction receipt</h3>
-        <div id="txnDetailContent">
-            <p>Loading...</p>
-        </div>
-    </div>
-</div>
-
-<script src="js/api_client.js"></script>
-<script src="js/beneficiary_dashboard.js"></script>
+    <script src="js/api_client.js"></script>
+    <script src="js/beneficiary_dashboard.js"></script>
 </body>
+
 </html>
