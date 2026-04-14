@@ -24,7 +24,7 @@ window.addEventListener('load', () => {
 function setupEventListeners() {
     // Module navigation
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function () {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
 
@@ -46,7 +46,7 @@ function setupEventListeners() {
     document.getElementById('complaintForm')?.addEventListener('submit', handleComplaintSubmit);
 
     // Header scroll effect
-    window.addEventListener('scroll', function() {
+    window.addEventListener('scroll', function () {
         const header = document.getElementById('header');
         if (window.scrollY > 50) {
             header.classList.add('scrolled');
@@ -100,15 +100,27 @@ async function loadBeneficiaryData() {
         const validDateEl = document.getElementById('validDate');
         const districtInfoEl = document.getElementById('districtInfo');
 
-        if (cardTypeEl) cardTypeEl.textContent = 'BPL (Antyodaya)';
-        if (issueDateEl) issueDateEl.textContent = '12 Mar 2020';
-        if (validDateEl) validDateEl.textContent = '31 Mar 2030';
-        if (districtInfoEl) districtInfoEl.textContent = stateDistrictCode || '--';
+        try {
+            const profile = await getBeneficiaryProfile();
+            if (profile && !profile.error) {
+                if (cardTypeEl) cardTypeEl.textContent = profile.fullName || username;
+                if (issueDateEl) issueDateEl.textContent = profile.email || email;
+                if (validDateEl) validDateEl.textContent = profile.isActive ? 'Active' : 'Inactive';
+                if (districtInfoEl) districtInfoEl.textContent = new Date(profile.createdAt).toLocaleDateString() || '--';
+            } else {
+                if (cardTypeEl) cardTypeEl.textContent = username;
+                if (issueDateEl) issueDateEl.textContent = email || '--';
+                if (validDateEl) validDateEl.textContent = 'Active';
+                if (districtInfoEl) districtInfoEl.textContent = '--';
+            }
+        } catch(e) {
+            console.error('Failed to load profile', e);
+        }
 
         const qrRationCardEl = document.getElementById('qrRationCard');
         const qrValidDateEl = document.getElementById('qrValidDate');
         const qrAddressEl = document.getElementById('qrAddress');
-        
+
         if (qrRationCardEl) qrRationCardEl.textContent = username || '--';
         if (qrValidDateEl) qrValidDateEl.textContent = '31/03/2030';
         if (qrAddressEl) qrAddressEl.textContent = 'District: ' + (stateDistrictCode || 'Unknown');
@@ -162,13 +174,21 @@ async function loadFamilyMembers() {
 
                 console.log('[FAMILY] Added member:', member.name);
             });
-            
+
             // Set derived UI
             const qrFamilyCountEl = document.getElementById('qrFamilyCount');
             if (qrFamilyCountEl) qrFamilyCountEl.textContent = response.length;
-            
+
             const qrBeneficiaryNameEl = document.getElementById('qrBeneficiaryName');
             if (qrBeneficiaryNameEl && response.length > 0) qrBeneficiaryNameEl.textContent = response[0].name;
+
+            const qrPhotoPlaceholderEl = document.getElementById('qrPhotoPlaceholder');
+            if (qrPhotoPlaceholderEl && response.length > 0 && response[0].photograph) {
+                const imgPrefix = response[0].photograph.startsWith('data:image') ? '' : 'data:image/jpeg;base64,';
+                qrPhotoPlaceholderEl.innerHTML = `<img src="${imgPrefix}${response[0].photograph}" alt="Beneficiary Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;"/>`;
+            } else if (qrPhotoPlaceholderEl) {
+                qrPhotoPlaceholderEl.innerHTML = '<i class="ri-user-face-line"></i>';
+            }
 
         } else if (response && response.status === 403) {
             console.error('[FAMILY] Access denied (403)');
@@ -218,14 +238,14 @@ async function generateQRCode() {
         btn.innerHTML = '<i class="ri-refresh-line"></i> Generate QR Code';
     } catch (error) {
         console.error('[QR] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
         const btn = event.target.closest('button');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-refresh-line"></i> Generate QR Code';
     }
 }
 
-function downloadQR() {
+async function downloadQR() {
     try {
         const img = document.querySelector('#qrCodeDisplay img');
         if (img) {
@@ -235,11 +255,11 @@ function downloadQR() {
             link.click();
             console.log('[QR] QR code downloaded');
         } else {
-            alert('Please generate QR code first');
+            await showCustomModal('Please generate QR code first');
         }
     } catch (error) {
         console.error('[QR] Download error:', error);
-        alert('Error downloading QR code: ' + error.message);
+        await showCustomModal('Error downloading QR code: ' + error.message);
     }
 }
 
@@ -248,10 +268,11 @@ async function handleComplaintSubmit(e) {
 
     const category = document.getElementById('complaintCategory').value;
     const message = document.getElementById('complaintMessage').value;
-    const priority = document.getElementById('complaintPriority').value;
+
+    const documentLink = document.getElementById('complaintDocumentLink')?.value || document.getElementById('complaintPriority')?.value;
 
     if (!category || !message) {
-        alert('Please fill all fields');
+        await showCustomModal('Please fill all required fields');
         return;
     }
 
@@ -266,23 +287,24 @@ async function handleComplaintSubmit(e) {
             category,
             message,
             category,
-            priority
+            documentLink
         );
 
         if (response && response.success) {
-            alert('Complaint submitted successfully!');
+            await showCustomModal('Complaint submitted successfully!');
             document.getElementById('complaintForm').reset();
             console.log('[COMPLAINT] Submitted successfully');
+            loadComplaints(); // Refresh the list
         } else {
             console.log('[COMPLAINT] Failed:', response?.message);
-            alert('Error: ' + (response?.message || 'Failed to submit complaint'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to submit complaint'));
         }
 
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit complaint';
     } catch (error) {
         console.error('[COMPLAINT] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
         btn.innerHTML = '<i class="ri-send-plane-line"></i> Submit complaint';
@@ -297,22 +319,22 @@ async function handleChangePassword(e) {
     const confirmPwd = document.getElementById('confirmPwd').value;
 
     if (newPwd !== confirmPwd) {
-        alert('New passwords do not match!');
+        await showCustomModal('New passwords do not match!');
         return;
     }
 
     if (newPwd.length < 6) {
-        alert('New password must be at least 6 characters long');
+        await showCustomModal('New password must be at least 6 characters long');
         return;
     }
 
     try {
         console.log('[PASSWORD] Changing password');
-        alert('Password changed successfully! Please login again.');
+        await showCustomModal('Password changed successfully! Please login again.');
         logout();
     } catch (error) {
         console.error('[PASSWORD] Error:', error);
-        alert('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message);
     }
 }
 
@@ -340,8 +362,8 @@ async function loadComplaints() {
                 const card = document.createElement('div');
                 card.className = `complaint-card`;
                 card.style.borderLeftColor = complaint.status === 'RESOLVED' ? 'var(--secondary)' :
-                                             complaint.status === 'REJECTED' ? 'var(--danger)' :
-                                             'var(--accent)';
+                    complaint.status === 'REJECTED' ? 'var(--danger)' :
+                        'var(--accent)';
                 card.onclick = () => viewComplaintDetail(index);
                 card.innerHTML = `
                     <div>
@@ -382,18 +404,26 @@ async function loadTransactions() {
             currentTransactions = response;
 
             response.forEach((txn, index) => {
-                const statusBadgeClass = txn.totalAmountPaid > 0 ? 'taken' : 'skipped';
+                let calculatedAmount = 0;
+                if (txn.costPerSupplies && Array.isArray(txn.costPerSupplies)) {
+                    calculatedAmount = txn.costPerSupplies.reduce((sum, cost) => sum + cost, 0);
+                }
+
+                const isCompleted = txn.status === 'COMPLETED';
+                const statusBadgeClass = isCompleted ? 'taken' : 'skipped';
+                const txnId = txn.id || txn._id || 'N/A';
+
                 const card = document.createElement('div');
                 card.className = 'txn-card';
                 card.onclick = () => viewTransactionDetail(index);
                 card.innerHTML = `
                     <div>
                         <strong>${new Date(txn.dateOfTransaction).toLocaleDateString()}</strong>
-                        <br><small>Receipt: ${txn.receiptNumber || 'N/A'}</small>
+                        <br><small>Receipt: ${txnId}</small>
                     </div>
                     <div style="text-align:right">
-                        <span class="txn-badge ${statusBadgeClass}">${txn.totalAmountPaid > 0 ? 'Received' : 'Skipped'}</span>
-                        <br><small>Amount: ${txn.totalAmountPaid}</small>
+                        <span class="txn-badge ${statusBadgeClass}">${isCompleted ? 'Received' : 'Skipped'}</span>
+                        <br><small>Amount: ₹${calculatedAmount}</small>
                     </div>
                 `;
                 if (container) container.appendChild(card);
@@ -433,14 +463,25 @@ function viewTransactionDetail(index) {
     const txn = currentTransactions[index];
     if (!txn) return;
 
+    let calculatedAmount = 0;
+    if (txn.costPerSupplies && Array.isArray(txn.costPerSupplies)) {
+        calculatedAmount = txn.costPerSupplies.reduce((sum, cost) => sum + cost, 0);
+    }
+
+    const isCompleted = txn.status === 'COMPLETED';
+    const txDate = new Date(txn.dateOfTransaction);
+    const monthName = txDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const verifyMethod = txn.faceVerified ? 'Face Verification' : 'Manual / QR';
+    const txnId = txn.id || txn._id || 'N/A';
+
     const content = `
-        <p><strong>Receipt Number:</strong> ${txn.receiptNumber || 'N/A'}</p>
-        <p><strong>Date & Time:</strong> ${new Date(txn.dateOfTransaction).toLocaleDateString()} ${new Date(txn.dateOfTransaction).toLocaleTimeString()}</p>
-        <p><strong>Amount Paid:</strong> ${txn.totalAmountPaid}</p>
-        <p><strong>Month:</strong> ${txn.transactionMonth || 'N/A'}</p>
-        <p><strong>Status:</strong> <span class="txn-badge ${txn.totalAmountPaid > 0 ? 'taken' : 'skipped'}">${txn.totalAmountPaid > 0 ? 'Received' : 'Skipped'}</span></p>
+        <p><strong>Receipt Number:</strong> ${txnId}</p>
+        <p><strong>Date & Time:</strong> ${txDate.toLocaleDateString()} ${txDate.toLocaleTimeString()}</p>
+        <p><strong>Amount Paid:</strong> ₹${calculatedAmount}</p>
+        <p><strong>Month:</strong> ${monthName}</p>
+        <p><strong>Status:</strong> <span class="txn-badge ${isCompleted ? 'taken' : 'skipped'}">${txn.status || 'Skipped'}</span></p>
         <p><strong>Distributor:</strong> ${txn.distributorUsername || 'N/A'}</p>
-        <p><strong>Verification Method:</strong> ${txn.verificationMethod || 'N/A'}</p>
+        <p><strong>Verification Method:</strong> ${verifyMethod}</p>
     `;
 
     const contentEl = document.getElementById('txnDetailContent');
