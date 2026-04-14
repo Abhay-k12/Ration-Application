@@ -122,12 +122,12 @@ async function getBeneficiaryComplaints() {
     return apiRequest('/beneficiary/getComplaints', 'GET');
 }
 
-async function submitComplaint(title, description, category, priority) {
+async function submitComplaint(title, description, category, documentLink) {
     return apiRequest('/beneficiary/submitComplaint', 'POST', {
         complaintTitle: title,
-        description,
-        category,
-        priority
+        description: description,
+        category: category,
+        documentLink: documentLink
     });
 }
 
@@ -251,15 +251,6 @@ async function getBeneficiaryMembers() {
     return apiRequest('/beneficiary/getMembers', 'GET');
 }
 
-async function submitComplaint(title, description, category, priority) {
-    return apiRequest('/beneficiary/submitComplaint', 'POST', {
-        complaintTitle: title,
-        description,
-        category,
-        priority
-    });
-}
-
 // ===== SCHEME ENDPOINTS =====
 async function createScheme(schemeName, schemeType, stateDistrictCode, suppliesName, suppliesCost, supplyPerPerson) {
     return apiRequest('/scheme/create', 'POST', {
@@ -298,3 +289,143 @@ async function updateScheme(schemeId, schemeName, schemeType, stateDistrictCode,
 async function deleteScheme(schemeId) {
     return apiRequest(`/scheme/delete/${schemeId}`, 'DELETE');
 }
+
+async function getBeneficiaryProfile() {
+    return apiRequest('/beneficiary/me', 'GET');
+}
+
+// ===== CUSTOM MODALS =====
+window.showCustomModal = function(message, title = 'Notification') {
+    return new Promise(resolve => {
+        let modal = document.getElementById('genericModal');
+        if (!modal) {
+            document.body.insertAdjacentHTML('beforeend', `
+            <div id="genericModal" class="modal">
+                <div class="modal-content" style="max-width: 400px; text-align: center;">
+                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
+                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
+                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
+                        <input type="text" id="genericModalInput" class="form-control" />
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
+                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
+                    </div>
+                </div>
+            </div>
+            `);
+            modal = document.getElementById('genericModal');
+        }
+
+        document.getElementById('genericModalTitle').textContent = title;
+        document.getElementById('genericModalMessage').textContent = message;
+        document.getElementById('genericModalInputContainer').style.display = 'none';
+        document.getElementById('genericModalCancelBtn').style.display = 'none';
+        
+        const okBtn = document.getElementById('genericModalOkBtn');
+        const handleOk = () => {
+            okBtn.removeEventListener('click', handleOk);
+            modal.classList.remove('active');
+            resolve(true);
+        };
+        okBtn.addEventListener('click', handleOk);
+        modal.classList.add('active');
+    });
+};
+
+window.showCustomConfirm = function(message, title = 'Confirm') {
+    return new Promise(resolve => {
+        let modal = document.getElementById('genericModal');
+        if (!modal) {
+            document.body.insertAdjacentHTML('beforeend', `
+            <div id="genericModal" class="modal">
+                <div class="modal-content" style="max-width: 400px; text-align: center;">
+                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
+                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
+                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
+                        <input type="text" id="genericModalInput" class="form-control" />
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
+                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
+                    </div>
+                </div>
+            </div>
+            `);
+            modal = document.getElementById('genericModal');
+        }
+
+        document.getElementById('genericModalTitle').textContent = title;
+        document.getElementById('genericModalMessage').textContent = message;
+        document.getElementById('genericModalInputContainer').style.display = 'none';
+        
+        const cancelBtn = document.getElementById('genericModalCancelBtn');
+        cancelBtn.style.display = 'block';
+        
+        const okBtn = document.getElementById('genericModalOkBtn');
+        const handleOk = () => { cleanup(); resolve(true); };
+        const handleCancel = () => { cleanup(); resolve(false); };
+        
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.classList.remove('active');
+        };
+        
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.classList.add('active');
+    });
+};
+
+window.showCustomPrompt = function(message, title = 'Input Required', defaultValue = '') {
+    return new Promise(resolve => {
+        let modal = document.getElementById('genericModal');
+        if (!modal) {
+            document.body.insertAdjacentHTML('beforeend', `
+            <div id="genericModal" class="modal">
+                <div class="modal-content" style="max-width: 400px; text-align: center;">
+                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
+                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
+                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
+                        <input type="text" id="genericModalInput" class="form-control" />
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
+                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
+                    </div>
+                </div>
+            </div>
+            `);
+            modal = document.getElementById('genericModal');
+        }
+
+        document.getElementById('genericModalTitle').textContent = title;
+        document.getElementById('genericModalMessage').textContent = message;
+        
+        const inputContainer = document.getElementById('genericModalInputContainer');
+        inputContainer.style.display = 'block';
+        
+        const inputField = document.getElementById('genericModalInput');
+        inputField.value = defaultValue;
+        
+        const cancelBtn = document.getElementById('genericModalCancelBtn');
+        cancelBtn.style.display = 'block';
+        
+        const okBtn = document.getElementById('genericModalOkBtn');
+        const handleOk = () => { cleanup(); resolve(inputField.value); };
+        const handleCancel = () => { cleanup(); resolve(null); };
+        
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.classList.remove('active');
+        };
+        
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.classList.add('active');
+        
+        setTimeout(() => inputField.focus(), 100);
+    });
+};
