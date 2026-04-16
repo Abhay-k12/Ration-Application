@@ -2,7 +2,6 @@ let currentBeneficiary = null;
 let currentComplaints = [];
 let currentTransactions = [];
 
-// Check authentication on page load
 window.addEventListener('load', () => {
     const token = localStorage.getItem('jwtToken');
     const userRole = localStorage.getItem('userRole');
@@ -22,7 +21,6 @@ window.addEventListener('load', () => {
 });
 
 function setupEventListeners() {
-    // Module navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function () {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -32,7 +30,6 @@ function setupEventListeners() {
             document.querySelectorAll('.module').forEach(module => module.classList.remove('active'));
             document.getElementById(moduleId).classList.add('active');
 
-            // Load module-specific data
             if (moduleId === 'module4') {
                 loadComplaints();
             } else if (moduleId === 'module5') {
@@ -41,11 +38,9 @@ function setupEventListeners() {
         });
     });
 
-    // Form submissions
     document.getElementById('changePwdForm')?.addEventListener('submit', handleChangePassword);
     document.getElementById('complaintForm')?.addEventListener('submit', handleComplaintSubmit);
 
-    // Header scroll effect
     window.addEventListener('scroll', function () {
         const header = document.getElementById('header');
         if (window.scrollY > 50) {
@@ -55,7 +50,6 @@ function setupEventListeners() {
         }
     });
 
-    // Close modal when clicking outside
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.classList.remove('active');
@@ -65,7 +59,6 @@ function setupEventListeners() {
 
 async function loadBeneficiaryData() {
     try {
-        // Get user data from localStorage (stored during login)
         const username = localStorage.getItem('username');
         const email = localStorage.getItem('email');
         const stateDistrictCode = localStorage.getItem('stateDistrictCode');
@@ -74,7 +67,6 @@ async function loadBeneficiaryData() {
         console.log('[DATA] Email:', email);
         console.log('[DATA] State/District:', stateDistrictCode);
 
-        // Update sidebar profile card with user details
         const beneficiaryNameEl = document.getElementById('beneficiaryName');
         const rcNumberEl = document.getElementById('rcNumber');
         const locationInfoEl = document.getElementById('locationInfo');
@@ -94,7 +86,6 @@ async function loadBeneficiaryData() {
             console.log('[SIDEBAR] Updated location:', stateDistrictCode);
         }
 
-        // Fetch and setup basic UI components right away
         const cardTypeEl = document.getElementById('cardType');
         const issueDateEl = document.getElementById('issueDate');
         const validDateEl = document.getElementById('validDate');
@@ -113,7 +104,7 @@ async function loadBeneficiaryData() {
                 if (validDateEl) validDateEl.textContent = 'Active';
                 if (districtInfoEl) districtInfoEl.textContent = '--';
             }
-        } catch(e) {
+        } catch (e) {
             console.error('Failed to load profile', e);
         }
 
@@ -496,7 +487,6 @@ function closeModal(modalId) {
     if (modal) modal.classList.remove('active');
 }
 
-// Add spin animation
 const style = document.createElement('style');
 style.textContent = `
     @keyframes spin {
