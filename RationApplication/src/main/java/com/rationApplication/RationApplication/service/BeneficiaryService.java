@@ -35,6 +35,9 @@ public class BeneficiaryService {
     @Autowired
     private UserRepository userRepository;  // NEW
 
+    @Autowired
+    private EmailService emailService;
+
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional
@@ -123,6 +126,185 @@ public class BeneficiaryService {
             log.error("[BENEFICIARY] Unexpected error adding beneficiary: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to add beneficiary: " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public void separateMembersToNewCard(String oldCardNumber, List<String> aadhaarNumbersToTransfer, String newEmail, String stateDistrictCode, int newAnnualIncome) throws Exception {
+        Beneficiary oldBeneficiary = beneficiaryRepository.findByUsername(oldCardNumber);
+        if (oldBeneficiary == null) {
+            throw new IllegalArgumentException("Old ration card not found");
+        }
+
+        String newCardNumber;
+        String prefix = stateDistrictCode != null && stateDistrictCode.contains("-") 
+                ? stateDistrictCode.split("-")[0] 
+                : "RC"; 
+
+        do {
+            long randomNum = (long) (Math.random() * 9999000L) + 1000L; // 4 to 7 digits
+            newCardNumber = prefix + "-" + randomNum;
+        } while (beneficiaryRepository.findByUsername(newCardNumber) != null || userRepository.findByUsername(newCardNumber) != null);
+
+        List<Aadhaar> transferringMembers = new ArrayList<>();
+        for (String aadhaarStr : aadhaarNumbersToTransfer) {
+            Aadhaar memberData = oldBeneficiary.getMembers().stream()
+                .filter(m -> m.getAadhaarNumber().equals(aadhaarStr))
+                .findFirst()
+                .orElse(null);
+            
+            if (memberData != null) {
+                transferringMembers.add(memberData);
+                oldBeneficiary.getMembers().remove(memberData);
+            }
+        }
+
+        if (transferringMembers.isEmpty()) {
+            throw new IllegalArgumentException("No valid members found to transfer");
+        }
+
+        int remainingIncome = oldBeneficiary.getAnnualIncome() - newAnnualIncome;
+        oldBeneficiary.setAnnualIncome(Math.max(remainingIncome, 0)); // Ensure it doesn't drop below 0
+        beneficiaryRepository.save(oldBeneficiary); // Save old card state
+
+        // Create New Beneficiary
+        Beneficiary newBeneficiary = new Beneficiary();
+        newBeneficiary.setUsername(newCardNumber);
+        newBeneficiary.setEmail(newEmail);
+        newBeneficiary.setFullName(transferringMembers.get(0).getName());
+        newBeneficiary.setStateDistrictCode(stateDistrictCode);
+        newBeneficiary.setAnnualIncome(newAnnualIncome); // Set the aggregated newly separated income
+        newBeneficiary.setIsActive(true);
+        newBeneficiary.setCreatedAt(System.currentTimeMillis());
+        newBeneficiary.setUpdatedAt(System.currentTimeMillis());
+        newBeneficiary.setMembers(transferringMembers); // Reassign members directly
+        newBeneficiary.setRoles(List.of("BENEFICIARY"));
+        
+        // Ensure Aadhaar records persist
+        for(Aadhaar m : transferringMembers) {
+            aadhaarRepository.save(m);
+        }
+        
+        beneficiaryRepository.save(newBeneficiary);
+
+        // Create New User
+        String tempPassword = "Beneficiary@123";
+        String hashedPassword = passwordEncoder.encode(tempPassword);
+
+        User newUser = new User();
+        newUser.setUsername(newCardNumber);
+        newUser.setPassword(hashedPassword);
+        newUser.setEmail(newEmail);
+        newUser.setFullName(transferringMembers.get(0).getName());
+        newUser.setRoles(List.of("BENEFICIARY"));
+        newUser.setStateDistrictCode(stateDistrictCode);
+        newUser.setUserType("BENEFICIARY");
+        newUser.setIsActive(true);
+        newUser.setCreatedAt(System.currentTimeMillis());
+        newUser.setUpdatedAt(System.currentTimeMillis());
+
+        userRepository.save(newUser);
+
+        // Email the credentials to the new beneficiary
+        if (newEmail != null && !newEmail.isEmpty()) {
+            String emailBody = "<p>Dear " + newBeneficiary.getFullName() + ",</p>" +
+                    "<p>Your family members have been successfully separated into a new Ration Card.</p>" +
+                    "<p>Your new login credentials are:</p>" +
+                    "<ul><li><strong>Ration Card Number:</strong> " + newCardNumber + "</li>" +
+                    "<li><strong>Password:</strong> " + tempPassword + "</li></ul>" +
+                    "<p>Please log in and change your password immediately.</p>";
+            
+            emailService.sendEmail(newEmail, "New Ration Card Issued (Separation)", emailBody);
+        }
+    }
+
+    @Transactional
+    public void updateCardDetails(String cardNumber, int newIncome, String newStateDistrictCode, String newEmail) {
+        Beneficiary beneficiary = beneficiaryRepository.findByUsername(cardNumber);
+        if (beneficiary == null) {
+            throw new IllegalArgumentException("Card not found");
+        }
+        User user = userRepository.findByUsername(cardNumber);
+        
+        beneficiary.setAnnualIncome(newIncome);
+        if (newStateDistrictCode != null && !newStateDistrictCode.isEmpty()) {
+            beneficiary.setStateDistrictCode(newStateDistrictCode);
+            if (user != null) user.setStateDistrictCode(newStateDistrictCode);
+        }
+        if (newEmail != null && !newEmail.isEmpty()) {
+            beneficiary.setEmail(newEmail);
+            if (user != null) user.setEmail(newEmail);
+        }
+        
+        beneficiary.setUpdatedAt(System.currentTimeMillis());
+        beneficiaryRepository.save(beneficiary);
+        if(user != null) userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateMemberDetails(String cardNumber, String aadhaarNumber, String newEmpStatus, String newPhotoBase64) {
+        Beneficiary beneficiary = beneficiaryRepository.findByUsername(cardNumber);
+        if (beneficiary == null) {
+            throw new IllegalArgumentException("Card not found");
+        }
+        
+        Aadhaar targetAadhaar = null;
+        for (Aadhaar m : beneficiary.getMembers()) {
+            if (m.getAadhaarNumber().equals(aadhaarNumber)) {
+                targetAadhaar = m;
+                break;
+            }
+        }
+        
+        if (targetAadhaar == null) throw new IllegalArgumentException("Member not found in card");
+        
+        if (newEmpStatus != null && !newEmpStatus.isEmpty()) {
+            try {
+                String enumStr = newEmpStatus.toUpperCase().replace("-", "_");
+                targetAadhaar.setEmploymentStatus(com.rationApplication.RationApplication.enums.EmploymentStatus.valueOf(enumStr));
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid employment status");
+            }
+        }
+        if (newPhotoBase64 != null && !newPhotoBase64.isEmpty()) targetAadhaar.setPhotograph(newPhotoBase64);
+        
+        aadhaarRepository.save(targetAadhaar);
+        beneficiary.setUpdatedAt(System.currentTimeMillis());
+        beneficiaryRepository.save(beneficiary);
+    }
+
+    @Transactional
+    public void removeAndAddToExistingCard(String currentCardNumber, String targetCardNumber, String userAadhaarNumber) {
+        Beneficiary oldBeneficiary = beneficiaryRepository.findByUsername(currentCardNumber);
+        Beneficiary newBeneficiary = beneficiaryRepository.findByUsername(targetCardNumber);
+        
+        if (oldBeneficiary == null || newBeneficiary == null) {
+            throw new IllegalArgumentException("Invalid card numbers provided.");
+        }
+        
+        if (oldBeneficiary.getMembers().size() <= 1) {
+            throw new IllegalArgumentException("Cannot remove the final member of a ration card. Card must be deleted entirely.");
+        }
+
+        Aadhaar transferringMember = null;
+        for (Aadhaar m : oldBeneficiary.getMembers()) {
+            if (m.getAadhaarNumber().equals(userAadhaarNumber)) {
+                transferringMember = m;
+                break;
+            }
+        }
+
+        if (transferringMember == null) {
+            throw new IllegalArgumentException("Member not found in source card.");
+        }
+        
+        oldBeneficiary.getMembers().remove(transferringMember);
+        newBeneficiary.getMembers().add(transferringMember);
+        
+        oldBeneficiary.setUpdatedAt(System.currentTimeMillis());
+        newBeneficiary.setUpdatedAt(System.currentTimeMillis());
+        
+        beneficiaryRepository.save(oldBeneficiary);
+        beneficiaryRepository.save(newBeneficiary);
     }
 
     @Transactional
