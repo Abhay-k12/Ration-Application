@@ -435,6 +435,7 @@ nav ul li a:hover {
     font-weight: 600;
     cursor: pointer;
     width: 100%;
+    height: 50px;
     font-size: 16px;
     display: flex;
     align-items: center;
@@ -875,4 +876,36 @@ nav ul li a:hover {
     .form-row {
         grid-template-columns: 1fr;
     }
+}
+
+.resolve-btn {
+    flex: 1;
+    background: #16a34a; /* Green color */
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.resolve-btn:hover {
+    background: #15803d;
+}
+
+.reject-btn {
+    flex: 1;
+    background: #dc2626; /* Red color */
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.reject-btn:hover {
+    background: #b91c1c;
 }
