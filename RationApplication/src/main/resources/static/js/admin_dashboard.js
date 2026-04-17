@@ -31,17 +31,21 @@ window.addEventListener('load', () => {
 
 function setupEventListeners() {
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            this.classList.add('active');
-
+        item.addEventListener('click', function () {
             const moduleId = this.getAttribute('data-module');
-            document.querySelectorAll('.module').forEach(module => module.classList.remove('active'));
-            const moduleEl = document.getElementById(moduleId);
-            if (moduleEl) moduleEl.classList.add('active');
+            if (moduleId) { // Only process if it's a main structural nav item with modules attached
+                document.querySelectorAll('.sidebar .nav-item, body > .main-content > .nav-tabs .nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
 
-            if (moduleId === 'module2') {
-                loadComplaints();
+                document.querySelectorAll('.module').forEach(module => module.classList.remove('active'));
+                const moduleEl = document.getElementById(moduleId);
+                if (moduleEl) moduleEl.classList.add('active');
+
+                if (moduleId === 'module2') {
+                    loadComplaints();
+                } else if (moduleId === 'module4') {
+                    loadSchemes();
+                }
             }
         });
     });
@@ -52,7 +56,7 @@ function setupEventListeners() {
     document.getElementById('addMemberForm')?.addEventListener('submit', handleAddMember);
     document.getElementById('changePwdForm')?.addEventListener('submit', handleChangePassword);
 
-    window.addEventListener('scroll', function() {
+    window.addEventListener('scroll', function () {
         const header = document.getElementById('header');
         if (window.scrollY > 50) {
             header.classList.add('scrolled');
@@ -114,34 +118,42 @@ async function loadAdminData() {
 async function handleFreshRegistration(e) {
     e.preventDefault();
 
+    const email = document.getElementById('fresEmail').value;
+    const annualIncome = parseInt(document.getElementById('fresIncome').value);
+
+    const familyCount = parseInt(document.getElementById('fresFamilyCount').value) || 1;
+    const members = [];
+    for (let i = 0; i < familyCount; i++) {
+        const pImg = document.getElementById('adminMemberPhotograph_' + i)?.value;
+        members.push({
+            name: document.getElementById('adminMemberName_' + i).value,
+            aadhaarNumber: document.getElementById('adminMemberAadhaar_' + i).value,
+            dateOfBirth: document.getElementById('adminMemberDOB_' + i).value,
+            employmentStatus: document.getElementById('adminMemberEmployment_' + i).value,
+            photograph: pImg || ''
+        });
+    }
+
     const registerData = {
-        username: document.getElementById('fresName').value.toLowerCase().replace(/\s+/g, '_') + Math.floor(Math.random() * 1000),
-        fullName: document.getElementById('fresName').value,
-        password: 'Beneficiary@123',
-        email: document.getElementById('fresEmail').value,
+        fullName: members[0].name, // Use the Head's name as full name for User
+        email: email,
         roles: ['BENEFICIARY'],
-        stateDistrictCode: document.getElementById('fresDistrictCode').value,
-        annualIncome: parseInt(document.getElementById('fresIncome').value)
+        annualIncome: annualIncome,
+        members: members
     };
 
-    console.log('[REGISTER] Registering beneficiary:', registerData.username);
+    console.log('[REGISTER] Registering beneficiary');
 
     try {
-        const response = await register(
-            registerData.username,
-            registerData.password,
-            registerData.email,
-            registerData.roles,
-            registerData.stateDistrictCode,
-            registerData.annualIncome,
-            registerData.fullName
-        );
+        const response = await apiRequest('/admin/registerBeneficiary', 'POST', registerData);
 
         if (response && response.success) {
             console.log('[REGISTER] Registration successful');
-            await showCustomModal('Ration Card generated successfully!\nCard Number: RC-' + Date.now() + '\nTemporary Password: ' + registerData.password);
+            await showCustomModal('Ration Card generated successfully!\nCard Number: ' + response.username + '\nTemporary Password: Beneficiary@123');
             const formEl = document.getElementById('freshRegistrationForm');
             if (formEl) formEl.reset();
+            document.getElementById('adminFamilyMembersContainer').innerHTML = ''; // reset dynamic members array
+            handleAdminTotalMembersChange(); // reset member inputs to 1
         } else {
             console.log('[REGISTER] Registration failed:', response?.message);
             await showCustomModal('Error: ' + (response?.message || 'Registration failed'));
@@ -225,7 +237,7 @@ async function handleAddMember(e) {
 async function handleSchemeForm(e) {
     e.preventDefault();
 
-    console.log('[SCHEME] Creating scheme');
+    console.log('[SCHEME] Creating/Updating scheme');
 
     const schemeType = document.getElementById('schemeType').value;
     const schemeName = document.getElementById('schemeName')?.value || schemeType;
@@ -237,14 +249,13 @@ async function handleSchemeForm(e) {
         return;
     }
 
-    const supplies = [];
     const suppliesNames = [];
     const suppliesCosts = [];
     const supplyPerPersons = [];
 
     document.querySelectorAll('.supply-row').forEach(row => {
         const inputs = row.querySelectorAll('input[type="text"], input[type="number"]');
-        if (inputs[0].value && inputs[1].value && inputs[2].value) {
+        if (inputs[0] && inputs[1] && inputs[2] && inputs[0].value && inputs[1].value && inputs[2].value) {
             suppliesNames.push(inputs[0].value);
             suppliesCosts.push(parseFloat(inputs[1].value));
             supplyPerPersons.push(parseFloat(inputs[2].value));
@@ -258,32 +269,54 @@ async function handleSchemeForm(e) {
 
     try {
         const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Creating...';
+        btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Saving...';
 
-        const response = await createScheme(
-            schemeName,
-            schemeType,
-            stateDistrictCode,
-            suppliesNames,
-            suppliesCosts,
-            supplyPerPersons
-        );
+        const editingSchemeId = localStorage.getItem('editingSchemeId');
+        let response;
+
+        if (editingSchemeId) {
+            response = await updateScheme(
+                editingSchemeId,
+                schemeName,
+                schemeType,
+                stateDistrictCode,
+                suppliesNames,
+                suppliesCosts,
+                supplyPerPersons
+            );
+            localStorage.removeItem('editingSchemeId');
+        } else {
+            response = await createScheme(
+                schemeName,
+                schemeType,
+                stateDistrictCode,
+                suppliesNames,
+                suppliesCosts,
+                supplyPerPersons
+            );
+        }
 
         console.log('[SCHEME] Response:', response);
 
-        if (response && response.success) {
-            console.log('[SCHEME] Scheme created successfully');
-            await showCustomModal('Scheme "' + schemeName + '" created successfully!');
+        if (response && (response.success || response.id || response.ok)) {
+            console.log('[SCHEME] Scheme saved successfully');
+            await showCustomModal('Scheme saved successfully!');
             document.getElementById('schemeForm').reset();
+
+            const customGroupEl = document.getElementById('customSchemeNameGroup');
+            if (customGroupEl) customGroupEl.style.display = 'none';
+
+            btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
             loadSchemes();
         } else {
             console.log('[SCHEME] Failed:', response?.message);
-            await showCustomModal('Error: ' + (response?.message || 'Failed to create scheme'));
+            await showCustomModal('Error: ' + (response?.message || 'Failed to save scheme'));
+            btn.innerHTML = originalText;
         }
 
         btn.disabled = false;
-        btn.innerHTML = '<i class="ri-save-line"></i> Create Scheme';
     } catch (error) {
         console.error('[SCHEME] Error:', error);
         await showCustomModal('Error: ' + error.message);
@@ -302,44 +335,71 @@ async function loadSchemes() {
 
         console.log('[SCHEMES] Response:', response);
 
-        if (response && Array.isArray(response)) {
-            const container = document.getElementById('schemesContainer');
-            if (container) container.innerHTML = '';
+        const container = document.getElementById('schemesContainer');
+        if (container) {
+            container.innerHTML = '';
 
-            if (response.length === 0) {
-                if (container) {
-                    container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No schemes created yet</p>';
-                }
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '20px';
+            container.style.gridTemplateColumns = 'none';
+
+            if (!response || response.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No schemes created yet</p>';
                 return;
             }
 
             response.forEach(scheme => {
+                const schemeIdStr = typeof scheme.id === 'string' ? scheme.id : (scheme.id?.$oid || '');
+
                 const card = document.createElement('div');
-                card.className = 'scheme-card';
+                card.style.background = '#fff';
+                card.style.padding = '20px';
+                card.style.borderRadius = '12px';
+                card.style.border = '1px solid #e2e8f0';
+                card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.gap = '15px';
+
+                const formattedType = (scheme.schemeType || '').replace(/_/g, ' ');
+                const formattedName = (scheme.schemeName || scheme.schemeType || '').replace(/_/g, ' ');
+
                 card.innerHTML = `
-                    <div class="scheme-header">
-                        <h4>${scheme.schemeName}</h4>
-                        <span class="status-badge status-approved">${scheme.schemeType}</span>
+                    <!-- Top Row: Info and Buttons -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                                <h4 style="margin: 0; color: var(--primary); font-size: 1.15rem; word-break: break-word;">${formattedName}</h4>
+                                <span style="background: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap;">${formattedType}</span>
+                            </div>
+                            <p style="margin: 0; font-size: 14px; color: var(--gray);"><i class="ri-map-pin-line"></i> District: <strong>${scheme.stateDistrictCode}</strong></p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 10px;">
+                            <button class="action-btn edit" onclick="editScheme('${schemeIdStr}')" style="padding: 8px 16px; border-radius: 8px; cursor: pointer; background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px;">
+                                <i class="ri-edit-line"></i> Edit
+                            </button>
+                            <button class="action-btn delete" onclick="deleteSchemeAction('${schemeIdStr}')" style="padding: 8px 16px; border-radius: 8px; cursor: pointer; background: #fef2f2; border: 1px solid #fecaca; color: #ef4444; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px;">
+                                <i class="ri-delete-bin-line"></i> Delete
+                            </button>
+                        </div>
                     </div>
-                    <p><strong>Type:</strong> ${scheme.schemeType}</p>
-                    <p><strong>District:</strong> ${scheme.stateDistrictCode}</p>
-                    <div class="scheme-items">
-                        ${scheme.suppliesName.map((name, idx) => `
-                            <div class="scheme-item">
-                                ${name}: ${scheme.supplyPerPerson[idx]} kg @ Rs ${scheme.suppliesCost[idx]}
+
+                    <div style="width: 100%; height: 1px; background: #e2e8f0;"></div>
+
+                    <!-- Bottom Row: Supplies (Pill format) -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        ${(scheme.suppliesName || []).map((name, idx) => `
+                            <div style="background: #fff; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; min-width: 100px;">
+                                <span style="font-weight: 600; color: var(--primary); font-size: 13px;">${name}</span>
+                                <span style="color: var(--secondary); font-weight: 700; font-size: 12px; margin-top: 4px;">${scheme.supplyPerPerson[idx]} kg @ ₹${scheme.suppliesCost[idx]}</span>
                             </div>
                         `).join('')}
                     </div>
-                    <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="action-btn edit" onclick="editScheme('${scheme.id}')">
-                            <i class="ri-edit-line"></i> Edit
-                        </button>
-                        <button class="action-btn delete" onclick="deleteSchemeAction('${scheme.id}')">
-                            <i class="ri-delete-bin-line"></i> Delete
-                        </button>
-                    </div>
                 `;
-                if (container) container.appendChild(card);
+                container.appendChild(card);
             });
         }
     } catch (error) {
@@ -352,35 +412,58 @@ async function editScheme(schemeId) {
         console.log('[SCHEME] Editing scheme:', schemeId);
         const response = await getSchemeById(schemeId);
 
+        if (response && response.ok === false) {
+            throw new Error(response.message || 'Failed to load scheme details');
+        }
+
         if (response) {
             console.log('[SCHEME] Loaded scheme for editing:', response);
-            document.getElementById('schemeType').value = response.schemeType;
-            document.getElementById('schemeName').value = response.schemeName;
-            document.getElementById('stateDistrictCode').value = response.stateDistrictCode;
+
+            const typeEl = document.getElementById('schemeType');
+            if (typeEl) typeEl.value = response.schemeType || '';
+
+            if (typeof toggleSchemeName === 'function') toggleSchemeName();
+
+            const nameEl = document.getElementById('schemeName');
+            if (nameEl) nameEl.value = response.schemeName || '';
+
+            const distEl = document.getElementById('stateDistrictCode');
+            if (distEl) distEl.value = response.stateDistrictCode || '';
 
             const container = document.getElementById('suppliesContainer');
-            container.innerHTML = '';
+            if (container) container.innerHTML = '';
 
-            response.suppliesName.forEach((name, idx) => {
+            const suppliesNames = response.suppliesName || [];
+            const suppliesCosts = response.suppliesCost || [];
+            const supplyPerPersons = response.supplyPerPerson || [];
+
+            suppliesNames.forEach((name, idx) => {
                 const row = document.createElement('div');
                 row.className = 'supply-row';
                 row.innerHTML = `
                     <input type="text" class="form-control" value="${name}" placeholder="Supply name">
-                    <input type="number" class="form-control" value="${response.suppliesCost[idx]}" placeholder="Cost">
-                    <input type="number" class="form-control" value="${response.supplyPerPerson[idx]}" placeholder="Per person">
+                    <input type="number" class="form-control" value="${suppliesCosts[idx] !== undefined ? suppliesCosts[idx] : ''}" placeholder="Cost">
+                    <input type="number" class="form-control" value="${supplyPerPersons[idx] !== undefined ? supplyPerPersons[idx] : ''}" placeholder="Per person">
                     <button type="button" class="remove-supply" onclick="this.parentElement.remove()">
                         <i class="ri-delete-bin-line"></i>
                     </button>
                 `;
-                container.appendChild(row);
+                if (container) container.appendChild(row);
             });
 
             localStorage.setItem('editingSchemeId', schemeId);
-            await showCustomModal('Form populated. Click "Create Scheme" to save changes (will update existing scheme)');
+
+            const btn = document.querySelector('#schemeForm button[type="submit"]');
+            if (btn) btn.innerHTML = '<i class="ri-save-line"></i> Update Scheme';
+
+            const module4 = document.getElementById('module4');
+            if (module4) module4.scrollIntoView({ behavior: 'smooth' });
+
+            await showCustomModal('Scheme details loaded into the form. You can now edit the fields and click "Update Scheme" to save.', 'Edit Scheme');
         }
     } catch (error) {
         console.error('[SCHEME] Error:', error);
-        await showCustomModal('Error: ' + error.message);
+        await showCustomModal('Error: ' + error.message, 'Failed to Load');
     }
 }
 
@@ -390,7 +473,7 @@ async function deleteSchemeAction(schemeId) {
             console.log('[SCHEME] Deleting scheme:', schemeId);
             const response = await deleteScheme(schemeId);
 
-            if (response && response.success) {
+            if (response && (response.success || response === true || response.ok)) {
                 console.log('[SCHEME] Scheme deleted successfully');
                 await showCustomModal('Scheme deleted successfully!');
                 loadSchemes();
@@ -544,8 +627,8 @@ async function viewComplaintDetail(index) {
                         <strong style="color: #16a34a;"><i class="ri-links-line"></i> Document Link:</strong>
                         <p style="margin-top: 8px; word-break: break-all;">
                             ${complaint.documentLink
-                                ? `<a href="${complaint.documentLink}" target="_blank" style="color: #2563eb; text-decoration: underline;">View Attached Document</a>`
-                                : 'No document attached.'}
+                    ? `<a href="${complaint.documentLink}" target="_blank" style="color: #2563eb; text-decoration: underline;">View Attached Document</a>`
+                    : 'No document attached.'}
                         </p>
                     </div>
                 </div>
@@ -605,6 +688,88 @@ async function resolveComplaintAction() {
         }
         if (rejectBtn) rejectBtn.disabled = false;
     }
+}
+
+
+// Global scope for active capturing target index
+window.currentCaptureIndex = -1;
+
+function handleAdminTotalMembersChange() {
+    const count = parseInt(document.getElementById('fresFamilyCount').value) || 1;
+    const container = document.getElementById('adminFamilyMembersContainer');
+
+    // Clear current to rebuild
+    container.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+        addAdminNewMemberHtml(i);
+    }
+}
+
+function addAdminNewMember() {
+    const countInput = document.getElementById('fresFamilyCount');
+    let count = parseInt(countInput.value) || 0;
+    if (count >= 10) {
+        showCustomModal("Maximum 10 members allowed");
+        return;
+    }
+
+    addAdminNewMemberHtml(count);
+
+    countInput.value = count + 1;
+}
+
+function addAdminNewMemberHtml(index) {
+    const container = document.getElementById('adminFamilyMembersContainer');
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'member-entry';
+    memberDiv.style.border = '1px solid var(--border)';
+    memberDiv.style.borderRadius = '8px';
+    memberDiv.style.padding = '15px';
+    memberDiv.style.marginBottom = '15px';
+    memberDiv.style.background = '#f8fafc';
+
+    memberDiv.innerHTML = `
+        <h5 style="margin-bottom: 10px; color: var(--secondary);">Member ${index + 1}</h5>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="adminMemberName_${index}" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Aadhaar Number</label>
+                <input type="text" id="adminMemberAadhaar_${index}" class="form-control" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" id="adminMemberDOB_${index}" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Employment Status</label>
+                <select id="adminMemberEmployment_${index}" class="form-control" required>
+                    <option value="GOVERNMENT">Government</option>
+                    <option value="PRIVATE">Private</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="HOUSE_WIFE">Homemaker</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+            <button type="button" class="submit-btn" style="width: auto; background: var(--secondary); padding: 8px 15px;" onclick="openCameraForAdminMember(${index})">
+                <i class="ri-camera-line"></i> Capture Photo
+            </button>
+            <span id="admin-photo-status-${index}" style="color: var(--gray); font-size: 14px;">No photo captured</span>
+            <input type="hidden" id="adminMemberPhotograph_${index}">
+        </div>
+    `;
+    container.appendChild(memberDiv);
+}
+
+window.openCameraForAdminMember = function (index) {
+    window.currentCaptureIndex = index;
+    openCameraModal(); // Call the existing openCameraModal
 }
 
 async function rejectComplaintAction() {
@@ -705,7 +870,7 @@ document.getElementById('composeMailForm')?.addEventListener('submit', async (e)
             body: document.getElementById('composeMailBody').value
         };
         const response = await apiRequest('/admin/sendMailToDistributor', 'POST', payload);
-        if(response && response.success) {
+        if (response && response.success) {
             await showCustomModal('Email sent successfully!');
             closeModal('composeMailModal');
         } else {
@@ -728,43 +893,24 @@ async function searchRationCard() {
 
     try {
         console.log('[CARD] Searching for card:', cardNumber);
-        localStorage.setItem('currentCardNumber', cardNumber);
-
-        const cardDetailsEl = document.getElementById('cardDetails');
-        const displayCardNumberEl = document.getElementById('displayCardNumber');
-        const cardHeadNameEl = document.getElementById('cardHeadName');
-        const cardTotalMembersEl = document.getElementById('cardTotalMembers');
-        const cardAnnualIncomeEl = document.getElementById('cardAnnualIncome');
-
-        if (cardDetailsEl) cardDetailsEl.style.display = 'block';
-        if (displayCardNumberEl) displayCardNumberEl.textContent = cardNumber;
-        if (cardHeadNameEl) cardHeadNameEl.textContent = 'Head Name';
-        if (cardTotalMembersEl) cardTotalMembersEl.textContent = '4';
-        if (cardAnnualIncomeEl) cardAnnualIncomeEl.textContent = '150000';
-
-        loadCardMembers(cardNumber);
-    } catch (error) {
-        console.error('[CARD] Error:', error);
-        await showCustomModal('Error searching card: ' + error.message);
-    }
-}
-
-async function loadCardMembers(cardNumber) {
-    try {
-        console.log('[MEMBERS] Loading members for card:', cardNumber);
         const response = await getAllBeneficiary(cardNumber);
 
-        console.log('[MEMBERS] Response:', response);
+        if (response && Array.isArray(response) && response.length > 0) {
+            localStorage.setItem('currentCardNumber', cardNumber);
+            const cardDetailsEl = document.getElementById('cardDetails');
+            if (cardDetailsEl) cardDetailsEl.style.display = 'block';
 
-        if (response && Array.isArray(response)) {
+            document.getElementById('displayCardNumber').textContent = cardNumber;
+            document.getElementById('cardHeadName').textContent = response[0].name || 'N/A';
+            document.getElementById('cardTotalMembers').textContent = response.length;
+            
+            // Re-fetch card data to populate exact Income if an endpoint exists, else render default state:
+            const incomeEl = document.getElementById('cardAnnualIncome');
+            if (incomeEl) incomeEl.textContent = 'Data Protected';
+
             const membersList = document.getElementById('membersList');
             if (membersList) membersList.innerHTML = '';
-
-            document.getElementById('cardHeadName').textContent = response.length > 0 ? response[0].name : 'N/A';
-            document.getElementById('cardTotalMembers').textContent = response.length;
-
-            loadCardTransactionsAndComplaints(cardNumber);
-
+            
             response.forEach(member => {
                 const memberCard = document.createElement('div');
                 memberCard.className = 'member-card';
@@ -781,17 +927,30 @@ async function loadCardMembers(cardNumber) {
                 `;
                 if (membersList) membersList.appendChild(memberCard);
             });
+            
+            loadCardTransactionsAndComplaints(cardNumber);
+        } else {
+            console.warn('[CARD] Invalid card or no members found.', response);
+            await showCustomModal(response?.message || 'Invalid Ration Card Number or no members found.');
+            const cardDetailsEl = document.getElementById('cardDetails');
+            if (cardDetailsEl) cardDetailsEl.style.display = 'none';
         }
     } catch (error) {
-        console.error('[MEMBERS] Error:', error);
+        console.error('[CARD] Error:', error);
+        await showCustomModal('Error searching card: ' + error.message);
+        const cardDetailsEl = document.getElementById('cardDetails');
+        if (cardDetailsEl) cardDetailsEl.style.display = 'none';
     }
 }
+async function loadCardMembers(cardNumber) {
+    // Deprecated. Handled directly inside searchRationCard now.
+}
 
-function switchCardTab(tabName) {
+function switchCardTab(e, tabName) {
     document.querySelectorAll('#module3 .nav-item').forEach(el => el.classList.remove('active'));
 
-    if (window.event && window.event.currentTarget) {
-        window.event.currentTarget.classList.add('active');
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
     }
 
     document.getElementById('cardTabMembers').style.display = 'none';
@@ -816,7 +975,7 @@ async function loadCardTransactionsAndComplaints(cardNumber) {
                 row.innerHTML = `
                     <td>${tx.id || 'N/A'}</td>
                     <td>${new Date(tx.dateOfTransaction).toLocaleDateString()}</td>
-                    <td>Rs ${(tx.costPerSupplies || []).reduce((a,b)=>a+b,0)}</td>
+                    <td>Rs ${(tx.costPerSupplies || []).reduce((a, b) => a + b, 0)}</td>
                     <td>${tx.distributorUsername}</td>
                     <td><span class="status-badge status-approved">SUCCESS</span></td>
                 `;
@@ -835,14 +994,14 @@ async function loadCardTransactionsAndComplaints(cardNumber) {
                     <td>${cx.id || 'N/A'}</td>
                     <td>${cx.complaintTitle}</td>
                     <td>${new Date(cx.createdAt).toLocaleDateString()}</td>
-                    <td><span class="status-badge status-${cx.status?.toLowerCase() || 'pending'}">${cx.status}</span></td>
+                    <td><span class="status-badge" style="background: var(--primary); color: white; padding: 4px 8px; border-radius: 4px; font-weight: 500;">${cx.status}</span></td>
                 `;
                 cb.appendChild(row);
             });
         } else {
             cb.innerHTML = '<tr><td colspan="4" style="text-align:center">No complaints</td></tr>';
         }
-    } catch(err) {
+    } catch (err) {
         console.error('Error fetching card Tx/Cx', err);
     }
 }
@@ -859,7 +1018,7 @@ async function fetchFamilyMembers() {
         console.log('[FAMILY] Fetching family members for:', cardNumber);
         const response = await getAllBeneficiary(cardNumber);
 
-        if (response && Array.isArray(response)) {
+        if (response && Array.isArray(response) && response.length > 0) {
             const tbody = document.getElementById('familyMembersTable');
             if (tbody) tbody.innerHTML = '';
 
@@ -870,12 +1029,18 @@ async function fetchFamilyMembers() {
                     <td>${member.name || 'N/A'}</td>
                     <td>${member.aadhaarNumber || 'N/A'}</td>
                     <td>${member.employmentStatus || 'N/A'}</td>
+                    <td><input type="number" class="sep-income form-control" style="width: 100px;" placeholder="Income"></td>
                 `;
                 if (tbody) tbody.appendChild(row);
             });
 
             const familyMembersListEl = document.getElementById('familyMembersList');
             if (familyMembersListEl) familyMembersListEl.style.display = 'block';
+        } else {
+            console.warn('[FAMILY] Invalid card or no members found.', response);
+            await showCustomModal(response?.message || 'Invalid Ration Card Number or no members found.');
+            const familyMembersListEl = document.getElementById('familyMembersList');
+            if (familyMembersListEl) familyMembersListEl.style.display = 'none';
         }
     } catch (error) {
         console.error('[FAMILY] Error:', error);
@@ -889,7 +1054,19 @@ async function submitSeparationCase() {
     const districtCode = document.getElementById('sepDistrictCode').value;
 
     const checkboxes = document.querySelectorAll('.sep-check:checked');
-    const aadhaarNumbers = Array.from(checkboxes).map(cb => cb.value);
+    const aadhaarNumbers = [];
+    let newAnnualIncome = 0;
+
+    checkboxes.forEach(cb => {
+        aadhaarNumbers.push(cb.value);
+        const row = cb.closest('tr');
+        if (row) {
+            const incomeInput = row.querySelector('.sep-income');
+            if (incomeInput && incomeInput.value) {
+                newAnnualIncome += parseInt(incomeInput.value);
+            }
+        }
+    });
 
     if (aadhaarNumbers.length === 0) {
         await showCustomModal("Please select at least one member to separate.");
@@ -907,7 +1084,8 @@ async function submitSeparationCase() {
                 oldCardNumber: oldCardNumber,
                 email: newEmail,
                 stateDistrictCode: districtCode,
-                aadhaarNumbers: aadhaarNumbers
+                aadhaarNumbers: aadhaarNumbers,
+                newAnnualIncome: newAnnualIncome
             };
 
             const response = await apiRequest('/admin/createNewCardFromOld', 'POST', payload);
@@ -1082,12 +1260,34 @@ function saveCapturedPhoto() {
     const preview = document.getElementById('cameraPreview');
     const base64Img = preview.src;
 
-    const inputField = document.getElementById('memberPhotograph');
-    const statusSpan = document.getElementById('photo-status');
-    if (inputField) inputField.value = base64Img;
-    if (statusSpan) {
-        statusSpan.style.color = "var(--secondary)";
-        statusSpan.textContent = "Photo captured successfully";
+    if (window.currentCaptureIndex === 'UPDATE_MEMBER') {
+        const inputField = document.getElementById('updateMemberPhotoBase64');
+        const statusSpan = document.getElementById('updateMemberPhotoStatus');
+        if (inputField) inputField.value = base64Img;
+        if (statusSpan) {
+            statusSpan.style.color = "var(--secondary)";
+            statusSpan.textContent = "Photo captured successfully";
+        }
+        window.currentCaptureIndex = -1;
+    } else if (window.currentCaptureIndex !== undefined && window.currentCaptureIndex >= 0) {
+        // Save for dynamic member in registration
+        const inputField = document.getElementById('adminMemberPhotograph_' + window.currentCaptureIndex);
+        const statusSpan = document.getElementById('admin-photo-status-' + window.currentCaptureIndex);
+        if (inputField) inputField.value = base64Img;
+        if (statusSpan) {
+            statusSpan.style.color = "var(--secondary)";
+            statusSpan.textContent = "Photo captured successfully";
+        }
+        window.currentCaptureIndex = -1; // Reset
+    } else {
+        // Fallback for single Add Member
+        const inputField = document.getElementById('memberPhotograph');
+        const statusSpan = document.getElementById('photo-status');
+        if (inputField) inputField.value = base64Img;
+        if (statusSpan) {
+            statusSpan.style.color = "var(--secondary)";
+            statusSpan.textContent = "Photo captured successfully";
+        }
     }
 
     closeCameraModal();
@@ -1100,5 +1300,147 @@ function closeCameraModal() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check if we are on the admin dashboard with Fresh Registration form
+    const fresFamilyCountEl = document.getElementById('fresFamilyCount');
+    if (fresFamilyCountEl) {
+        handleAdminTotalMembersChange();
+    }
+
+    // Fetch and populate the Admin's default state district code into the separation form
+    try {
+        const response = await apiRequest('/admin/profile', 'GET');
+        if (response && response.success && response.stateDistrictCode) {
+            const sepDistrictInput = document.getElementById('sepDistrictCode');
+            if (sepDistrictInput) {
+                sepDistrictInput.value = response.stateDistrictCode;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load admin profile data for default district code.');
+    }
+});
+
+/* CARD SERVICES EXTENDED FUNCTIONS */
+
+async function populateMemberDropdown(selectId) {
+    const cardNumber = localStorage.getItem('currentCardNumber');
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">Loading...</option>';
+
+    try {
+        const response = await getAllBeneficiary(cardNumber);
+        if (response && Array.isArray(response) && response.length > 0) {
+            select.innerHTML = '<option value="">Select Member</option>';
+            response.forEach(member => {
+                const opt = document.createElement('option');
+                opt.value = member.aadhaarNumber;
+                opt.textContent = `${member.name} (${member.aadhaarNumber.slice(-4)})`;
+                select.appendChild(opt);
+            });
+        } else {
+            select.innerHTML = '<option value="">No members found</option>';
+        }
+    } catch (e) {
+        select.innerHTML = '<option value="">Error loading</option>';
+    }
+}
+
+async function showUpdateMemberModal() {
+    await populateMemberDropdown('updateMemberSelect');
+    document.getElementById('updateMemberEmp').value = '';
+    document.getElementById('updateMemberPhotoBase64').value = '';
+    const st = document.getElementById('updateMemberPhotoStatus');
+    if (st) { st.textContent = 'No photo captured'; st.style.color = 'var(--gray)'; }
+    document.getElementById('updateMemberModal').classList.add('active');
+}
+
+async function submitUpdateMemberAction() {
+    const aadhaar = document.getElementById('updateMemberSelect').value;
+    const empStatus = document.getElementById('updateMemberEmp').value;
+    const photo = document.getElementById('updateMemberPhotoBase64').value;
+    const cardNumber = localStorage.getItem('currentCardNumber');
+
+    if (!aadhaar) return await showCustomModal("Please select a member.");
+
+    const payload = {};
+    if (empStatus) payload.employmentStatus = empStatus;
+    if (photo) payload.photograph = photo;
+
+    if (Object.keys(payload).length === 0) return await showCustomModal("Enter at least one field to update.");
+
+    try {
+        const response = await apiRequest(`/admin/updateMemberDetails/${cardNumber}/${aadhaar}`, 'PUT', payload);
+        if (response && response.success) {
+            await showCustomModal("Member updated successfully!");
+            closeModal('updateMemberModal');
+            searchRationCard(); // Refresh card stats
+        } else {
+            await showCustomModal("Error: " + (response?.message || "Failed update"));
+        }
+    } catch (e) { await showCustomModal("Error: " + e.message); }
+}
+
+function showUpdateCardModal() {
+    document.getElementById('updateCardIncome').value = '';
+    document.getElementById('updateCardDistrict').value = '';
+    document.getElementById('updateCardEmail').value = '';
+    document.getElementById('updateCardModal').classList.add('active');
+}
+
+async function submitUpdateCardAction() {
+    const income = document.getElementById('updateCardIncome').value;
+    const districtCode = document.getElementById('updateCardDistrict').value;
+    const email = document.getElementById('updateCardEmail').value;
+    const cardNumber = localStorage.getItem('currentCardNumber');
+
+    const payload = {};
+    if (income) payload.annualIncome = income;
+    if (districtCode) payload.stateDistrictCode = districtCode;
+    if (email) payload.email = email;
+
+    if (Object.keys(payload).length === 0) return await showCustomModal("Enter at least one field to update.");
+
+    try {
+        const response = await apiRequest(`/admin/updateCardDetails/${cardNumber}`, 'PUT', payload);
+        if (response && response.success) {
+            await showCustomModal("Card properties updated successfully!");
+            closeModal('updateCardModal');
+            searchRationCard();
+        } else {
+            await showCustomModal("Error: " + (response?.message || "Failed update"));
+        }
+    } catch (e) { await showCustomModal("Error: " + e.message); }
+}
+
+async function showTransferMemberModal() {
+    await populateMemberDropdown('transferMemberSelect');
+    document.getElementById('transferTargetCard').value = '';
+    document.getElementById('transferMemberModal').classList.add('active');
+}
+
+async function submitTransferMemberAction() {
+    const aadhaar = document.getElementById('transferMemberSelect').value;
+    const newCard = document.getElementById('transferTargetCard').value;
+    const oldCard = localStorage.getItem('currentCardNumber');
+
+    if (!aadhaar || !newCard) return await showCustomModal("Please fill missing fields.");
+
+    if (oldCard === newCard) return await showCustomModal("Source and target card cannot be identical.");
+
+    if (await showCustomConfirm("Are you certain you wish to permanently migrate this member?")) {
+        try {
+            const response = await apiRequest(`/admin/transferToExistingCard/${oldCard}/${newCard}/${aadhaar}`, 'PUT');
+            if (response && response.success) {
+                await showCustomModal("Member migrated to existing card successfully.");
+                closeModal('transferMemberModal');
+                searchRationCard();
+            } else {
+                await showCustomModal("Error: " + (response?.message || "Failed migration"));
+            }
+        } catch (e) { await showCustomModal("Error: " + e.message); }
     }
 }
