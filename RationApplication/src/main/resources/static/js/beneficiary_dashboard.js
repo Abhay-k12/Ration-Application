@@ -34,6 +34,8 @@ function setupEventListeners() {
                 loadComplaints();
             } else if (moduleId === 'module5') {
                 loadTransactions();
+            } else if (moduleId === 'module6') {
+                loadSchemes();
             }
         });
     });
@@ -425,6 +427,67 @@ async function loadTransactions() {
         const container = document.getElementById('transactionHistoryContainer');
         if (container) {
             container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">Failed to load transactions</p>';
+        }
+    }
+}
+
+async function loadSchemes() {
+    try {
+        console.log('[SCHEMES] Loading schemes');
+        const stateDistrictCode = localStorage.getItem('stateDistrictCode');
+        const response = await getSchemesByDistrict(stateDistrictCode);
+
+        const container = document.getElementById('schemesContainer');
+        if (container) container.innerHTML = '';
+
+        if (!response || !Array.isArray(response) || response.length === 0) {
+            if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No active schemes found for your district</p>';
+            return;
+        }
+
+        response.forEach(scheme => {
+            const card = document.createElement('div');
+            card.style.display = 'flex';
+            card.style.justifyContent = 'space-between';
+            card.style.alignItems = 'center';
+            card.style.background = '#f8fafc';
+            card.style.border = '1px solid #e2e8f0';
+            card.style.borderRadius = '12px';
+            card.style.padding = '20px';
+            card.style.flexWrap = 'wrap';
+            card.style.gap = '20px';
+
+            let itemsHtml = (scheme.suppliesName || []).map((name, idx) => `
+                <div style="background: white; padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; flex-direction: column; align-items: center; min-width: 110px;">
+                    <span style="font-weight: 600; color: var(--primary); font-size: 14px;">${name}</span>
+                    <span style="color: var(--secondary); font-weight: 700; font-size: 13px; margin-top: 4px;">${scheme.supplyPerPerson[idx]} kg @ ₹${scheme.suppliesCost[idx]}</span>
+                </div>
+            `).join('');
+
+            const displayName = (scheme.schemeName || scheme.schemeType || '').replace(/_/g, ' ');
+
+            card.innerHTML = `
+                <!-- Left Side: Scheme Info -->
+                <div style="flex: 1; min-width: 250px; max-width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <h4 style="color: var(--primary); font-size: 1.2rem; margin: 0; word-break: break-word;">${displayName}</h4>
+                        <span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap;">Active</span>
+                    </div>
+                    <p style="color: var(--gray); font-size: 14px; margin: 0;"><i class="ri-map-pin-line"></i> District: <strong>${scheme.stateDistrictCode}</strong></p>
+                </div>
+
+                <!-- Right Side: Supplies List -->
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; flex: 2;">
+                    ${itemsHtml}
+                </div>
+            `;
+            if (container) container.appendChild(card);
+        });
+    } catch (error) {
+        console.error('[SCHEMES] Error:', error);
+        const container = document.getElementById('schemesContainer');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 40px;">Failed to load schemes</p>';
         }
     }
 }
