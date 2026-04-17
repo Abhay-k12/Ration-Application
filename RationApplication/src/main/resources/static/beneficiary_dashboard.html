@@ -71,6 +71,7 @@
                 <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> Complaint history</div>
                 <div class="nav-item" data-module="module5"><i class="ri-file-list-3-line"></i> Transaction history
                 </div>
+                <div class="nav-item" data-module="module6"><i class="ri-calendar-line"></i> View Schemes</div>
             </div>
 
             <!-- MODULE 1: Ration card details + profile Management Section -->
@@ -213,6 +214,17 @@
                     <div class="card-title"><i class="ri-history-line"></i> My Transaction History</div>
                     <div id="transactionHistoryContainer">
                         <p style="text-align: center; color: var(--gray); padding: 40px;">Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 6: View Schemes -->
+            <div id="module6" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-calendar-line"></i> Active Schemes in My District</div>
+                    <!-- Changed to a flex column layout for landscape cards -->
+                    <div id="schemesContainer" style="display: flex; flex-direction: column; gap: 15px;">
+                        <p style="text-align: center; color: var(--gray); padding: 40px;">Loading schemes...</p>
                     </div>
                 </div>
             </div>
