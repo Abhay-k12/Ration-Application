@@ -92,63 +92,33 @@
                         <form id="freshRegistrationForm">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Full Name</label>
-                                    <input type="text" id="fresName" class="form-control" placeholder="Enter full name"
-                                        required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Aadhaar Number</label>
-                                    <input type="text" id="fresAadhaar" class="form-control"
-                                        placeholder="XXXX-XXXX-XXXX" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Email</label>
+                                    <label class="form-label">Email Address</label>
                                     <input type="email" id="fresEmail" class="form-control"
-                                        placeholder="email@example.com" required>
+                                        placeholder="Enter email address" required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Mobile Number</label>
-                                    <input type="tel" id="fresMobile" class="form-control"
-                                        placeholder="10 digit mobile number" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Annual Income (₹)</label>
+                                    <label class="form-label">Annual Family Income (₹)</label>
                                     <input type="number" id="fresIncome" class="form-control"
-                                        placeholder="Enter annual income" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">State District Code</label>
-                                    <input type="text" id="fresDistrictCode" class="form-control"
-                                        placeholder="e.g., UK-01" required>
+                                        placeholder="Enter total annual income" required>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Address</label>
-                                <textarea id="fresAddress" class="form-control" rows="2" placeholder="Complete address"
-                                    required></textarea>
+                                <label class="form-label">Number of Family Members</label>
+                                <input type="number" id="fresFamilyCount" class="form-control" min="1" max="10"
+                                    value="1" onchange="handleAdminTotalMembersChange()">
+                                <small style="color: var(--gray);">Maximum 10 members allowed</small>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Family Members Count</label>
-                                    <input type="number" id="fresFamilyCount" class="form-control" min="1" max="10"
-                                        required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Scheme Type</label>
-                                    <select id="fresSchemeType" class="form-control" required>
-                                        <option value="">Select Scheme</option>
-                                        <option value="BPL">BPL (Below Poverty Line)</option>
-                                        <option value="APL">APL (Above Poverty Line)</option>
-                                        <option value="AAY">AAY (Antyodaya Anna Yojana)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" class="submit-btn">
-                                <i class="ri-save-line"></i> Generate Ration Card
+
+                            <h4 style="margin: 20px 0 10px; color: var(--primary);">Family Members</h4>
+                            <div id="adminFamilyMembersContainer"></div>
+
+                            <button type="button" class="add-member-btn" onclick="addAdminNewMember()"
+                                style="width: auto; background: linear-gradient(135deg, var(--secondary) 0%, #1e88e5 100%); margin-top: 10px; padding: 12px 24px; border-radius: 25px; color: white; display: inline-flex; align-items: center; gap: 8px; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                <i class="ri-add-line" style="font-size: 1.2rem;"></i> Add Another Family Member
+                            </button>
+
+                            <button type="submit" class="submit-btn" style="margin-top: 15px;">
+                                <i class="ri-save-line"></i> Register Beneficiary
                             </button>
                         </form>
                     </div>
@@ -172,24 +142,19 @@
                         </div>
 
                         <div id="familyMembersList" style="display: none; margin-top: 20px;">
-                            <h4 style="margin-bottom: 15px;">Family Members</h4>
-                            <p style="font-size: 13px; color: var(--gray); margin-bottom: 15px;">Select the members you
-                                wish to migrate to a new Ration Card.</p>
                             <table class="family-table">
                                 <thead>
                                     <tr>
                                         <th>Select</th>
                                         <th>Name</th>
                                         <th>Aadhaar</th>
-                                        <th>Employment Status</th>
+                                        <th>Emp. Status</th>
+                                        <th>Income (₹)</th>
                                     </tr>
                                 </thead>
-                                <tbody id="familyMembersTable">
-                                </tbody>
+                                <tbody id="familyMembersTable"></tbody>
                             </table>
-
                             <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-                                <h4 style="margin-bottom: 15px;">New Card Details</h4>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label class="form-label">New Beneficiary Email</label>
@@ -197,13 +162,12 @@
                                             placeholder="email@example.com" required>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">State District Code</label>
+                                        <label class="form-label">New State District Code</label>
                                         <input type="text" id="sepDistrictCode" class="form-control"
                                             placeholder="e.g., UK-01" required>
                                     </div>
                                 </div>
-                                <button type="button" class="submit-btn" style="background: var(--success);"
-                                    onclick="submitSeparationCase()">
+                                <button type="button" class="submit-btn" onclick="submitSeparationCase()">
                                     <i class="ri-git-branch-line"></i> Finalize Separation
                                 </button>
                             </div>
@@ -265,6 +229,18 @@
                         <div class="quick-actions">
                             <button class="quick-btn" onclick="showAddMemberModal()">
                                 <i class="ri-user-add-line"></i> Add Member
+                            </button>
+                            <button class="quick-btn" onclick="showRemoveMemberModal()">
+                                <i class="ri-user-unfollow-line"></i> Remove Member
+                            </button>
+                            <button class="quick-btn" onclick="showUpdateMemberModal()">
+                                <i class="ri-user-settings-line"></i> Update Member
+                            </button>
+                            <button class="quick-btn" onclick="showUpdateCardModal()">
+                                <i class="ri-article-line"></i> Update Card
+                            </button>
+                            <button class="quick-btn" onclick="showTransferMemberModal()">
+                                <i class="ri-arrow-left-right-line"></i> Transfer Member
                             </button>
                         </div>
 
@@ -374,6 +350,11 @@
                             </button>
                         </form>
                     </div>
+
+                    <h4 style="margin: 30px 0 15px;">Active Schemes</h4>
+                    <div id="schemesContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <p style="text-align: center; color: var(--gray); padding: 40px; grid-column: 1 / -1;">Loading schemes...</p>
+                    </div>
                 </div>
             </div>
 
@@ -446,8 +427,10 @@
 
             <!-- Resolution/Rejection Notes Input -->
             <div class="form-group" style="margin-top: 20px; text-align: left;">
-                <label class="form-label" style="color: var(--primary); font-weight: 600;">Resolution / Rejection Notes <span style="color: red;">*</span></label>
-                <textarea id="adminResolutionNotes" class="form-control" rows="3" placeholder="Enter your remarks here before resolving or rejecting..."></textarea>
+                <label class="form-label" style="color: var(--primary); font-weight: 600;">Resolution / Rejection Notes
+                    <span style="color: red;">*</span></label>
+                <textarea id="adminResolutionNotes" class="form-control" rows="3"
+                    placeholder="Enter your remarks here before resolving or rejecting..."></textarea>
             </div>
 
             <div class="modal-actions" style="margin-top: 15px; display: flex; gap: 10px;">
@@ -565,7 +548,7 @@
     </div>
 
     <!-- Camera Modal -->
-    <div class="modal" id="cameraModal">
+    <div class="modal" id="cameraModal" style="z-index: 10001;">
         <div class="modal-content" style="max-width: 500px; text-align: center;">
             <span class="close-modal" onclick="closeCameraModal()">&times;</span>
             <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
@@ -577,13 +560,96 @@
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i
                         class="ri-camera-fill"></i> Capture</button>
-                <button id="btnRetake" class="submit-btn"
-                    style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i
+                <button id="btnRetake" class="submit-btn" style="width: auto; display: none;" onclick="retakePhoto()"><i
                         class="ri-refresh-line"></i> Retake</button>
                 <button id="btnSavePhoto" class="submit-btn"
                     style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i
                         class="ri-save-line"></i> Save</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Update Member Modal -->
+    <div class="modal" id="updateMemberModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('updateMemberModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Update Member Details</h3>
+            <div class="form-group">
+                <label class="form-label">Select Member</label>
+                <select id="updateMemberSelect" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">New Employment Status</label>
+                <select id="updateMemberEmp" class="form-control">
+                    <option value="">Keep current</option>
+                    <option value="Employed">Employed</option>
+                    <option value="Unemployed">Unemployed</option>
+                    <option value="Self-Employed">Self-Employed</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">New Photograph (Optional)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" class="search-btn"
+                        onclick="window.currentCaptureIndex = 'UPDATE_MEMBER'; openCameraModal()"
+                        style="padding: 10px 15px;"><i class="ri-camera-line"></i> Capture Photo</button>
+                    <span id="updateMemberPhotoStatus" style="font-size: 0.9em; color: var(--gray);">No photo
+                        captured</span>
+                </div>
+                <input type="hidden" id="updateMemberPhotoBase64">
+            </div>
+            <button class="submit-btn" style="margin-top: 15px;" onclick="submitUpdateMemberAction()">
+                <i class="ri-save-line"></i> Update Member
+            </button>
+        </div>
+    </div>
+
+    <!-- Update Card Details Modal -->
+    <div class="modal" id="updateCardModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('updateCardModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Update Ration Card Details</h3>
+            <div class="form-group">
+                <label class="form-label">New Annual Income (₹)</label>
+                <input type="number" id="updateCardIncome" class="form-control" placeholder="Leave empty to ignore">
+            </div>
+            <div class="form-group">
+                <label class="form-label">New State District Code</label>
+                <input type="text" id="updateCardDistrict" class="form-control"
+                    placeholder="e.g. UP-12 (Leave empty to ignore)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">New Email Address</label>
+                <input type="email" id="updateCardEmail" class="form-control" placeholder="Leave empty to ignore">
+            </div>
+            <button class="submit-btn" style="margin-top: 15px;" onclick="submitUpdateCardAction()">
+                <i class="ri-save-line"></i> Save Card Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Transfer Member Modal -->
+    <div class="modal" id="transferMemberModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('transferMemberModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Transfer Member</h3>
+            <div class="alert alert-warning" style="margin-bottom: 15px; font-size: 14px;">
+                <i class="ri-alert-line"></i> Member will be detached from current card and appended to the target
+                existing card.
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Member to Transfer</label>
+                <select id="transferMemberSelect" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Target Ration Card Number</label>
+                <input type="text" id="transferTargetCard" class="form-control"
+                    placeholder="Enter strictly existing destination Card NO." required>
+            </div>
+            <button class="submit-btn" style="margin-top: 15px; background: var(--secondary);"
+                onclick="submitTransferMemberAction()">
+                <i class="ri-arrow-left-right-line"></i> Process Transfer
+            </button>
         </div>
     </div>
 
