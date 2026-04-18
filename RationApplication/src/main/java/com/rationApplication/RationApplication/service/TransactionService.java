@@ -32,6 +32,9 @@ public class TransactionService {
     @Autowired
     private SchemeRepository schemeRepository;
 
+    @Autowired
+    private EmailService emailService;
+
 
     @Transactional
     public Transaction processTransaction(String beneficiaryUsername, String aadhaarNumber,
@@ -49,7 +52,7 @@ public class TransactionService {
 
             if (beneficiary.getTransactions() != null) {
                 for (Transaction tx : beneficiary.getTransactions()) {
-                    if (tx.getDateOfTransaction() != null) {
+                    if (tx != null && tx.getDateOfTransaction() != null) {
                         YearMonth txMonth = YearMonth.from(tx.getDateOfTransaction());
                         if (txMonth.equals(currentMonth)) {
                             throw new IllegalArgumentException("Beneficiary already claimed ration for " + currentMonth);
@@ -99,6 +102,27 @@ public class TransactionService {
             }
             beneficiary.getTransactions().add(transaction);
             beneficiaryRepository.save(beneficiary);
+
+            if (beneficiary.getEmail() != null && !beneficiary.getEmail().isEmpty()) {
+                StringBuilder suppliesStr = new StringBuilder("<ul>");
+                for (int i = 0; i < allocation.suppliesName.size(); i++) {
+                    suppliesStr.append("<li>").append(allocation.suppliesName.get(i))
+                               .append(": ").append(allocation.suppliesWeight.get(i)).append(" kg (Rs ")
+                               .append(allocation.costPerSupplies.get(i)).append(")</li>");
+                }
+                suppliesStr.append("</ul>");
+
+                String emailBody = "<p>Dear " + beneficiary.getUsername() + ",</p>" +
+                        "<div class='alert-box' style='border-left: 4px solid #16a34a; background: #f0fdf4;'>" +
+                        "<p>Your ration allocation for <strong>" + currentMonth + "</strong> has been successfully processed.</p>" +
+                        "</div>" +
+                        "<p><strong>Transaction ID:</strong> " + transaction.getId() + "</p>" +
+                        "<p><strong>Total Paid:</strong> ₹" + allocation.totalCost + "</p>" +
+                        "<p><strong>Allocated Supplies:</strong></p>" + suppliesStr.toString() +
+                        "<p>Thank you for using the Smart-Ration system.</p>";
+
+                emailService.sendEmail(beneficiary.getEmail(), "Ration Allocation Successful", emailBody);
+            }
 
             return transaction;
 
