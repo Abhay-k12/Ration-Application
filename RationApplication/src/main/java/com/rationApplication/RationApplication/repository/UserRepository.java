@@ -19,4 +19,8 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     @Query("{ 'stateDistrictCode': ?0 }")
     List<User> findAllInRegion(String stateDistrictCode);
+
+    long countByRolesContainsAndStateDistrictCode(String role, String stateDistrictCode);
+
+    List<User> findByRolesContainsAndStateDistrictCode(String role, String stateDistrictCode);
 }
