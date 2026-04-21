@@ -1,5 +1,7 @@
 package com.rationApplication.RationApplication.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.rationApplication.RationApplication.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Complaint {
 
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
     @Indexed
@@ -27,7 +30,7 @@ public class Complaint {
 
     private String category;
 
-    private String priority;
+    private String documentLink;
 
     private Status status = Status.PROCESSING;
 
@@ -41,14 +44,13 @@ public class Complaint {
 
 
     public Complaint(String applicantUsername, String title, String description,
-                     String category, String priority, String stateDistrictCode) {
+                     String category, String documentLink, String stateDistrictCode) {
         this.applicantUsername = applicantUsername;
         this.complaintTitle = title;
         this.description = description;
         this.category = category;
-        this.priority = priority;
+        this.documentLink = documentLink;
         this.stateDistrictCode = stateDistrictCode;
-        this.status = Status.PROCESSING;
         this.createdAt = System.currentTimeMillis();
     }
 
