@@ -160,8 +160,34 @@ public class BeneficiaryController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile() {
+        try {
+            String username = getCurrentUsername();
+            log.info("Fetching profile for beneficiary: {}", username);
+
+            Beneficiary beneficiary = beneficiaryRepository.findByUsername(username);
+
+            if (beneficiary == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Beneficiary not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+
+            return new ResponseEntity<>(beneficiary, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error fetching beneficiary profile: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error fetching profile");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null ? authentication.getName() : null;
     }
 }
+
