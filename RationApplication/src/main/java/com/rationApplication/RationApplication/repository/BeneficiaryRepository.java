@@ -19,4 +19,6 @@ public interface BeneficiaryRepository extends MongoRepository<Beneficiary, Stri
 
     @Query("{ 'stateDistrictCode': ?0 }")
     List<Beneficiary> findAllInRegion(String stateDistrictCode);
+
+    long countByStateDistrictCode(String stateDistrictCode);
 }
