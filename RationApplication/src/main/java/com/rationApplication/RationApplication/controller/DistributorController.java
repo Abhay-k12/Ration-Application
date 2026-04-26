@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/distributor")
@@ -40,6 +41,86 @@ public class DistributorController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private com.rationApplication.RationApplication.service.EmailService emailService;
+
+    private final Map<String, String> otpStore = new ConcurrentHashMap<>();
+
+    @PostMapping("/sendOtp")
+    public ResponseEntity<Map<String, Object>> sendOtp(@RequestParam String beneficiaryUsername) {
+        log.info("Request to send OTP to {}", beneficiaryUsername);
+        try {
+            Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
+            if (beneficiary == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Beneficiary not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+            if (beneficiary.getEmail() == null || beneficiary.getEmail().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "No registered email found for this beneficiary");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+            
+            String otp = String.format("%04d", new java.util.Random().nextInt(10000));
+            otpStore.put(beneficiaryUsername, otp);
+            
+            String subject = "Smart-Ration: OTP for Ration Allocation";
+            String body = "<p>Your 4-digit OTP for Ration Allocation is: <strong style='font-size:18px;'>" + otp + "</strong></p><p>Please share this with your distributor to complete the transaction.</p>";
+            emailService.sendEmail(beneficiary.getEmail(), subject, body);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "OTP sent successfully to registered email");
+            
+            // Mask the email for response
+            String email = beneficiary.getEmail();
+            String maskedEmail = email.length() > 4 ? email.substring(0, 2) + "***" + email.substring(email.indexOf('@')) : "***@***";
+            response.put("email", maskedEmail); 
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+             log.error("Error sending OTP: {}", e.getMessage());
+             Map<String, Object> response = new HashMap<>();
+             response.put("success", false);
+             response.put("message", "Failed to send OTP");
+             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<Map<String, Object>> verifyOtp(@RequestParam String beneficiaryUsername, @RequestParam String otp) {
+        try {
+            String storedOtp = otpStore.get(beneficiaryUsername);
+            Map<String, Object> response = new HashMap<>();
+            if (storedOtp != null && storedOtp.equals(otp)) {
+                otpStore.remove(beneficiaryUsername); // One time use
+                
+                Beneficiary beneficiary = beneficiaryService.getBeneficiaryByUsername(beneficiaryUsername);
+                response.put("success", true);
+                response.put("message", "OTP Verified Successfully");
+                
+                if (beneficiary != null) {
+                   response.put("beneficiary", beneficiary); 
+                }
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                response.put("success", false);
+                response.put("message", "Invalid or Expired OTP");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+             Map<String, Object> response = new HashMap<>();
+             response.put("success", false);
+             response.put("message", "Failed to verify OTP");
+             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @PutMapping("/register")
     @Transactional
