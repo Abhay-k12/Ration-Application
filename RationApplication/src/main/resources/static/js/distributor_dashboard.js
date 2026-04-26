@@ -705,21 +705,23 @@ function selectFace(memberJson) {
     }, 100);
 }
 
-function executeMockVerification(aadhaar) {
+async function executeMockVerification(aadhaar) {
     const btn = document.getElementById('verifyFaceBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Processing...';
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> AI Verifying...';
 
     const video = document.getElementById('verifyVideo');
     const canvas = document.getElementById('verifyCanvas');
     const preview = document.getElementById('verifyPreview');
 
+    let liveImageBase64 = '';
     if (video) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        preview.src = canvas.toDataURL('image/jpeg');
+        liveImageBase64 = canvas.toDataURL('image/jpeg');
         video.style.display = 'none';
+        preview.src = liveImageBase64;
         preview.style.display = 'block';
     }
 
@@ -727,21 +729,61 @@ function executeMockVerification(aadhaar) {
         window.activeVerifyStream.getTracks().forEach(t => t.stop());
     }
 
-    setTimeout(() => {
-        btn.style.display = 'none';
+    // Get the database image source
+    // It's displayed right beside the live feed in the DOM
+    let databaseImageSrc = '';
+    const imgs = document.querySelectorAll('#allocationDetails img');
+    if (imgs.length > 0) {
+        databaseImageSrc = imgs[0].src; 
+    }
 
+    try {
         const aiBox = document.getElementById('aiVerificationBox');
         aiBox.style.display = 'block';
-        aiBox.style.backgroundColor = '#dcfce7';
-        aiBox.style.color = '#166534';
-        aiBox.innerHTML = '<strong><i class="ri-checkbox-circle-fill"></i> ID Verified: 99.8% Match</strong>';
+        
+        // Ensure image base64 headers are handled properly by python
+        const response = await fetch('http://localhost:5000/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image1: liveImageBase64,
+                image2: databaseImageSrc
+            })
+        });
 
-        renderAllocationDetails(aadhaar);
-    }, 1500);
+        const result = await response.json();
+        
+        btn.style.display = 'none';
+
+        if (result.success && result.match) {
+            aiBox.style.backgroundColor = '#dcfce7';
+            aiBox.style.color = '#166534';
+            aiBox.innerHTML = `<strong><i class="ri-checkbox-circle-fill"></i> ID Verified: Match Confirmed (${result.confidence})</strong>`;
+            
+            // Call the allocation generator now that face is verified
+            renderAllocationDetails(aadhaar);
+        } else {
+            aiBox.style.backgroundColor = '#fee2e2';
+            aiBox.style.color = '#991b1b';
+            aiBox.innerHTML = `<strong><i class="ri-error-warning-fill"></i> Verification Failed. Match Score Unacceptable.</strong>`;
+            // don't generate allocation
+        }
+    } catch (e) {
+        btn.style.display = 'none';
+        const aiBox = document.getElementById('aiVerificationBox');
+        aiBox.style.display = 'block';
+        aiBox.style.backgroundColor = '#fee2e2';
+        aiBox.style.color = '#991b1b';
+        aiBox.innerHTML = '<strong><i class="ri-error-warning-fill"></i> AI Verification Error: API Offline </strong>';
+        console.error("Face Verification Error:", e);
+    }
 }
 
-async function renderAllocationDetails(aadhaarNumber) {
-    const beneficiaryUsername = document.getElementById('verifiedRCNumber').textContent.trim();
+async function renderAllocationDetails(aadhaarNumber, targetContainer = null) {
+    let beneficiaryUsername = document.getElementById('verifiedRCNumber').textContent.trim();
+    if (!beneficiaryUsername || beneficiaryUsername === '--') {
+        beneficiaryUsername = window.currentOtpBeneficiaryId;
+    }
 
     const useOthersScheme = document.getElementById('useOthersSchemeCheckbox')?.checked || false;
 
@@ -795,9 +837,21 @@ async function renderAllocationDetails(aadhaarNumber) {
                 </button>
             `;
 
-            const section = document.getElementById('verifiedAllocationSection');
-            section.style.display = 'block';
-            section.innerHTML = allocationHTML;
+            let targetContent = allocationHTML;
+            
+            // Try to find if we passed a specific target, or determine based on visibility
+            let section = targetContainer ? document.getElementById(targetContainer) : null;
+            if (!section) {
+                const onlineSec = document.getElementById('onlineSection');
+                section = (onlineSec && onlineSec.style.display !== 'none') 
+                            ? document.getElementById('verifiedAllocationSection')
+                            : document.getElementById('offlineAllocationDetails');
+            }
+            
+            if (section) {
+                section.style.display = 'block';
+                section.innerHTML = targetContent;
+            }
 
         } else {
             showCustomAlert('Error: ' + (response?.message || 'Failed'), 'Error');
@@ -808,62 +862,91 @@ async function renderAllocationDetails(aadhaarNumber) {
     }
 }
 
-function verifyOTP() {
+async function verifyOTP() {
     const otp = document.getElementById('otpInput').value;
 
-    if (otp.length !== 6) {
-        showCustomAlert('Please enter a valid 6-digit OTP', 'Invalid OTP');
+    if (otp.length !== 4) {
+        showCustomAlert('Please enter a valid 4-digit OTP', 'Invalid OTP');
         return;
     }
 
+    const beneficiaryId = window.currentOtpBeneficiaryId || document.getElementById('otpBeneficiaryId').value;
+
     console.log('[OTP] Verifying OTP');
-    showCustomAlert('OTP verified successfully!', 'Success');
+    try {
+        const btn = document.querySelector('.verify-btn');
+        if (btn) {
+            btn.innerHTML = 'Verifying...';
+            btn.disabled = true;
+        }
 
-    const offlineAllocationEl = document.getElementById('offlineAllocation');
-    if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
+        const response = await apiRequest(`/distributor/verifyOtp?beneficiaryUsername=${encodeURIComponent(beneficiaryId)}&otp=${encodeURIComponent(otp)}`, 'POST');
+        
+        if (response && response.success) {
+            showCustomAlert('OTP verified successfully!', 'Success');
 
-    // Show scheme selection for offline too
-    const schemeBox = document.getElementById('schemeSelectionBox');
-    if (schemeBox) {
-        const hasOthersScheme = currentSchemes && currentSchemes.some(s => s.schemeType === 'OTHERS');
-        schemeBox.style.display = hasOthersScheme ? 'block' : 'none';
+            const offlineAllocationEl = document.getElementById('offlineAllocation');
+            if (offlineAllocationEl) offlineAllocationEl.style.display = 'block';
+
+            // Show scheme selection for offline too
+            const schemeBox = document.getElementById('schemeSelectionBox');
+            if (schemeBox) {
+                const hasOthersScheme = currentSchemes && currentSchemes.some(s => s.schemeType === 'OTHERS');
+                schemeBox.style.display = hasOthersScheme ? 'block' : 'none';
+            }
+
+            const aadhaar = response.beneficiary && response.beneficiary.members && response.beneficiary.members.length > 0
+                ? response.beneficiary.members[0].aadhaarNumber : 'OTP-AUTH';
+
+            const details = `
+                <p><strong>Beneficiary:</strong> ${response.beneficiary ? response.beneficiary.username : beneficiaryId}</p>
+                <p><strong>Note:</strong> Select "Others" scheme if needed above, then click Continue to generate allocation.</p>
+                <div id="otpVerifiedAllocationSection" style="display:none;"></div>
+                <button id="otpGenerateBtn" class="submit-btn" style="margin-top: 15px;" onclick="document.getElementById('otpGenerateBtn').disabled=true; document.getElementById('otpGenerateBtn').innerHTML='Processing...'; renderAllocationDetails('${aadhaar}', 'offlineAllocationDetails')">
+                    <i class="ri-file-list-3-line"></i> Generate Allocation Details
+                </button>
+            `;
+            const detailsEl = document.getElementById('offlineAllocationDetails');
+            if (detailsEl) detailsEl.innerHTML = details;
+        } else {
+            showCustomAlert('Error: ' + (response?.message || 'Invalid OTP'), 'Error');
+        }
+
+        if (btn) {
+            btn.innerHTML = 'Verify';
+            btn.disabled = false;
+        }
+    } catch(error) {
+        console.error('[OTP] Error:', error);
+        showCustomAlert('Error: ' + error.message, 'Verify Error');
+        const btn = document.querySelector('.verify-btn');
+        if (btn) {
+            btn.innerHTML = 'Verify';
+            btn.disabled = false;
+        }
     }
-
-    const details = `
-        <p><strong>Note:</strong> Select "Others" scheme if needed above, then click Complete</p>
-        <p style="color: var(--gray); font-size: 12px; margin-top: 10px;">Actual allocation will be calculated by backend</p>
-        <button class="submit-btn" style="margin-top: 15px;" onclick="completeOfflineAllocation()">
-            <i class="ri-check-double-line"></i> Complete Transaction
-        </button>
-    `;
-    const detailsEl = document.getElementById('offlineAllocationDetails');
-    if (detailsEl) detailsEl.innerHTML = details;
 }
 
 function completeOfflineAllocation() {
-    const useOthersScheme = document.getElementById('useOthersSchemeCheckbox')?.checked || false;
-
-    console.log('[OFFLINE] useOthersScheme:', useOthersScheme);
-
-    showCustomAlert('Offline transaction will be processed when online!', 'Transaction Initialized');
-
-    const offlineSectionEl = document.getElementById('offlineSection');
-    const otpBeneficiaryIdEl = document.getElementById('otpBeneficiaryId');
-    const otpInputEl = document.getElementById('otpInput');
-    const schemeBox = document.getElementById('schemeSelectionBox');
-    const checkbox = document.getElementById('useOthersSchemeCheckbox');
-
-    if (offlineSectionEl) offlineSectionEl.style.display = 'none';
-    if (otpBeneficiaryIdEl) otpBeneficiaryIdEl.value = '';
-    if (otpInputEl) otpInputEl.value = '';
-    if (schemeBox) schemeBox.style.display = 'none';
-    if (checkbox) checkbox.checked = false;
+    // Deprecated, now we render real details mimicking the online flow
 }
 
 function completeAllocationSuccess() {
     showCustomAlert('Transaction Completed Successfully!', 'Success');
     document.getElementById('verificationResult').style.display = 'none';
     document.getElementById('onlineSection').style.display = 'none';
+    
+    // Also reset offline UI
+    document.getElementById('offlineSection').style.display = 'none';
+    const otpInput = document.getElementById('otpInput');
+    if (otpInput) otpInput.value = '';
+    const otpBeneficiaryId = document.getElementById('otpBeneficiaryId');
+    if (otpBeneficiaryId) otpBeneficiaryId.value = '';
+    const otpSection = document.getElementById('otpSection');
+    if (otpSection) otpSection.style.display = 'none';
+    const offlineAllocation = document.getElementById('offlineAllocation');
+    if (offlineAllocation) offlineAllocation.style.display = 'none';
+    
     document.getElementById('qrCodeInput').value = '';
 
     const checkbox = document.getElementById('useOthersSchemeCheckbox');
@@ -885,12 +968,35 @@ async function sendOTP() {
 
     try {
         console.log('[OTP] Sending OTP for:', beneficiaryId);
-        showCustomAlert('OTP sent to registered email: ' + beneficiaryId.substring(0, 2) + '***@gmail.com', 'OTP Sent');
-        const otpSectionEl = document.getElementById('otpSection');
-        if (otpSectionEl) otpSectionEl.style.display = 'block';
+        const btn = document.querySelector('button[onclick="sendOTP()"]');
+        if (btn) {
+            btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Sending...';
+            btn.disabled = true;
+        }
+
+        const response = await apiRequest(`/distributor/sendOtp?beneficiaryUsername=${encodeURIComponent(beneficiaryId)}`, 'POST');
+        
+        if (response && response.success) {
+            showCustomAlert(`OTP sent to registered email: ${response.email}`, 'OTP Sent');
+            const otpSectionEl = document.getElementById('otpSection');
+            if (otpSectionEl) otpSectionEl.style.display = 'block';
+            window.currentOtpBeneficiaryId = beneficiaryId;
+        } else {
+            showCustomAlert('Error: ' + (response?.message || 'Failed to send OTP'), 'Error');
+        }
+
+        if (btn) {
+            btn.innerHTML = '<i class="ri-mail-send-line"></i> Send OTP to Registered Email';
+            btn.disabled = false;
+        }
     } catch (error) {
         console.error('[OTP] Error:', error);
         showCustomAlert('Error: ' + error.message, 'OTP Error');
+        const btn = document.querySelector('button[onclick="sendOTP()"]');
+        if (btn) {
+            btn.innerHTML = '<i class="ri-mail-send-line"></i> Send OTP to Registered Email';
+            btn.disabled = false;
+        }
     }
 }
 
