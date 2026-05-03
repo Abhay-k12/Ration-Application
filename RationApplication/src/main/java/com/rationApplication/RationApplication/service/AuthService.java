@@ -402,4 +402,33 @@ public class AuthService {
             log.error("Error activating user: {}", e.getMessage());
         }
     }
+
+    public boolean resetPassword(String username, String newPassword) {
+        try {
+            User user = userRepository.findByUsername(username);
+            if (user != null) {
+                user.setPassword(passwordEncoder.encode(newPassword));
+                user.setUpdatedAt(System.currentTimeMillis());
+                userRepository.save(user);
+                
+                // If it's a beneficiary, we also need to update the Beneficiary collection
+                if ("BENEFICIARY".equals(user.getUserType()) || user.getRoles().contains("BENEFICIARY")) {
+                    Beneficiary beneficiary = beneficiaryRepository.findByUsername(username);
+                    if (beneficiary != null) {
+                        beneficiary.setPassword(user.getPassword());
+                        beneficiary.setUpdatedAt(System.currentTimeMillis());
+                        beneficiaryRepository.save(beneficiary);
+                    }
+                }
+                
+                log.info("Password reset successfully for user: {}", username);
+                return true;
+            }
+            log.warn("User not found for password reset: {}", username);
+            return false;
+        } catch (Exception e) {
+            log.error("Error resetting password for user {}: {}", username, e.getMessage());
+            return false;
+        }
+    }
 }
