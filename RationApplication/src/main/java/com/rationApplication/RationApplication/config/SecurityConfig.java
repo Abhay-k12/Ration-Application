@@ -96,6 +96,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .antMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                 .antMatchers(HttpMethod.GET, "/auth/validate").permitAll()
+                .antMatchers(HttpMethod.POST, "/auth/forgot-password/**").permitAll()
 
                 // COMPLAINT ENDPOINTS - No authentication required (public complaints)
                 .antMatchers(HttpMethod.POST, "/complaint/register").permitAll()
