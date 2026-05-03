@@ -3,7 +3,10 @@ package com.rationApplication.RationApplication.controller;
 import com.rationApplication.RationApplication.dto.AuthRequest;
 import com.rationApplication.RationApplication.dto.AuthResponse;
 import com.rationApplication.RationApplication.dto.RegisterRequest;
+import com.rationApplication.RationApplication.entity.User;
 import com.rationApplication.RationApplication.service.AuthService;
+import com.rationApplication.RationApplication.service.EmailService;
+import com.rationApplication.RationApplication.service.OTPService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,12 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private OTPService otpService;
+
+    @Autowired
+    private EmailService emailService;
 
 
     @PostMapping("/register")
@@ -198,6 +207,110 @@ public class AuthController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Token validation failed: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/forgot-password/request")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            if (username == null || username.trim().isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Username is required to proceed.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+            }
+
+            User user = authService.getUserByUsername(username);
+            if (user == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "We couldn't find an account with that username. Please verify and try again.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+            }
+
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "No registered email address found for this account. Please contact an administrator.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+            }
+
+            String otp = otpService.generateOTP(username);
+            String subject = "Password Reset OTP - Smart-Ration";
+            String body = "<p>Dear " + (user.getFullName() != null ? user.getFullName() : username) + ",</p>" +
+                    "<p>You have requested to reset your password. Please use the following OTP to proceed:</p>" +
+                    "<div class='alert-box' style='font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px;'>" + otp + "</div>" +
+                    "<p>If you did not request this, please ignore this email.</p>";
+            
+            emailService.sendEmail(user.getEmail(), subject, body);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "OTP sent to registered email");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            log.error("Error requesting password reset: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to process request: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/forgot-password/verify")
+    public ResponseEntity<?> verifyPasswordReset(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            String otp = request.get("otp");
+
+            if (username == null || username.trim().isEmpty() || otp == null || otp.trim().isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Username and OTP are required.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+            }
+
+            boolean isValid = otpService.validateOTP(username, otp);
+            if (!isValid) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Invalid or expired OTP. Please check the code and try again.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+            }
+
+            // OTP valid, reset password
+            String tempPassword = "User@123";
+            boolean isReset = authService.resetPassword(username, tempPassword);
+
+            if (isReset) {
+                User user = authService.getUserByUsername(username);
+                String subject = "Password Successfully Reset - Smart-Ration";
+                String body = "<p>Dear " + (user.getFullName() != null ? user.getFullName() : username) + ",</p>" +
+                        "<p>Your password has been successfully reset.</p>" +
+                        "<p>Your temporary password is: <strong style='font-size: 18px;'>" + tempPassword + "</strong></p>" +
+                        "<div class='alert-box'><strong>Important:</strong> Please log in and change your password immediately.</div>";
+                
+                emailService.sendEmail(user.getEmail(), subject, body);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Password reset successfully");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Failed to reset password in database");
+                return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+        } catch (Exception e) {
+            log.error("Error verifying password reset: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to process verification: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
