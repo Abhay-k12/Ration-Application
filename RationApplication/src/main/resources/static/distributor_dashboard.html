@@ -1,438 +1,395 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Distributor Dashboard · Smart-Ration TPDS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link rel="stylesheet" href="css/distributor_dashboard.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
-
 <body>
-    <!-- Header -->
-    <header id="header">
-        <div class="logo">
-            <div class="logo-icon"><i class="ri-government-line"></i></div>
-            <div class="logo-text">
-                <h1>Smart-Ration</h1>
-                <span>Govt of India · TPDS</span>
+<!-- Header -->
+<header id="header">
+    <div class="logo">
+        <div class="logo-icon"><i class="ri-government-line"></i></div>
+        <div class="logo-text">
+            <h1>Smart-Ration</h1>
+            <span>Govt of India · TPDS</span>
+        </div>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
+            <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
+            <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
+            <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i> Logout</a></li>
+        </ul>
+    </nav>
+    <div class="mobile-menu"><i class="ri-menu-line"></i></div>
+</header>
+
+<!-- Main Dashboard -->
+<div class="dashboard-container">
+    <!-- Sidebar Having Distributor Info -->
+    <aside class="sidebar">
+        <div class="profile-card">
+            <div class="avatar"><i class="ri-store-line"></i></div>
+            <h3 id="distributorName">Loading...</h3>
+            <div class="dist-id"><i class="ri-fingerprint-line"></i> <span id="distId">DIST/001</span></div>
+            <div class="info-row"><i class="ri-map-pin-line"></i><span id="shopLocation">District, State</span></div>
+            <div class="info-row"><i class="ri-store-line"></i><span id="shopName">FPS Shop</span></div>
+        </div>
+
+        <div class="shop-info">
+            <h4><i class="ri-bar-chart-line"></i> Today's Summary</h4>
+            <div class="shop-detail"><span>Beneficiaries served:</span> <strong id="beneficiariesServed">0</strong></div>
+            <div class="shop-detail"><span>Ration distributed:</span> <strong id="rationDistributed">0 kg</strong></div>
+            <div class="shop-detail"><span>Pending verifications:</span> <strong id="pendingVerifications">0</strong></div>
+            <div class="shop-detail"><span>Stock available:</span> <strong id="stockAvailable">--</strong></div>
+        </div>
+
+        <div class="logout-btn" onclick="logout()">
+            <i class="ri-logout-box-line"></i> Logout
+        </div>
+        <div class="change-pwd" onclick="openChangePwdModal()">
+            <i class="ri-lock-line"></i> Change Password
+        </div>
+    </aside>
+
+    <!-- Main Content  -->
+    <main class="main-content">
+        <div class="dash-header">
+            <h2>Distributor Dashboard</h2>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-item active" data-module="module1"><i class="ri-user-add-line"></i> Register Beneficiary</div>
+            <div class="nav-item" data-module="module2"><i class="ri-alert-line"></i> Complaints</div>
+            <div class="nav-item" data-module="module3"><i class="ri-history-line"></i> Complaint History</div>
+            <div class="nav-item" data-module="module4"><i class="ri-exchange-line"></i> Ration Allocation</div>
+            <div class="nav-item" data-module="module5"><i class="ri-gift-line"></i> Current Schemes</div>
+        </div>
+
+        <!-- MODULE 1: New User Registration -->
+        <div id="module1" class="module active">
+            <div class="card">
+                <div class="card-title"><i class="ri-user-add-line"></i> Register New Beneficiary</div>
+                <form id="registrationForm">
+                    <div class="form-group">
+                        <label class="form-label">Username / Ration Card Number</label>
+                        <input type="text" id="beneficiaryUsername" class="form-control" placeholder="Choose a username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="beneficiaryEmail" class="form-control" placeholder="Enter email address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Annual Family Income (₹)</label>
+                        <input type="number" id="annualIncome" class="form-control" placeholder="Enter total annual income" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Number of Family Members</label>
+                        <input type="number" id="totalMembers" class="form-control" min="1" max="10" value="1" onchange="handleTotalMembersChange()">
+                        <small style="color: var(--gray);">Maximum 10 members allowed</small>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">Family Members</h4>
+
+                    <!-- Dynamic Family Members Container -->
+                    <div id="familyMembersContainer"></div>
+
+                    <button type="button" class="add-member-btn" onclick="addNewMember()">
+                        <i class="ri-add-line"></i> Add Another Family Member
+                    </button>
+
+                    <button type="submit" class="submit-btn" style="margin-top: 15px;">
+                        <i class="ri-save-line"></i> Register Beneficiary
+                    </button>
+                </form>
             </div>
         </div>
-        <nav>
-            <ul>
-                <li><a href="index.html"><i class="ri-home-line"></i> Home</a></li>
-                <li><a href="index.html#about"><i class="ri-information-line"></i> About</a></li>
-                <li><a href="index.html#contact"><i class="ri-customer-service-line"></i> Support</a></li>
-                <li><a href="login_page.html" onclick="logout(); return false;"><i class="ri-logout-box-line"></i>
-                        Logout</a></li>
-            </ul>
-        </nav>
-        <div class="mobile-menu"><i class="ri-menu-line"></i></div>
-    </header>
 
-    <!-- Main Dashboard -->
-    <div class="dashboard-container">
-        <!-- Sidebar Having Distributor Info -->
-        <aside class="sidebar">
-            <div class="profile-card">
-                <div class="avatar"><i class="ri-store-line"></i></div>
-                <h3 id="distributorName">Loading...</h3>
-                <div class="dist-id"><i class="ri-fingerprint-line"></i> <span id="distId">DIST/001</span></div>
-                <div class="info-row"><i class="ri-map-pin-line"></i><span id="shopLocation">District, State</span>
-                </div>
-                <div class="info-row"><i class="ri-store-line"></i><span id="shopName">FPS Shop</span></div>
-            </div>
+        <!-- MODULE 2: Complaint Registration -->
+        <div id="module2" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-alert-line"></i> Register Complaint</div>
 
-            <div class="shop-info">
-                <h4><i class="ri-bar-chart-line"></i> Today's Summary</h4>
-                <div class="shop-detail"><span>Beneficiaries served:</span> <strong id="beneficiariesServed">0</strong>
-                </div>
-                <div class="shop-detail"><span>Ration distributed:</span> <strong id="rationDistributed">0 kg</strong>
-                </div>
-                <div class="shop-detail"><span>Pending verifications:</span> <strong
-                        id="pendingVerifications">0</strong></div>
-                <div class="shop-detail"><span>Stock available:</span> <strong id="stockAvailable">--</strong></div>
-            </div>
-
-            <div class="logout-btn" onclick="logout()">
-                <i class="ri-logout-box-line"></i> Logout
-            </div>
-            <div class="change-pwd" onclick="openChangePwdModal()">
-                <i class="ri-lock-line"></i> Change Password
-            </div>
-        </aside>
-
-        <!-- Main Content  -->
-        <main class="main-content">
-            <div class="dash-header">
-                <h2>Distributor Dashboard</h2>
-            </div>
-
-            <!-- Navigation Tabs -->
-            <div class="nav-tabs">
-                <div class="nav-item active" data-module="module1"><i class="ri-user-add-line"></i> Register Beneficiary
-                </div>
-                <div class="nav-item" data-module="module2"><i class="ri-alert-line"></i> Complaints</div>
-                <div class="nav-item" data-module="module3"><i class="ri-history-line"></i> Complaint History</div>
-                <div class="nav-item" data-module="module4"><i class="ri-exchange-line"></i> Ration Allocation</div>
-                <div class="nav-item" data-module="module5"><i class="ri-gift-line"></i> Current Schemes</div>
-            </div>
-
-            <!-- MODULE 1: New User Registration -->
-            <div id="module1" class="module active">
-                <div class="card">
-                    <div class="card-title"><i class="ri-user-add-line"></i> Register New Beneficiary</div>
-                    <form id="registrationForm">
+                <!-- Case 1: Distributor's own complaint -->
+                <div class="sub-card">
+                    <h4><i class="ri-user-line"></i> Complaint as Distributor</h4>
+                    <form id="distributorComplaintForm">
                         <div class="form-group">
-                            <label class="form-label">Username / Ration Card Number</label>
-                            <input type="text" id="beneficiaryUsername" class="form-control"
-                                placeholder="Choose a username" required>
+                            <label class="form-label">Subject</label>
+                            <input type="text" id="distComplaintSubject" class="form-control" placeholder="e.g., Stock shortage, Technical issue" required>
                         </div>
-
                         <div class="form-group">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" id="beneficiaryEmail" class="form-control"
-                                placeholder="Enter email address" required>
+                            <label class="form-label">Message Body</label>
+                            <textarea id="distComplaintMessage" class="form-control" rows="4" placeholder="Describe your concern in detail" required></textarea>
                         </div>
-
                         <div class="form-group">
-                            <label class="form-label">Annual Family Income (₹)</label>
-                            <input type="number" id="annualIncome" class="form-control"
-                                placeholder="Enter total annual income" required>
+                            <label class="form-label">Merged Document Link</label>
+                            <input type="text" id="distComplaintPriority" class="form-control" required>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Number of Family Members</label>
-                            <input type="number" id="totalMembers" class="form-control" min="1" max="10" value="1"
-                                onchange="handleTotalMembersChange()">
-                            <small style="color: var(--gray);">Maximum 10 members allowed</small>
-                        </div>
-
-                        <h4 style="margin: 20px 0 10px; color: var(--primary);">Family Members</h4>
-
-                        <!-- Dynamic Family Members Container -->
-                        <div id="familyMembersContainer"></div>
-
-                        <button type="button" class="add-member-btn" onclick="addNewMember()">
-                            <i class="ri-add-line"></i> Add Another Family Member
+                        <button type="submit" class="submit-btn" style="background: var(--primary);">
+                            <i class="ri-send-plane-line"></i> Submit as Distributor
                         </button>
+                    </form>
+                </div>
 
-                        <button type="submit" class="submit-btn" style="margin-top: 15px;">
-                            <i class="ri-save-line"></i> Register Beneficiary
+                <!-- Case 2: On behalf of Beneficiary -->
+                <div class="sub-card">
+                    <h4><i class="ri-user-star-line"></i> Complaint on Behalf of Beneficiary</h4>
+                    <form id="beneficiaryComplaintForm">
+                        <div class="form-group">
+                            <label class="form-label">Beneficiary Username/RC Number</label>
+                            <input type="text" id="beneficiaryRCNumber" class="form-control" placeholder="Enter username or RC number" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subject Category</label>
+                            <select id="beneficiaryComplaintCategory" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="ADD_MEMBER">Add new member</option>
+                                <option value="REMOVE_MEMBER">Remove member</option>
+                                <option value="TRANSFER_MEMBER">Transfer member</option>
+                                <option value="FAMILY_SEPARATION">Family separation</option>
+                                <option value="RATION_NOT_RECEIVED">Ration not received</option>
+                                <option value="WRONG_QUANTITY">Wrong quantity</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Message Body</label>
+                            <textarea id="beneficiaryComplaintMessage" class="form-control" rows="4" placeholder="Describe the issue" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Merged Document Link</label>
+                            <input type="text" id="beneficiaryComplaintPriority" class="form-control" required>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background: var(--accent); color: black;">
+                            <i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
 
-            <!-- MODULE 2: Complaint Registration -->
-            <div id="module2" class="module">
-                <div class="card">
-                    <div class="card-title"><i class="ri-alert-line"></i> Register Complaint</div>
+        <!-- MODULE 3: Distributor's Own Complaint History -->
+        <div id="module3" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
+                <div id="complaintHistoryContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Case 1: Distributor's own complaint -->
-                    <div class="sub-card">
-                        <h4><i class="ri-user-line"></i> Complaint as Distributor</h4>
-                        <form id="distributorComplaintForm">
-                            <div class="form-group">
-                                <label class="form-label">Subject</label>
-                                <input type="text" id="distComplaintSubject" class="form-control"
-                                    placeholder="e.g., Stock shortage, Technical issue" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Message Body</label>
-                                <textarea id="distComplaintMessage" class="form-control" rows="4"
-                                    placeholder="Describe your concern in detail" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Merged Document Link</label>
-                                <input type="text" id="distComplaintPriority" class="form-control" required>
-                            </div>
-                            <button type="submit" class="submit-btn" style="background: var(--primary);">
-                                <i class="ri-send-plane-line"></i> Submit as Distributor
+        <!-- MODULE 4: Ration Allocation (Online & Offline) -->
+        <div id="module4" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-exchange-line"></i> Ration Allocation</div>
+
+                <div class="allocation-method">
+                    <div class="method-card" onclick="showOnlineVerification()">
+                        <i class="ri-qr-scan-line"></i>
+                        <h4>QR Code Scan</h4>
+                        <p>Scan beneficiary QR code for verification</p>
+                    </div>
+                    <div class="method-card" onclick="showOfflineOTP()">
+                        <i class="ri-mail-send-line"></i>
+                        <h4>Offline / OTP Mode</h4>
+                        <p>Email OTP when no network</p>
+                    </div>
+                </div>
+
+                <!-- QR Scanner Area (Online) -->
+                <div id="onlineSection" style="display: none;">
+                    <div class="qr-scanner-area">
+                        <i class="ri-qr-scan-line" style="font-size: 60px; margin-bottom: 20px;"></i>
+                        <h3>Scan Beneficiary QR Code or Enter RC Number</h3>
+                        <p>Use your device camera to scan the QR code automatically, or manually type the Ration Card number.</p>
+                        
+                        <!-- Camera Target Area -->
+                        <div id="qr-reader" style="width:100%; max-width:300px; margin: 15px auto; display: none; border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; background: black;"></div>
+                        
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+                            <button class="submit-btn" id="startScannerBtn" style="width: auto; background: var(--secondary); margin: 0;" onclick="startWebCamScanner()">
+                                <i class="ri-camera-lens-line"></i> Open Camera to Scan
                             </button>
-                        </form>
-                    </div>
-
-                    <!-- Case 2: On behalf of Beneficiary -->
-                    <div class="sub-card">
-                        <h4><i class="ri-user-star-line"></i> Complaint on Behalf of Beneficiary</h4>
-                        <form id="beneficiaryComplaintForm">
-                            <div class="form-group">
-                                <label class="form-label">Beneficiary Username/RC Number</label>
-                                <input type="text" id="beneficiaryRCNumber" class="form-control"
-                                    placeholder="Enter username or RC number" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Subject Category</label>
-                                <select id="beneficiaryComplaintCategory" class="form-control" required>
-                                    <option value="">Select Category</option>
-                                    <option value="ADD_MEMBER">Add new member</option>
-                                    <option value="REMOVE_MEMBER">Remove member</option>
-                                    <option value="TRANSFER_MEMBER">Transfer member</option>
-                                    <option value="FAMILY_SEPARATION">Family separation</option>
-                                    <option value="RATION_NOT_RECEIVED">Ration not received</option>
-                                    <option value="WRONG_QUANTITY">Wrong quantity</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Message Body</label>
-                                <textarea id="beneficiaryComplaintMessage" class="form-control" rows="4"
-                                    placeholder="Describe the issue" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Merged Document Link</label>
-                                <input type="text" id="beneficiaryComplaintPriority" class="form-control" required>
-                            </div>
-                            <button type="submit" class="submit-btn" style="background: var(--accent); color: black;">
-                                <i class="ri-send-plane-line"></i> Submit on Behalf of Beneficiary
+                            <button class="submit-btn" id="stopScannerBtn" style="width: auto; background: var(--danger); margin: 0; display: none;" onclick="stopWebCamScanner()">
+                                <i class="ri-close-circle-line"></i> Stop Scanning
                             </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MODULE 3: Distributor's Own Complaint History -->
-            <div id="module3" class="module">
-                <div class="card">
-                    <div class="card-title"><i class="ri-history-line"></i> My Complaint History</div>
-                    <div id="complaintHistoryContainer">
-                        <p style="text-align: center; color: var(--gray); padding: 40px;">Loading complaints...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MODULE 4: Ration Allocation (Online & Offline) -->
-            <div id="module4" class="module">
-                <div class="card">
-                    <div class="card-title"><i class="ri-exchange-line"></i> Ration Allocation</div>
-
-                    <div class="allocation-method">
-                        <div class="method-card" onclick="showOnlineVerification()">
-                            <i class="ri-qr-scan-line"></i>
-                            <h4>QR Code Scan</h4>
-                            <p>Scan beneficiary QR code for verification</p>
-                        </div>
-                        <div class="method-card" onclick="showOfflineOTP()">
-                            <i class="ri-mail-send-line"></i>
-                            <h4>Offline / OTP Mode</h4>
-                            <p>Email OTP when no network</p>
-                        </div>
-                    </div>
-
-                    <!-- QR Scanner Area (Online) -->
-                    <div id="onlineSection" style="display: none;">
-                        <div class="qr-scanner-area">
-                            <i class="ri-qr-scan-line" style="font-size: 60px; margin-bottom: 20px;"></i>
-                            <h3>Scan Beneficiary QR Code or Enter RC Number</h3>
-                            <p>Use your device camera to scan the QR code automatically, or manually type the Ration
-                                Card number.</p>
-
-                            <!-- Camera Target Area -->
-                            <div id="qr-reader"
-                                style="width:100%; max-width:300px; margin: 15px auto; display: none; border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; background: black;">
-                            </div>
-
-                            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-                                <button class="submit-btn" id="startScannerBtn"
-                                    style="width: auto; background: var(--secondary); margin: 0;"
-                                    onclick="startWebCamScanner()">
-                                    <i class="ri-camera-lens-line"></i> Open Camera to Scan
-                                </button>
-                                <button class="submit-btn" id="stopScannerBtn"
-                                    style="width: auto; background: var(--danger); margin: 0; display: none;"
-                                    onclick="stopWebCamScanner()">
-                                    <i class="ri-close-circle-line"></i> Stop Scanning
-                                </button>
-                            </div>
-
-                            <div
-                                style="margin: 25px 0; border-top: 1px dashed var(--gray); position: relative; max-width: 400px; margin-left: auto; margin-right: auto;">
-                                <span
-                                    style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: var(--gray); font-size: 14px; font-weight: bold;">OR</span>
-                            </div>
-
-                            <div
-                                style="display: flex; justify-content: center; gap: 10px; align-items: center; max-width: 500px; margin: 0 auto 20px auto;">
-                                <input type="text" id="qrCodeInput" class="form-control"
-                                    placeholder="Enter Ration Card No. or pasted QR string"
-                                    style="flex: 1; padding: 12px; border-radius: 6px; text-align: left; margin: 0;">
-                                <button class="submit-btn" id="verifyQrBtn"
-                                    style="width: auto; background: var(--primary); margin: 0; padding: 12px 20px;"
-                                    onclick="processQRScan()">
-                                    <i class="ri-search-line"></i> Verify
-                                </button>
-                            </div>
                         </div>
 
-                        <div id="verificationResult" class="verification-result" style="display: none;">
-                            <h4 style="color: var(--secondary); margin-bottom: 15px;">
-                                <i class="ri-checkbox-circle-line"></i> Card Verified Successfully
-                            </h4>
-                            <p><strong>Ration Card:</strong> <span id="verifiedRCNumber">--</span></p>
-                            <p><strong>Beneficiary:</strong> <span id="verifiedBeneficiaryName">--</span></p>
-                            <p><strong>Family Members:</strong> <span id="verifiedMemberCount">0</span></p>
-
-                            <h5 style="margin: 20px 0 10px;">Select member for verification:</h5>
-                            <div class="face-selection" id="faceSelectionContainer">
-                                <p style="text-align: center; color: var(--gray);">Loading family members...</p>
-                            </div>
-
-                            <div id="schemeSelectionBox" style="display: none; margin-top: 20px;">
-                                <h5 style="color: var(--secondary); margin-bottom: 15px;">Scheme Selection</h5>
-                                <div
-                                    style="background: #fef3c7; padding: 12px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                                    <label style="display: flex; align-items: center; cursor: pointer; margin: 0;">
-                                        <input type="checkbox" id="useOthersSchemeCheckbox"
-                                            style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
-                                        <span style="font-size: 14px;">
-                                            <strong>Apply "Others" Scheme</strong>
-                                            <br>
-                                            <small style="color: #666;">Uncheck to use income-based scheme Only.</small>
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div id="allocationSummary" style="display: none;">
-                                <h5 style="margin: 20px 0 10px;">Ration to be allocated:</h5>
-                                <div class="allocation-summary" id="allocationDetails">
-                                    <p>Loading allocation details...</p>
-                                </div>
-                            </div>
+                        <div style="margin: 25px 0; border-top: 1px dashed var(--gray); position: relative; max-width: 400px; margin-left: auto; margin-right: auto;">
+                            <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: var(--gray); font-size: 14px; font-weight: bold;">OR</span>
                         </div>
-                    </div>
 
-                    <!-- Offline OTP Section -->
-                    <div id="offlineSection" style="display: none;">
-                        <div class="card" style="background: #f8fafc;">
-                            <h4 style="margin-bottom: 20px;"><i class="ri-mail-send-line"></i> OTP Verification (Offline
-                                Mode)</h4>
-                            <div class="form-group">
-                                <label class="form-label">Enter Beneficiary Username/RC Number</label>
-                                <input type="text" class="form-control" id="otpBeneficiaryId"
-                                    placeholder="Username or RC number">
-                            </div>
-                            <button class="submit-btn" style="background: var(--accent); color: black;"
-                                onclick="sendOTP()">
-                                <i class="ri-mail-send-line"></i> Send OTP to Registered Email
+                        <div style="display: flex; justify-content: center; gap: 10px; align-items: center; max-width: 500px; margin: 0 auto 20px auto;">
+                            <input type="text" id="qrCodeInput" class="form-control" placeholder="Enter Ration Card No. or pasted QR string" style="flex: 1; padding: 12px; border-radius: 6px; text-align: left; margin: 0;">
+                            <button class="submit-btn" id="verifyQrBtn" style="width: auto; background: var(--primary); margin: 0; padding: 12px 20px;" onclick="processQRScan()">
+                                <i class="ri-search-line"></i> Verify
                             </button>
+                        </div>
+                    </div>
 
-                            <div id="otpSection" style="display: none; margin-top: 30px;">
-                                <h5>Enter OTP received on beneficiary email</h5>
-                                <div class="otp-container">
-                                    <input type="text" id="otpInput" class="otp-input" maxlength="4" placeholder="••••">
-                                    <button type="button" class="verify-btn" onclick="verifyOTP()">Verify</button>
-                                </div>
+                    <div id="verificationResult" class="verification-result" style="display: none;">
+                        <h4 style="color: var(--secondary); margin-bottom: 15px;">
+                            <i class="ri-checkbox-circle-line"></i> Card Verified Successfully
+                        </h4>
+                        <p><strong>Ration Card:</strong> <span id="verifiedRCNumber">--</span></p>
+                        <p><strong>Beneficiary:</strong> <span id="verifiedBeneficiaryName">--</span></p>
+                        <p><strong>Family Members:</strong> <span id="verifiedMemberCount">0</span></p>
+
+                        <h5 style="margin: 20px 0 10px;">Select member for verification:</h5>
+                        <div class="face-selection" id="faceSelectionContainer">
+                            <p style="text-align: center; color: var(--gray);">Loading family members...</p>
+                        </div>
+
+                        <div id="schemeSelectionBox" style="display: none; margin-top: 20px;">
+                            <h5 style="color: var(--secondary); margin-bottom: 15px;">Scheme Selection</h5>
+                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                <label style="display: flex; align-items: center; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="useOthersSchemeCheckbox" style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
+                                    <span style="font-size: 14px;">
+                                        <strong>Apply "Others" Scheme</strong>
+                                        <br>
+                                        <small style="color: #666;">Uncheck to use income-based scheme Only.</small>
+                                    </span>
+                                </label>
                             </div>
+                        </div>
 
-                            <div id="offlineAllocation" style="display: none; margin-top: 20px;">
-                                <div class="allocation-summary" id="offlineAllocationDetails">
-                                    <p>Loading allocation details...</p>
-                                </div>
+                        <div id="allocationSummary" style="display: none;">
+                            <h5 style="margin: 20px 0 10px;">Ration to be allocated:</h5>
+                            <div class="allocation-summary" id="allocationDetails">
+                                <p>Loading allocation details...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offline OTP Section -->
+                <div id="offlineSection" style="display: none;">
+                    <div class="card" style="background: #f8fafc;">
+                        <h4 style="margin-bottom: 20px;"><i class="ri-mail-send-line"></i> OTP Verification (Offline Mode)</h4>
+                        <div class="form-group">
+                            <label class="form-label">Enter Beneficiary Username/RC Number</label>
+                            <input type="text" class="form-control" id="otpBeneficiaryId" placeholder="Username or RC number">
+                        </div>
+                        <button class="submit-btn" style="background: var(--accent); color: black;" onclick="sendOTP()">
+                            <i class="ri-mail-send-line"></i> Send OTP to Registered Email
+                        </button>
+
+                        <div id="otpSection" style="display: none; margin-top: 30px;">
+                            <h5>Enter OTP received on beneficiary email</h5>
+                            <div class="otp-container">
+                                <input type="text" id="otpInput" class="otp-input" maxlength="4" placeholder="••••">
+                                <button type="button" class="verify-btn" onclick="verifyOTP()">Verify</button>
+                            </div>
+                        </div>
+
+                        <div id="offlineAllocation" style="display: none; margin-top: 20px;">
+                            <div class="allocation-summary" id="offlineAllocationDetails">
+                                <p>Loading allocation details...</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- MODULE 5: Current Schemes -->
-            <div id="module5" class="module">
-                <div class="card">
-                    <div class="card-title"><i class="ri-gift-line"></i> Active Schemes (Current Month)</div>
-                    <div id="schemesContainer">
-                        <p style="text-align: center; color: var(--gray); padding: 40px;">Loading schemes...</p>
-                    </div>
+        <!-- MODULE 5: Current Schemes -->
+        <div id="module5" class="module">
+            <div class="card">
+                <div class="card-title"><i class="ri-gift-line"></i> Active Schemes (Current Month)</div>
+                <div id="schemesContainer">
+                    <p style="text-align: center; color: var(--gray); padding: 40px;">Loading schemes...</p>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
+</div>
 
-    <!-- Complaint Detail Modal -->
-    <div class="modal" id="complaintModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
-            <h3 style="color: var(--primary);">Complaint Details</h3>
-            <div id="complaintDetailContent">
-                <p>Loading...</p>
+<!-- Complaint Detail Modal -->
+<div class="modal" id="complaintModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
+        <h3 style="color: var(--primary);">Complaint Details</h3>
+        <div id="complaintDetailContent">
+            <p>Loading...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal" id="changePwdModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('changePwdModal')">&times;</span>
+        <h3 style="color: var(--primary);">Change Password</h3>
+        <form id="changePwdForm">
+            <div class="form-group">
+                <label class="form-label">Current Password</label>
+                <input type="password" id="currentPwd" class="form-control" required>
             </div>
-        </div>
-    </div>
-
-    <!-- Change Password Modal -->
-    <div class="modal" id="changePwdModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('changePwdModal')">&times;</span>
-            <h3 style="color: var(--primary);">Change Password</h3>
-            <form id="changePwdForm">
-                <div class="form-group">
-                    <label class="form-label">Current Password</label>
-                    <input type="password" id="currentPwd" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">New Password</label>
-                    <input type="password" id="newPwd" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Confirm New Password</label>
-                    <input type="password" id="confirmPwd" class="form-control" required>
-                </div>
-                <button type="submit" class="submit-btn">Update Password</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Camera Modal -->
-    <div class="modal" id="cameraModal">
-        <div class="modal-content" style="max-width: 500px; text-align: center;">
-            <span class="close-modal" onclick="closeCameraModal()">&times;</span>
-            <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
-            <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
-                <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
-                <canvas id="cameraCanvas" style="display: none;"></canvas>
-                <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
+            <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="newPwd" class="form-control" required>
             </div>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i
-                        class="ri-camera-fill"></i> Capture</button>
-                <button id="btnRetake" class="submit-btn"
-                    style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i
-                        class="ri-refresh-line"></i> Retake</button>
-                <button id="btnSavePhoto" class="submit-btn"
-                    style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i
-                        class="ri-save-line"></i> Save</button>
+            <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" id="confirmPwd" class="form-control" required>
             </div>
+            <button type="submit" class="submit-btn">Update Password</button>
+        </form>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal" id="cameraModal">
+    <div class="modal-content" style="max-width: 500px; text-align: center;">
+        <span class="close-modal" onclick="closeCameraModal()">&times;</span>
+        <h3 style="color: var(--primary); margin-bottom: 20px;">Capture Photograph</h3>
+        <div style="background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+            <video id="cameraVideo" width="100%" height="auto" autoplay playsinline style="display: block;"></video>
+            <canvas id="cameraCanvas" style="display: none;"></canvas>
+            <img id="cameraPreview" style="display: none; width: 100%; height: auto;" />
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btnCapture" class="submit-btn" style="width: auto;" onclick="capturePhoto()"><i class="ri-camera-fill"></i> Capture</button>
+            <button id="btnRetake" class="submit-btn" style="width: auto; background: var(--warning); display: none;" onclick="retakePhoto()"><i class="ri-refresh-line"></i> Retake</button>
+            <button id="btnSavePhoto" class="submit-btn" style="width: auto; background: var(--secondary); display: none;" onclick="saveCapturedPhoto()"><i class="ri-save-line"></i> Save</button>
         </div>
     </div>
+</div>
 
-    <!-- Global Message Modal -->
-    <div class="modal" id="messageModal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <span class="close-modal" onclick="closeModal('messageModal')">&times;</span>
-            <h3 id="messageModalTitle" style="color: var(--primary); margin-bottom: 15px;">Message</h3>
-            <p id="messageModalText" style="margin-bottom: 20px; color: var(--gray);">Something happened.</p>
-            <button class="submit-btn" style="width: auto; padding: 8px 20px;"
-                onclick="closeModal('messageModal')">OK</button>
-        </div>
+<!-- Global Message Modal -->
+<div class="modal" id="messageModal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <span class="close-modal" onclick="closeModal('messageModal')">&times;</span>
+        <h3 id="messageModalTitle" style="color: var(--primary); margin-bottom: 15px;">Message</h3>
+        <p id="messageModalText" style="margin-bottom: 20px; color: var(--gray);">Something happened.</p>
+        <button class="submit-btn" style="width: auto; padding: 8px 20px;" onclick="closeModal('messageModal')">OK</button>
     </div>
+</div>
 
-    <script>
-        function showCustomAlert(message, title = 'Information') {
-            const modal = document.getElementById('messageModal');
-            const titleEl = document.getElementById('messageModalTitle');
-            const textEl = document.getElementById('messageModalText');
-            if (titleEl) titleEl.textContent = title;
-            if (textEl) textEl.textContent = message;
-            if (modal) modal.classList.add('active');
-        }
-    </script>
+<script>
+    function showCustomAlert(message, title = 'Information') {
+        const modal = document.getElementById('messageModal');
+        const titleEl = document.getElementById('messageModalTitle');
+        const textEl = document.getElementById('messageModalText');
+        if (titleEl) titleEl.textContent = title;
+        if (textEl) textEl.textContent = message;
+        if (modal) modal.classList.add('active');
+    }
+</script>
 
-    <script src="js/api_client.js"></script>
-    <script src="js/distributor_dashboard.js"></script>
+<script src="js/api_client.js"></script>
+<script src="js/distributor_dashboard.js"></script>
 </body>
-
 </html>
