@@ -16,9 +16,9 @@
       formDescription: "Enter your credentials to access the portal",
       buttonText: "Login as Beneficiary",
       modalTitle: "Reset Beneficiary Password",
-      modalDescription: "Enter your username to receive reset link.",
+      modalDescription: "Enter your username to receive an OTP.",
       modalLabel: "Username",
-      resetButtonText: "Send Reset Link",
+      resetButtonText: "Send OTP",
       usernameField: "benUsername",
       passwordField: "benPassword",
     },
@@ -31,9 +31,9 @@
       formDescription: "Enter your credentials to access the portal",
       buttonText: "Login as Distributor",
       modalTitle: "Reset Distributor Password",
-      modalDescription: "Enter your username to receive reset link.",
+      modalDescription: "Enter your username to receive an OTP.",
       modalLabel: "Username",
-      resetButtonText: "Send Reset Link",
+      resetButtonText: "Send OTP",
       usernameField: "distUsername",
       passwordField: "distPassword",
     },
@@ -46,9 +46,9 @@
       formDescription: "Enter your credentials to access the portal",
       buttonText: "Login as Admin",
       modalTitle: "Reset Admin Password",
-      modalDescription: "Enter your username to receive reset link.",
+      modalDescription: "Enter your username to receive an OTP.",
       modalLabel: "Username",
-      resetButtonText: "Send Reset Link",
+      resetButtonText: "Send OTP",
       usernameField: "adminUsername",
       passwordField: "adminPassword",
     },
@@ -295,6 +295,8 @@
   });
 
   // Forgot password modal
+  let otpPhase = 0; // 0 = request, 1 = verify
+  
   const modal = document.getElementById("forgotModal");
   const forgotLink = document.getElementById("forgotPasswordLink");
   const closeModalBtn = document.getElementById("closeModalBtn");
@@ -302,9 +304,33 @@
   const modalDesc = document.getElementById("modalDesc");
   const modalLabel = document.getElementById("modalLabel");
   const resetBtnSpan = document.getElementById("resetBtnText");
+  const resetBtnIcon = document.getElementById("resetBtnIcon");
   const resetField = document.getElementById("resetField");
   const resetSuccess = document.getElementById("resetSuccess");
+  const resetSuccessText = document.getElementById("resetSuccessText") || resetSuccess.querySelector("span");
+  const resetError = document.getElementById("resetError");
   const forgotForm = document.getElementById("forgotForm");
+  const resetUsernameGroup = document.getElementById("resetUsernameGroup");
+  const resetOtpGroup = document.getElementById("resetOtpGroup");
+  const otpField = document.getElementById("otpField");
+
+  function resetForgotModal() {
+    otpPhase = 0;
+    resetUsernameGroup.style.display = "block";
+    resetOtpGroup.style.display = "none";
+    resetField.disabled = false;
+    resetField.value = "";
+    if (otpField) otpField.value = "";
+    resetSuccess.style.display = "none";
+    if (resetError) resetError.style.display = "none";
+    
+    const cfg = roleConfig[currentRole];
+    resetBtnSpan.textContent = cfg ? (cfg.resetButtonText || "Send OTP") : "Send OTP";
+    if (resetBtnIcon) resetBtnIcon.className = "ri-mail-send-line";
+    
+    const submitBtn = forgotForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.style.display = "flex";
+  }
 
   forgotLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -313,48 +339,143 @@
     modalTitle.textContent = cfg.modalTitle;
     modalDesc.textContent = cfg.modalDescription;
     modalLabel.textContent = cfg.modalLabel;
-    resetBtnSpan.textContent = cfg.resetButtonText;
 
     resetField.placeholder = "Enter " + cfg.modalLabel;
-    resetField.value = "";
-    resetSuccess.style.display = "none";
+    resetForgotModal();
 
     modal.classList.add("active");
   });
 
   closeModalBtn.addEventListener("click", () => {
     modal.classList.remove("active");
-    resetSuccess.style.display = "none";
-    resetField.value = "";
+    resetForgotModal();
   });
 
   window.addEventListener("click", (e) => {
     if (e.target === modal) {
       modal.classList.remove("active");
-      resetSuccess.style.display = "none";
-      resetField.value = "";
+      resetForgotModal();
     }
   });
 
-  forgotForm.addEventListener("submit", (e) => {
+  forgotForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (resetError) resetError.style.display = "none";
+    resetSuccess.style.display = "none";
+    
     const username = resetField.value.trim();
-
     if (!username) {
-      alert("Please enter your username");
+      if (resetError) {
+        resetError.textContent = "Please enter your username";
+        resetError.style.display = "block";
+      } else {
+        alert("Please enter your username");
+      }
       return;
     }
 
-    console.log("[FORGOT] Reset password requested for:", username);
+    const submitBtn = forgotForm.querySelector('button[type="submit"]');
+    const originalBtnHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
 
-    resetSuccess.style.display = "block";
-
-    setTimeout(() => {
-      modal.classList.remove("active");
-      resetSuccess.style.display = "none";
-      resetField.value = "";
-      alert("Password reset link sent to your registered email!");
-    }, 2000);
+    if (otpPhase === 0) {
+      // Phase 0: Request OTP
+      console.log("[FORGOT] Reset password requested for:", username);
+      submitBtn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Sending OTP...';
+      
+      try {
+        const res = await fetch("http://localhost:8081/auth/forgot-password/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: username })
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          otpPhase = 1;
+          resetField.disabled = true;
+          resetUsernameGroup.style.display = "none";
+          resetOtpGroup.style.display = "block";
+          resetBtnSpan.textContent = "Verify OTP";
+          if (resetBtnIcon) resetBtnIcon.className = "ri-shield-check-line";
+          resetSuccessText.textContent = "OTP sent to registered email!";
+          resetSuccess.style.display = "block";
+        } else {
+          if (resetError) {
+            resetError.textContent = data.message || "Failed to send OTP.";
+            resetError.style.display = "block";
+          } else {
+            alert(data.message || "Failed to send OTP.");
+          }
+        }
+      } catch (err) {
+        if (resetError) {
+          resetError.textContent = "Error connecting to server.";
+          resetError.style.display = "block";
+        } else {
+          alert("Error connecting to server.");
+        }
+      } finally {
+        submitBtn.disabled = false;
+        if (otpPhase === 0) submitBtn.innerHTML = originalBtnHtml; // restore if failed
+      }
+    } else if (otpPhase === 1) {
+      // Phase 1: Verify OTP
+      const otp = otpField.value.trim();
+      if (!otp) {
+        if (resetError) {
+          resetError.textContent = "Please enter the OTP";
+          resetError.style.display = "block";
+        } else {
+          alert("Please enter the OTP");
+        }
+        submitBtn.disabled = false;
+        return;
+      }
+      
+      console.log("[FORGOT] Verifying OTP for:", username);
+      submitBtn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Verifying...';
+      
+      try {
+        const res = await fetch("http://localhost:8081/auth/forgot-password/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: username, otp: otp })
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          resetSuccessText.textContent = "Your temporary password is set to User@123. Please check your email. Change it after first login.";
+          resetSuccess.style.display = "block";
+          resetOtpGroup.style.display = "none";
+          submitBtn.style.display = "none"; // hide button on success
+          
+          setTimeout(() => {
+            modal.classList.remove("active");
+            resetForgotModal();
+          }, 5000);
+        } else {
+          if (resetError) {
+            resetError.textContent = data.message || "Invalid OTP.";
+            resetError.style.display = "block";
+          } else {
+            alert(data.message || "Invalid OTP.");
+          }
+        }
+      } catch (err) {
+        if (resetError) {
+          resetError.textContent = "Error verifying OTP.";
+          resetError.style.display = "block";
+        } else {
+          alert("Error verifying OTP.");
+        }
+      } finally {
+        submitBtn.disabled = false;
+        if (otpPhase === 1 && submitBtn.style.display !== "none") {
+          submitBtn.innerHTML = '<i class="ri-shield-check-line" id="resetBtnIcon"></i> <span id="resetBtnText">Verify OTP</span>';
+        }
+      }
+    }
   });
 
   // Header scroll effect
