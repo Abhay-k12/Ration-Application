@@ -31,9 +31,7 @@ public class QRCodeService {
     private static final int QR_CODE_WIDTH = 400;
     private static final int QR_CODE_HEIGHT = 400;
 
-    // Store used QR codes with timestamp for tracking
     private static final Map<String, Long> usedQRCodes = new HashMap<>();
-
 
     public QRCodeResponse scanQRCode(String qrData) {
         try {
@@ -42,43 +40,37 @@ public class QRCodeService {
                 return new QRCodeResponse("Invalid QR code data", false);
             }
 
-            // Parse QR code
             QRCodeData qrCodeData = parseQRCodeData(qrData);
 
-            // Check if QR code has been used already
             if (isQRCodeUsed(qrData)) {
                 log.warn("QR code already used: {}", qrCodeData.getRationCardNumber());
                 return new QRCodeResponse("QR code has already been used", false);
             }
 
-            // Validate QR code is not expired
             if (!isQRCodeValid(qrData)) {
                 log.warn("QR code expired: {}", qrCodeData.getRationCardNumber());
                 return new QRCodeResponse("QR code has expired", false);
             }
 
-            // Get beneficiary by username (which is rationCardNumber)
             Beneficiary beneficiary = beneficiaryRepository.findByUsername(qrCodeData.getUsername());
             if (beneficiary == null) {
                 log.warn("Beneficiary not found for RC: {}", qrCodeData.getUsername());
                 return new QRCodeResponse("Beneficiary not found", false);
             }
 
-            // Check if beneficiary is verified
             if (!beneficiary.getIsActive()) {
                 log.warn("Beneficiary not verified: {}", beneficiary.getUsername());
                 return new QRCodeResponse("Beneficiary not yet verified", false);
             }
 
-            // Create success response
             QRCodeResponse response = new QRCodeResponse(
                     qrData,
-                    null,  // No need to return image on scan
-                    beneficiary.getUsername(),  // This IS the rationCardNumber
+                    null, 
+                    beneficiary.getUsername(),  
                     beneficiary.getMembers() != null && !beneficiary.getMembers().isEmpty()
                             ? beneficiary.getMembers().get(0).getName()
                             : beneficiary.getUsername(),
-                    beneficiary.getUsername(),  // This IS the rationCardNumber
+                    beneficiary.getUsername(),  
                     Calendar.getInstance().getTime().toString(),
                     beneficiary.getMembers()
             );
@@ -95,35 +87,28 @@ public class QRCodeService {
 
     public QRCodeResponse generateQRCode(String username, String rationCardNumber) {
         try {
-            // Get user and beneficiary data
             User user = userRepository.findByUsername(username);
             if (user == null) {
                 log.warn("User not found: {}", username);
                 return new QRCodeResponse("User not found", false);
             }
 
-            // In beneficiary, username IS the rationCardNumber
             Beneficiary beneficiary = beneficiaryRepository.findByUsername(username);
             if (beneficiary == null) {
                 log.warn("Beneficiary not found: {}", username);
                 return new QRCodeResponse("Beneficiary not found", false);
             }
 
-            // Create QR code content with beneficiary details
             String qrContent = createQRContent(beneficiary);
-
-            // Generate QR code image
             String qrCodeImage = generateQRCodeImage(qrContent);
-
-            // Create response - username is the rationCardNumber
             QRCodeResponse response = new QRCodeResponse(
                     qrContent,
                     qrCodeImage,
-                    beneficiary.getUsername(),  // This IS the rationCardNumber
+                    beneficiary.getUsername(), 
                     beneficiary.getMembers() != null && !beneficiary.getMembers().isEmpty()
                             ? beneficiary.getMembers().get(0).getName()
                             : username,
-                    beneficiary.getUsername(),  // This IS the rationCardNumber
+                    beneficiary.getUsername(),
                     Calendar.getInstance().getTime().toString(),
                     beneficiary.getMembers()
             );
@@ -140,7 +125,6 @@ public class QRCodeService {
 
     private String createQRContent(Beneficiary beneficiary) {
         // Format: RC|USERNAME|NAME|REGION|TIMESTAMP
-        // Note: username IS the rationCardNumber for beneficiary
         StringBuilder content = new StringBuilder();
         content.append("RC:").append(beneficiary.getUsername()).append("|");
         content.append("USER:").append(beneficiary.getUsername()).append("|");
@@ -212,7 +196,6 @@ public class QRCodeService {
             long currentTime = System.currentTimeMillis();
             long timeDifference = currentTime - data.getTimestamp();
 
-            // QR code valid for 24 hours
             long twentyFourHoursInMs = 24 * 60 * 60 * 1000;
 
             boolean isValid = timeDifference < twentyFourHoursInMs;
@@ -264,7 +247,6 @@ public class QRCodeService {
                 long usedTime = usedQRCodes.get(qrData);
                 long currentTime = System.currentTimeMillis();
 
-                // QR code is considered "used" for 30 days
                 long thirtyDaysInMs = 30L * 24 * 60 * 60 * 1000;
 
                 if (currentTime - usedTime > thirtyDaysInMs) {
