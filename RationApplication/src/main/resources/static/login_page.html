@@ -146,20 +146,29 @@
     <div class="modal-content">
         <span class="close-modal" id="closeModalBtn">&times;</span>
         <h3 id="modalTitle">Reset Beneficiary Password</h3>
-        <p id="modalDesc">Enter your username to receive reset link.</p>
+        <p id="modalDesc">Enter your username to receive an OTP.</p>
         <form id="forgotForm">
-            <div class="form-group">
+            <div class="form-group" id="resetUsernameGroup">
                 <label class="form-label" id="modalLabel" for="resetField">Username</label>
                 <div class="input-group">
                     <input type="text" id="resetField" class="form-control" placeholder="Enter username">
                     <div class="input-icon"><i class="ri-user-line"></i></div>
                 </div>
             </div>
+            <div class="form-group" id="resetOtpGroup" style="display: none;">
+                <label class="form-label" for="otpField">Enter OTP</label>
+                <div class="input-group">
+                    <input type="text" id="otpField" class="form-control" placeholder="6-digit OTP">
+                    <div class="input-icon"><i class="ri-shield-keyhole-line"></i></div>
+                </div>
+            </div>
             <button type="submit" class="login-btn">
-                <i class="ri-mail-send-line"></i> <span id="resetBtnText">Send Reset Link</span>
+                <i class="ri-mail-send-line" id="resetBtnIcon"></i> <span id="resetBtnText">Send OTP</span>
             </button>
             <div class="success-message" id="resetSuccess">
-                <i class="ri-checkbox-circle-line"></i> <span>Reset link sent to registered email!</span>
+                <i class="ri-checkbox-circle-line"></i> <span id="resetSuccessText">OTP sent to registered email!</span>
+            </div>
+            <div class="error-message" id="resetError" style="display: none;">
             </div>
         </form>
     </div>
