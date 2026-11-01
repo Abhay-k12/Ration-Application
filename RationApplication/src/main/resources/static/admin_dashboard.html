@@ -535,6 +535,49 @@
     </div>
 
 
+    <!-- Remove Member Modal -->
+    <div class="modal" id="removeMemberModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('removeMemberModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Remove Family Member</h3>
+            <p>Aadhaar ending in: <strong id="removeAadhaarMask"></strong></p>
+            <input type="hidden" id="removeAadhaarValue">
+            <button class="submit-btn" style="margin-top: 20px; background: var(--danger);"
+                onclick="removeMemberAction()">
+                <i class="ri-delete-bin-line"></i> Confirm Removal
+            </button>
+        </div>
+    </div>
+
+    <!-- Compose Mail Modal -->
+    <div class="modal" id="composeMailModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeModal('composeMailModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Compose Email to User</h3>
+            <form id="composeMailForm">
+                <div class="form-group">
+                    <label class="form-label">To:</label>
+                    <input type="email" id="composeMailTo" class="form-control" readonly style="background: #f1f5f9;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject:</label>
+                    <input type="text" id="composeMailSubject" class="form-control" placeholder="Enter Subject"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message:</label>
+                    <textarea id="composeMailBody" class="form-control" rows="8" placeholder="Type your message here..."
+                        required></textarea>
+                </div>
+                <button type="submit" class="submit-btn"><i class="ri-send-plane-fill"></i> Send Email</button>
+            </form>
+        </div>
+    </div>
+
+
+
+
+
     <!-- Camera Modal -->
     <div class="modal" id="cameraModal" style="z-index: 10001;">
         <div class="modal-content" style="max-width: 500px; text-align: center;">
