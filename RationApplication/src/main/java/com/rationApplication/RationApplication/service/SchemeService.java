@@ -53,7 +53,35 @@ public class SchemeService {
             return new ArrayList<>();
         }
     }
+public List<Scheme> getSchemesByDistrict(String stateDistrictCode) {
 
+    try {
+
+        log.info("Fetching schemes for district: {}", stateDistrictCode);
+
+
+        List<Scheme> schemes =
+                schemeRepository.findAll();
+
+
+        return schemes.stream()
+
+                .filter(scheme ->
+                        scheme.getStateDistrictCode() != null &&
+
+                        scheme.getStateDistrictCode().equals(stateDistrictCode)
+                )
+
+                .collect(Collectors.toList());
+
+    } catch (Exception e) {
+
+        log.error("Error fetching schemes by district: {}", e.getMessage(), e);
+
+
+        return new ArrayList<>();
+    }
+}
 
 public Scheme updateScheme(String schemeId, Scheme schemeUpdates) {
 
