@@ -122,6 +122,33 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/getAllComplaints")
+    public ResponseEntity<?> getAllComplaints(Authentication authentication) {
+        try {
+            String adminUsername = authentication.getName();
+            User admin = userService.getUserByUsername(adminUsername);
+            
+            if (admin == null || admin.getStateDistrictCode() == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Admin region not found");
+                return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+            }
+
+            List<Complaint> complaints = complaintService.getComplaintsByRegionAndStatus(
+                    admin.getStateDistrictCode(),
+                    com.rationApplication.RationApplication.enums.Status.PROCESSING);
+            return new ResponseEntity<>(complaints, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error getting complaints: {}", e.toString());
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Error fetching complaints");
+            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
 
     @PostMapping("/createDistributor")
