@@ -70,7 +70,81 @@ public class SchemeService {
         }
     }
 
+public Scheme updateScheme(String schemeId, Scheme schemeUpdates) {
 
+    try {
+
+        log.info("Updating scheme: {}", schemeId);
+
+
+        Optional<Scheme> existingScheme =
+                schemeRepository.findById(new ObjectId(schemeId));
+
+
+        if (existingScheme.isPresent()) {
+
+            Scheme scheme = existingScheme.get();
+
+
+            if (schemeUpdates.getSchemeName() != null) {
+
+                scheme.setSchemeName(schemeUpdates.getSchemeName());
+            }
+
+
+            if (schemeUpdates.getSchemeType() != null) {
+
+                scheme.setSchemeType(schemeUpdates.getSchemeType());
+            }
+
+
+            if (schemeUpdates.getStateDistrictCode() != null) {
+
+                scheme.setStateDistrictCode(schemeUpdates.getStateDistrictCode());
+            }
+
+
+            if (schemeUpdates.getSuppliesName() != null) {
+
+                scheme.setSuppliesName(schemeUpdates.getSuppliesName());
+            }
+
+
+            if (schemeUpdates.getSuppliesCost() != null) {
+
+                scheme.setSuppliesCost(schemeUpdates.getSuppliesCost());
+            }
+
+
+            if (schemeUpdates.getSupplyPerPerson() != null) {
+
+                scheme.setSupplyPerPerson(schemeUpdates.getSupplyPerPerson());
+            }
+
+
+            Scheme updatedScheme = schemeRepository.save(scheme);
+
+
+            log.info("Scheme updated: {}", schemeId);
+
+
+            return updatedScheme;
+        }
+
+
+        log.warn("Scheme not found for update: {}", schemeId);
+
+
+        return null;
+
+    } catch (Exception e) {
+
+        log.error("Error updating scheme: {}", e.getMessage(), e);
+
+
+        throw new RuntimeException("Failed to update scheme", e);
+    }
+}
 
 
 public boolean deleteScheme(String schemeId) {
