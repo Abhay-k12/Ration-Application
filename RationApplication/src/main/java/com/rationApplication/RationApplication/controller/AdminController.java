@@ -56,7 +56,33 @@ public class AdminController {
     @Autowired
     private UserRepository userRepo;
 
-
+    @PutMapping("/addNewMember/{cardNumber}")
+    public ResponseEntity<Map<String, Object>> addNewMember(
+            @RequestBody Aadhaar aadhaar,
+            @PathVariable String cardNumber) {
+        try {
+            beneficiaryService.addNewMemberToExistingCard(cardNumber, aadhaar);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Member added successfully");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+        catch (IllegalArgumentException e) {
+            log.warn("Validation error adding member: {}", e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
+        catch (Exception e) {
+            log.error("Error in adding new member: {}", e.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error adding member");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+  
     @PutMapping("/separationCase/{oldCardNumber}/{newCardNumber}/{userAadhaarNumber}")
     public ResponseEntity<Map<String, Object>> migrateAadhaarFromCurrentCardToNewCard(
             @PathVariable String oldCardNumber,
