@@ -424,7 +424,25 @@ public class AdminController {
         }
     }
 
-  
+
+  @PutMapping("/transferToExistingCard/{oldCard}/{newCard}/{aadhaarNumber}")
+    public ResponseEntity<Map<String, Object>> transferToExistingCard(@PathVariable String oldCard, @PathVariable String newCard, @PathVariable String aadhaarNumber) {
+        try {
+            beneficiaryService.removeAndAddToExistingCard(oldCard, newCard, aadhaarNumber);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Member successfully transferred to the existing card.");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(Map.of("success", false, "message", e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            log.error("Transfer member exception: ", e);
+            return new ResponseEntity<>(Map.of("success", false, "message", "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    
  @GetMapping("/profile")
     public ResponseEntity<Map<String, Object>> getAdminProfile(Authentication authentication) {
         try {
