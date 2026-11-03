@@ -19,7 +19,78 @@ public class SchemeService {
     @Autowired
     private SchemeRepository schemeRepository;
 
+public Scheme createScheme(Scheme scheme) {
 
+    try {
+
+        log.info("Creating scheme: {}", scheme.getSchemeName());
+
+
+        Scheme savedScheme =
+                schemeRepository.save(scheme);
+
+
+        log.info("Scheme created with ID: {}", savedScheme.getId());
+
+
+        return savedScheme;
+
+    } catch (Exception e) {
+
+        log.error("Error creating scheme: {}", e.getMessage(), e);
+
+
+        throw new RuntimeException("Failed to create scheme", e);
+    }
+}
+
+
+
+
+public Scheme getSchemeById(String schemeId) {
+
+    try {
+
+        log.info("Fetching scheme by ID: {}", schemeId);
+
+
+        Optional<Scheme> scheme =
+                schemeRepository.findById(new ObjectId(schemeId));
+
+
+        return scheme.orElse(null);
+
+    } catch (Exception e) {
+
+        log.error("Error fetching scheme by ID: {}", e.getMessage(), e);
+
+
+        return null;
+    }
+}
+
+
+
+
+public List<Scheme> getAllSchemes() {
+
+    try {
+
+        log.info("Fetching all schemes");
+
+
+        return schemeRepository.findAll();
+
+    } catch (Exception e) {
+
+        log.error("Error fetching all schemes: {}", e.getMessage(), e);
+
+
+        return new ArrayList<>();
+    }
+}
+
+    
 public List<Scheme> getSchemesByDistrict(String stateDistrictCode) {
 
     try {
