@@ -103,24 +103,7 @@ public class AdminController {
         }
     }
 
-    @DeleteMapping("/delete/{cardNumber}/{userAadhaarNumber}")
-    public ResponseEntity<Map<String, Object>> deleteUserFromBeneficiaryCard(
-            @PathVariable String cardNumber,
-            @PathVariable String userAadhaarNumber) {
-        try {
-            beneficiaryService.removeMemberFromCard(cardNumber, userAadhaarNumber);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Member deleted successfully");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("Error in deleting the user: {}", e.toString());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Error deleting member: " + e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+  
 
     @GetMapping("/getAllBeneficiary/{cardNumber}")
     public ResponseEntity<?> getAllBeneficiary(@PathVariable String cardNumber) {
