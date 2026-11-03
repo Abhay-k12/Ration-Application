@@ -450,21 +450,4 @@ public class AdminController {
         }
     }
 
-    @PutMapping("/updateMemberDetails/{cardNumber}/{aadhaarNumber}")
-    public ResponseEntity<Map<String, Object>> updateMemberDetails(@PathVariable String cardNumber, @PathVariable String aadhaarNumber, @RequestBody Map<String, Object> body) {
-        try {
-            String empStatus = (String) body.get("employmentStatus");
-            String photo = (String) body.get("photograph");
-            
-            beneficiaryService.updateMemberDetails(cardNumber, aadhaarNumber, empStatus, photo);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Member updated successfully");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(Map.of("success", false, "message", e.getMessage()), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(Map.of("success", false, "message", "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
+  
