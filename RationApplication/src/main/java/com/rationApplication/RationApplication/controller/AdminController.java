@@ -484,20 +484,3 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<Map<String, Object>> getAdminProfile(Authentication authentication) {
-        try {
-            String adminUsername = authentication.getName();
-            User admin = userService.getUserByUsername(adminUsername);
-            if (admin == null) {
-                return new ResponseEntity<>(Map.of("success", false, "message", "Admin not found"), HttpStatus.NOT_FOUND);
-            }
-            Map<String, Object> profile = new HashMap<>();
-            profile.put("success", true);
-            profile.put("stateDistrictCode", admin.getStateDistrictCode());
-            return new ResponseEntity<>(profile, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(Map.of("success", false, "message", "Error fetching profile"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-}
