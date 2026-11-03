@@ -113,23 +113,3 @@ public class SchemeService {
     }
 
 
-    public boolean deleteScheme(String schemeId) {
-        try {
-            log.info("Deleting scheme: {}", schemeId);
-
-            Optional<Scheme> scheme = schemeRepository.findById(new ObjectId(schemeId));
-
-            if (scheme.isPresent()) {
-                schemeRepository.deleteById(new ObjectId(schemeId));
-                log.info("Scheme deleted: {}", schemeId);
-                return true;
-            }
-
-            log.warn("Scheme not found for deletion: {}", schemeId);
-            return false;
-        } catch (Exception e) {
-            log.error("Error deleting scheme: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to delete scheme", e);
-        }
-    }
-}
