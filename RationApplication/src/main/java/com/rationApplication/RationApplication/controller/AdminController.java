@@ -105,19 +105,6 @@ public class AdminController {
 
   
 
-    @GetMapping("/getAllBeneficiary/{cardNumber}")
-    public ResponseEntity<?> getAllBeneficiary(@PathVariable String cardNumber) {
-        try {
-            List<Aadhaar> members = beneficiaryService.returnAllMembers(cardNumber);
-            return new ResponseEntity<>(members, HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("ERROR IN FINDING THE MEMBERS: {}", e.toString());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Members not found: " + e.getMessage());
-            return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
-        }
-    }
 
     @PostMapping("/createDistributor")
     public ResponseEntity<Map<String, Object>> createDistributor(@RequestBody User user) {
