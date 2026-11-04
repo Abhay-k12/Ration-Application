@@ -1,33 +1,3 @@
-package com.rationApplication.RationApplication.controller;
-
-import com.rationApplication.RationApplication.entity.Scheme;
-import com.rationApplication.RationApplication.enums.SchemeType;
-import com.rationApplication.RationApplication.service.SchemeService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-@RestController
-@RequestMapping("/scheme")
-@Slf4j
-public class SchemeController {
-
-    @Autowired
-    private SchemeService schemeService;
-
-    // Get current username from JWT
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null ? authentication.getName() : null;
-    }
 
 
     // Create new scheme
