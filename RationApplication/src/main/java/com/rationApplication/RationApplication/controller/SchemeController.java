@@ -30,7 +30,265 @@ public class SchemeController {
     }
 
 
+    // Create new scheme
+    @PostMapping("/create")
+    public ResponseEntity<?> createScheme(
+            @RequestBody Scheme scheme) {
 
+        try {
+
+            String username = getCurrentUsername();
+
+
+            log.info(
+                    "Admin {} creating scheme: {}",
+                    username,
+                    scheme.getSchemeName()
+            );
+
+
+            if (scheme.getSchemeName() == null
+                    || scheme.getSchemeName().trim().isEmpty()) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "Scheme name is required");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+
+            if (scheme.getSchemeType() == null) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "Scheme type is required");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+
+            if (scheme.getStateDistrictCode() == null
+                    || scheme.getStateDistrictCode().trim().isEmpty()) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "State/District code is required");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+
+            if (scheme.getSuppliesName() == null
+                    || scheme.getSuppliesName().isEmpty()) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "At least one supply is required");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+
+            Scheme createdScheme = schemeService.createScheme(scheme);
+
+
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+
+            response.put("message", "Scheme created successfully");
+
+            response.put("scheme", createdScheme);
+
+
+            log.info(
+                    "Scheme created successfully: {} by admin {}",
+                    createdScheme.getId(),
+                    username
+            );
+
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.CREATED
+            );
+
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Error creating scheme: {}",
+                    e.getMessage(),
+                    e
+            );
+
+
+            Map<String, Object> errorResponse = new HashMap<>();
+
+            errorResponse.put("success", false);
+
+            errorResponse.put(
+                    "message",
+                    "Error creating scheme: " + e.getMessage()
+            );
+
+
+            return new ResponseEntity<>(
+                    errorResponse,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+
+    // Get all schemes for current district
+    @GetMapping("/getByDistrict")
+    public ResponseEntity<?> getSchemesByDistrict(
+            @RequestParam String stateDistrictCode) {
+
+        try {
+
+            log.info(
+                    "Fetching schemes for district: {}",
+                    stateDistrictCode
+            );
+
+
+            List<Scheme> schemes = schemeService.getSchemesByDistrict(
+                    stateDistrictCode
+            );
+
+
+            log.info(
+                    "Found {} schemes for district: {}",
+                    schemes.size(),
+                    stateDistrictCode
+            );
+
+
+            return new ResponseEntity<>(
+                    schemes,
+                    HttpStatus.OK
+            );
+
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Error fetching schemes: {}",
+                    e.getMessage(),
+                    e
+            );
+
+
+            Map<String, Object> errorResponse = new HashMap<>();
+
+            errorResponse.put("success", false);
+
+            errorResponse.put(
+                    "message",
+                    "Error fetching schemes: " + e.getMessage()
+            );
+
+
+            return new ResponseEntity<>(
+                    errorResponse,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+
+    // Get scheme by ID
+    @GetMapping("/getById/{schemeId}")
+    public ResponseEntity<?> getSchemeById(
+            @PathVariable String schemeId) {
+
+        try {
+
+            log.info(
+                    "Fetching scheme: {}",
+                    schemeId
+            );
+
+
+            Scheme scheme = schemeService.getSchemeById(schemeId);
+
+
+            if (scheme == null) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "Scheme not found");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.NOT_FOUND
+                );
+            }
+
+
+            return new ResponseEntity<>(
+                    scheme,
+                    HttpStatus.OK
+            );
+
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Error fetching scheme: {}",
+                    e.getMessage(),
+                    e
+            );
+
+
+            Map<String, Object> errorResponse = new HashMap<>();
+
+            errorResponse.put("success", false);
+
+            errorResponse.put(
+                    "message",
+                    "Error fetching scheme: " + e.getMessage()
+            );
+
+
+            return new ResponseEntity<>(
+                    errorResponse,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 
 
         // Update scheme
