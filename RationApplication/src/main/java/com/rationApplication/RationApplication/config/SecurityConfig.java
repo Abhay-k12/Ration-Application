@@ -118,11 +118,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.PUT, "/distributor/**").hasRole("DISTRIBUTOR")
                 .antMatchers(HttpMethod.DELETE, "/distributor/**").hasRole("DISTRIBUTOR")
 
-                // ADMIN ENDPOINTS - Require ADMIN role
-                .antMatchers(HttpMethod.POST, "/admin/**").hasRole("ADMIN")
-                .antMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN")
-                .antMatchers(HttpMethod.PUT, "/admin/**").hasRole("ADMIN")
-                .antMatchers(HttpMethod.DELETE, "/admin/**").hasRole("ADMIN")
+               
 
                 // SCHEME ENDPOINTS - Require ADMIN role
                 .antMatchers(HttpMethod.POST, "/scheme/create").hasRole("ADMIN")
