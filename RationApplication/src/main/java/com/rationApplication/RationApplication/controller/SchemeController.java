@@ -131,46 +131,7 @@ public class SchemeController {
         }
     }
 
-    // Update scheme
-    @PutMapping("/update/{schemeId}")
-    public ResponseEntity<?> updateScheme(@PathVariable String schemeId, @RequestBody Scheme scheme) {
-        try {
-            String username = getCurrentUsername();
-            log.info("Admin {} updating scheme: {}", username, schemeId);
-
-            if (scheme.getSchemeName() == null || scheme.getSchemeName().trim().isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Scheme name is required");
-                return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-            }
-
-            Scheme updatedScheme = schemeService.updateScheme(schemeId, scheme);
-
-            if (updatedScheme == null) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Scheme not found");
-                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-            }
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Scheme updated successfully");
-            response.put("scheme", updatedScheme);
-
-            log.info("Scheme updated successfully: {} by admin {}", schemeId, username);
-
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (Exception e) {
-            log.error("Error updating scheme: {}", e.getMessage(), e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Error updating scheme: " + e.getMessage());
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+   
     // Delete scheme
     @DeleteMapping("/delete/{schemeId}")
     public ResponseEntity<?> deleteScheme(
