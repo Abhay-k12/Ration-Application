@@ -171,4 +171,137 @@ public class SchemeController {
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    // Delete scheme
+    @DeleteMapping("/delete/{schemeId}")
+    public ResponseEntity<?> deleteScheme(
+            @PathVariable String schemeId) {
 
+        try {
+
+            String username = getCurrentUsername();
+
+
+            log.info(
+                    "Admin {} deleting scheme: {}",
+                    username,
+                    schemeId
+            );
+
+
+            boolean deleted = schemeService.deleteScheme(schemeId);
+
+
+            if (!deleted) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+
+                errorResponse.put("success", false);
+
+                errorResponse.put("message", "Scheme not found");
+
+
+                return new ResponseEntity<>(
+                        errorResponse,
+                        HttpStatus.NOT_FOUND
+                );
+            }
+
+
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+
+            response.put("message", "Scheme deleted successfully");
+
+
+            log.info(
+                    "Scheme deleted successfully: {} by admin {}",
+                    schemeId,
+                    username
+            );
+
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.OK
+            );
+
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Error deleting scheme: {}",
+                    e.getMessage(),
+                    e
+            );
+
+
+            Map<String, Object> errorResponse = new HashMap<>();
+
+            errorResponse.put("success", false);
+
+            errorResponse.put(
+                    "message",
+                    "Error deleting scheme: " + e.getMessage()
+            );
+
+
+            return new ResponseEntity<>(
+                    errorResponse,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+
+    // Get all schemes
+    @GetMapping("/getAll")
+    public ResponseEntity<?> getAllSchemes() {
+
+        try {
+
+            log.info("Fetching all schemes");
+
+
+            List<Scheme> schemes = schemeService.getAllSchemes();
+
+
+            log.info(
+                    "Found {} schemes",
+                    schemes.size()
+            );
+
+
+            return new ResponseEntity<>(
+                    schemes,
+                    HttpStatus.OK
+            );
+
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Error fetching all schemes: {}",
+                    e.getMessage(),
+                    e
+            );
+
+
+            Map<String, Object> errorResponse = new HashMap<>();
+
+            errorResponse.put("success", false);
+
+            errorResponse.put(
+                    "message",
+                    "Error fetching schemes: " + e.getMessage()
+            );
+
+
+            return new ResponseEntity<>(
+                    errorResponse,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+}
