@@ -455,4 +455,172 @@ public class AdminController {
         }
     }
 
+    @PutMapping("/updateMemberDetails/{cardNumber}/{aadhaarNumber}")
+    public ResponseEntity<Map<String, Object>> updateMemberDetails(
+            @PathVariable String cardNumber,
+            @PathVariable String aadhaarNumber,
+            @RequestBody Map<String, Object> body) {
 
+        try {
+
+            String empStatus = (String) body.get("employmentStatus");
+
+            String photo = (String) body.get("photograph");
+
+
+            beneficiaryService.updateMemberDetails(
+                    cardNumber,
+                    aadhaarNumber,
+                    empStatus,
+                    photo
+            );
+
+
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+
+            response.put("message", "Member updated successfully");
+
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.OK
+            );
+
+
+        } catch (IllegalArgumentException e) {
+
+            return new ResponseEntity<>(
+                    Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ),
+                    HttpStatus.BAD_REQUEST
+            );
+
+
+        } catch (Exception e) {
+
+            return new ResponseEntity<>(
+                    Map.of(
+                            "success", false,
+                            "message", "Internal Server Error"
+                    ),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+
+        }
+    }
+
+
+
+    @PutMapping("/transferToExistingCard/{oldCard}/{newCard}/{aadhaarNumber}")
+    public ResponseEntity<Map<String, Object>> transferToExistingCard(
+            @PathVariable String oldCard,
+            @PathVariable String newCard,
+            @PathVariable String aadhaarNumber) {
+
+        try {
+
+            beneficiaryService.removeAndAddToExistingCard(
+                    oldCard,
+                    newCard,
+                    aadhaarNumber
+            );
+
+
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+
+            response.put("message", "Member successfully transferred to the existing card.");
+
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.OK
+            );
+
+
+        } catch (IllegalArgumentException e) {
+
+            return new ResponseEntity<>(
+                    Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ),
+                    HttpStatus.BAD_REQUEST
+            );
+
+
+        } catch (Exception e) {
+
+            log.error("Transfer member exception: ", e);
+
+
+            return new ResponseEntity<>(
+                    Map.of(
+                            "success", false,
+                            "message", "Internal Server Error"
+                    ),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+
+        }
+    }
+
+
+
+
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, Object>> getAdminProfile(
+            Authentication authentication) {
+
+        try {
+
+            String adminUsername = authentication.getName();
+
+
+            User admin = userService.getUserByUsername(adminUsername);
+
+
+            if (admin == null) {
+
+                return new ResponseEntity<>(
+                        Map.of(
+                                "success", false,
+                                "message", "Admin not found"
+                        ),
+                        HttpStatus.NOT_FOUND
+                );
+
+            }
+
+
+            Map<String, Object> profile = new HashMap<>();
+
+            profile.put("success", true);
+
+            profile.put("stateDistrictCode", admin.getStateDistrictCode());
+
+
+            return new ResponseEntity<>(
+                    profile,
+                    HttpStatus.OK
+            );
+
+
+        } catch (Exception e) {
+
+            return new ResponseEntity<>(
+                    Map.of(
+                            "success", false,
+                            "message", "Error fetching profile"
+                    ),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+
+        }
+    }
+}
