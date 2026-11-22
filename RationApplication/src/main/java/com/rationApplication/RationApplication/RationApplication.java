@@ -16,6 +16,14 @@ public class RationApplication {
 
 }
 
+//Username: beneficiary001
+//Password: Beneficiary@123
+
+//Username: distributor001
+//Password: distributor123
+
+//Username: admin001
+//Password: admin123
 
 
 

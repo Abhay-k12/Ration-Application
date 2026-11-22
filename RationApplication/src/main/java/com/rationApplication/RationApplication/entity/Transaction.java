@@ -35,6 +35,8 @@ public class Transaction {
 
     private boolean faceVerified;
 
+    private String verificationMethod;
+
     List<String> suppliesName;
 
     List<Float> suppliesWeight;

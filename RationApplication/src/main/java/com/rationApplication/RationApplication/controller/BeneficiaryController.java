@@ -27,7 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/beneficiary")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-@PreAuthorize("hasRole('BENEFICIARY')")
+@PreAuthorize("hasAnyRole('BENEFICIARY', 'ROLE_BENEFICIARY') or hasAnyAuthority('BENEFICIARY', 'ROLE_BENEFICIARY')")
 @Slf4j
 public class BeneficiaryController {
 
@@ -49,7 +49,12 @@ public class BeneficiaryController {
     @PostMapping("/generateQR")
     public ResponseEntity<QRCodeResponse> generateQRCode(Authentication authentication) {
         try {
-            String username = authentication.getName();
+            String username = authentication != null ? authentication.getName() : getCurrentUsername();
+            if (username == null) {
+                return new ResponseEntity<>(
+                        new QRCodeResponse("Authentication required to generate QR code", false),
+                        HttpStatus.UNAUTHORIZED);
+            }
 
             log.info("Generating QR code for beneficiary: {}", username);
             QRCodeResponse response = qrCodeService.generateQRCode(username, username);
@@ -70,34 +75,41 @@ public class BeneficiaryController {
     @GetMapping("/getTransactions")
     public ResponseEntity<?> getAllTransactions(Authentication authentication) {
         try {
-            String username = authentication.getName();
+            String username = authentication != null ? authentication.getName() : getCurrentUsername();
+            if (username == null) {
+                return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
+            }
             log.info("Getting transactions for beneficiary: {}", username);
 
             List<Transaction> transactions = transactionService.getTransactionsByBeneficiary(username);
+            if (transactions == null) {
+                transactions = new ArrayList<>();
+            }
             return new ResponseEntity<>(transactions, HttpStatus.OK);
         } catch (Exception e) {
             log.error("ERROR IN TRACKING THE TRANSACTIONS: {}", e.toString());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error fetching transactions");
-            return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
         }
     }
 
     @GetMapping("/getComplaints")
     public ResponseEntity<?> getAllComplaints(Authentication authentication) {
         try {
-            String username = authentication.getName();
+            String username = authentication != null ? authentication.getName() : getCurrentUsername();
+            if (username == null) {
+                log.warn("Cannot get complaints: Authenticated username is null");
+                return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
+            }
             log.info("Getting complaints for beneficiary: {}", username);
 
             List<Complaint> complaints = complaintService.getComplaintsByUser(username);
+            if (complaints == null) {
+                complaints = new ArrayList<>();
+            }
             return new ResponseEntity<>(complaints, HttpStatus.OK);
         } catch (Exception e) {
             log.error("ERROR IN TRACKING THE COMPLAINTS: {}", e.toString());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error fetching complaints");
-            return new ResponseEntity<>(error, HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
         }
     }
 
@@ -106,10 +118,12 @@ public class BeneficiaryController {
             @RequestBody Complaint complaint,
             Authentication authentication) {
         try {
-            String username = authentication.getName();
-            complaint.setApplicantUsername(username);
+            String username = authentication != null ? authentication.getName() : getCurrentUsername();
+            if (username != null && !username.trim().isEmpty()) {
+                complaint.setApplicantUsername(username);
+            }
 
-            log.info("Submitting complaint for beneficiary: {}", username);
+            log.info("Submitting complaint for beneficiary: {}", complaint.getApplicantUsername());
             complaintService.registerComplaint(complaint);
 
             Map<String, Object> response = new HashMap<>();
@@ -120,7 +134,7 @@ public class BeneficiaryController {
             log.error("Error submitting complaint: {}", e.toString());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error submitting complaint");
+            response.put("message", "Error submitting complaint: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -169,6 +183,7 @@ public class BeneficiaryController {
             Beneficiary beneficiary = beneficiaryRepository.findByUsername(username);
 
             if (beneficiary == null) {
+                log.warn("Beneficiary not found: {}", username);
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
                 errorResponse.put("message", "Beneficiary not found");
@@ -190,4 +205,3 @@ public class BeneficiaryController {
         return authentication != null ? authentication.getName() : null;
     }
 }
-

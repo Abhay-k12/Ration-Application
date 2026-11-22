@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/distributor")
-@PreAuthorize("hasRole('DISTRIBUTOR')")
+@PreAuthorize("hasAnyAuthority('ROLE_DISTRIBUTOR', 'DISTRIBUTOR') or hasRole('DISTRIBUTOR')")
 @Slf4j
 public class DistributorController {
 
@@ -219,6 +219,7 @@ public class DistributorController {
             @RequestParam String beneficiaryUsername,
             @RequestParam String aadhaarNumber,
             @RequestParam boolean useOthersScheme,
+            @RequestParam(required = false, defaultValue = "FACE") String verificationMethod,
             Authentication authentication) {
         try {
             String distributorUsername = authentication.getName();
@@ -238,7 +239,8 @@ public class DistributorController {
                     aadhaarNumber,
                     useOthersScheme,
                     beneficiary.getStateDistrictCode(),
-                    distributorUsername);
+                    distributorUsername,
+                    verificationMethod);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

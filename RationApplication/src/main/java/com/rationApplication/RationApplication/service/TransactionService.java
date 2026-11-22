@@ -40,6 +40,12 @@ public class TransactionService {
     public Transaction processTransaction(String beneficiaryUsername, String aadhaarNumber,
                                           boolean useOthersScheme, String stateDistrictCode,
                                           String distributorUsername) throws Exception {
+        return processTransaction(beneficiaryUsername, aadhaarNumber, useOthersScheme, stateDistrictCode, distributorUsername, "FACE");
+    }
+
+    public Transaction processTransaction(String beneficiaryUsername, String aadhaarNumber,
+                                          boolean useOthersScheme, String stateDistrictCode,
+                                          String distributorUsername, String verificationMethod) throws Exception {
         try {
             log.info("[TRANSACTION] Starting for: {}, useOthersScheme: {}", beneficiaryUsername, useOthersScheme);
 
@@ -85,7 +91,9 @@ public class TransactionService {
             transaction.setBeneficiaryUsername(beneficiaryUsername);
             transaction.setDateOfTransaction(LocalDateTime.now());  // Just use current date/time
             transaction.setAadhaarNumber(aadhaarNumber);
-            transaction.setFaceVerified(true);
+            boolean isFace = verificationMethod == null || "FACE".equalsIgnoreCase(verificationMethod) || "Face Verification".equalsIgnoreCase(verificationMethod);
+            transaction.setFaceVerified(isFace);
+            transaction.setVerificationMethod(isFace ? "Face Verification" : "Email OTP");
             transaction.setDistributorUsername(distributorUsername);
             transaction.setStatus(Status.COMPLETED);
             transaction.setCreatedAt(System.currentTimeMillis());

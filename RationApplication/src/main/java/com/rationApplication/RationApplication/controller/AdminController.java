@@ -82,7 +82,7 @@ public class AdminController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-  
+
     @PutMapping("/separationCase/{oldCardNumber}/{newCardNumber}/{userAadhaarNumber}")
     public ResponseEntity<Map<String, Object>> migrateAadhaarFromCurrentCardToNewCard(
             @PathVariable String oldCardNumber,
@@ -122,6 +122,37 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/getAllBeneficiary/{cardNumber}")
+    public ResponseEntity<?> getAllBeneficiary(@PathVariable String cardNumber) {
+        try {
+            List<Aadhaar> members = beneficiaryService.returnAllMembers(cardNumber);
+            return new ResponseEntity<>(members, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("ERROR IN FINDING THE MEMBERS: {}", e.toString());
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Members not found: " + e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("/createDistributor")
+    public ResponseEntity<Map<String, Object>> createDistributor(@RequestBody User user) {
+        try {
+            userService.addNewDistributor(user);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Distributor created successfully");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            log.error("ERROR IN CREATING NEW DISTRIBUTOR: {}", e.toString());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error creating distributor: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/getAllComplaints")
     public ResponseEntity<?> getAllComplaints(Authentication authentication) {
         try {
@@ -147,42 +178,6 @@ public class AdminController {
             return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    @GetMapping("/getAllBeneficiary/{cardNumber}")
-    public ResponseEntity<?> getAllBeneficiary(@PathVariable String cardNumber) {
-        try {
-            List<Aadhaar> members = beneficiaryService.returnAllMembers(cardNumber);
-            return new ResponseEntity<>(members, HttpStatus.OK);
-        } catch (Exception e) {
-            log.error("ERROR IN FINDING THE MEMBERS: {}", e.toString());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Members not found: " + e.getMessage());
-            return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
-        }
-    }
-
-
-
-
-    @PostMapping("/createDistributor")
-    public ResponseEntity<Map<String, Object>> createDistributor(@RequestBody User user) {
-        try {
-            userService.addNewDistributor(user);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Distributor created successfully");
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (Exception e) {
-            log.error("ERROR IN CREATING NEW DISTRIBUTOR: {}", e.toString());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Error creating distributor: " + e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-
 
     @PutMapping("/resolveComplaint/{complaintId}")
     public ResponseEntity<Map<String, Object>> resolveComplaint(
@@ -456,171 +451,53 @@ public class AdminController {
     }
 
     @PutMapping("/updateMemberDetails/{cardNumber}/{aadhaarNumber}")
-    public ResponseEntity<Map<String, Object>> updateMemberDetails(
-            @PathVariable String cardNumber,
-            @PathVariable String aadhaarNumber,
-            @RequestBody Map<String, Object> body) {
-
+    public ResponseEntity<Map<String, Object>> updateMemberDetails(@PathVariable String cardNumber, @PathVariable String aadhaarNumber, @RequestBody Map<String, Object> body) {
         try {
-
             String empStatus = (String) body.get("employmentStatus");
-
             String photo = (String) body.get("photograph");
-
-
-            beneficiaryService.updateMemberDetails(
-                    cardNumber,
-                    aadhaarNumber,
-                    empStatus,
-                    photo
-            );
-
-
+            
+            beneficiaryService.updateMemberDetails(cardNumber, aadhaarNumber, empStatus, photo);
             Map<String, Object> response = new HashMap<>();
-
             response.put("success", true);
-
             response.put("message", "Member updated successfully");
-
-
-            return new ResponseEntity<>(
-                    response,
-                    HttpStatus.OK
-            );
-
-
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-
-            return new ResponseEntity<>(
-                    Map.of(
-                            "success", false,
-                            "message", e.getMessage()
-                    ),
-                    HttpStatus.BAD_REQUEST
-            );
-
-
+            return new ResponseEntity<>(Map.of("success", false, "message", e.getMessage()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-
-            return new ResponseEntity<>(
-                    Map.of(
-                            "success", false,
-                            "message", "Internal Server Error"
-                    ),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-
+            return new ResponseEntity<>(Map.of("success", false, "message", "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
 
     @PutMapping("/transferToExistingCard/{oldCard}/{newCard}/{aadhaarNumber}")
-    public ResponseEntity<Map<String, Object>> transferToExistingCard(
-            @PathVariable String oldCard,
-            @PathVariable String newCard,
-            @PathVariable String aadhaarNumber) {
-
+    public ResponseEntity<Map<String, Object>> transferToExistingCard(@PathVariable String oldCard, @PathVariable String newCard, @PathVariable String aadhaarNumber) {
         try {
-
-            beneficiaryService.removeAndAddToExistingCard(
-                    oldCard,
-                    newCard,
-                    aadhaarNumber
-            );
-
-
+            beneficiaryService.removeAndAddToExistingCard(oldCard, newCard, aadhaarNumber);
             Map<String, Object> response = new HashMap<>();
-
             response.put("success", true);
-
             response.put("message", "Member successfully transferred to the existing card.");
-
-
-            return new ResponseEntity<>(
-                    response,
-                    HttpStatus.OK
-            );
-
-
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-
-            return new ResponseEntity<>(
-                    Map.of(
-                            "success", false,
-                            "message", e.getMessage()
-                    ),
-                    HttpStatus.BAD_REQUEST
-            );
-
-
+            return new ResponseEntity<>(Map.of("success", false, "message", e.getMessage()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-
             log.error("Transfer member exception: ", e);
-
-
-            return new ResponseEntity<>(
-                    Map.of(
-                            "success", false,
-                            "message", "Internal Server Error"
-                    ),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-
+            return new ResponseEntity<>(Map.of("success", false, "message", "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
-
-
     @GetMapping("/profile")
-    public ResponseEntity<Map<String, Object>> getAdminProfile(
-            Authentication authentication) {
-
+    public ResponseEntity<Map<String, Object>> getAdminProfile(Authentication authentication) {
         try {
-
             String adminUsername = authentication.getName();
-
-
             User admin = userService.getUserByUsername(adminUsername);
-
-
             if (admin == null) {
-
-                return new ResponseEntity<>(
-                        Map.of(
-                                "success", false,
-                                "message", "Admin not found"
-                        ),
-                        HttpStatus.NOT_FOUND
-                );
-
+                return new ResponseEntity<>(Map.of("success", false, "message", "Admin not found"), HttpStatus.NOT_FOUND);
             }
-
-
             Map<String, Object> profile = new HashMap<>();
-
             profile.put("success", true);
-
             profile.put("stateDistrictCode", admin.getStateDistrictCode());
-
-
-            return new ResponseEntity<>(
-                    profile,
-                    HttpStatus.OK
-            );
-
-
+            return new ResponseEntity<>(profile, HttpStatus.OK);
         } catch (Exception e) {
-
-            return new ResponseEntity<>(
-                    Map.of(
-                            "success", false,
-                            "message", "Error fetching profile"
-                    ),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-
+            return new ResponseEntity<>(Map.of("success", false, "message", "Error fetching profile"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

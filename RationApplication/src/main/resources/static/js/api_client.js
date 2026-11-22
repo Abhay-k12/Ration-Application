@@ -1,18 +1,87 @@
 const API_BASE_URL = 'http://localhost:8081';
 
+// ===== SESSION MANAGEMENT (1 HOUR DURABLE SESSION) =====
+const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+
+function getSessionExpiry() {
+    const expiryStr = sessionStorage.getItem('sessionExpiry') || localStorage.getItem('sessionExpiry');
+    return expiryStr ? parseInt(expiryStr, 10) : 0;
+}
+
+function updateSessionExpiry() {
+    const expiryTime = Date.now() + SESSION_DURATION_MS;
+    try {
+        sessionStorage.setItem('sessionExpiry', expiryTime.toString());
+        localStorage.setItem('sessionExpiry', expiryTime.toString());
+    } catch (_) {}
+}
+
+function touchSession() {
+    const token = getAuthToken();
+    if (token) {
+        updateSessionExpiry();
+    }
+}
+
+function isSessionValid() {
+    const token = getAuthToken();
+    if (!token) {
+        return false;
+    }
+    const expiry = getSessionExpiry();
+    // If token exists but expiry not set yet (e.g. existing session), initialize 1-hour duration
+    if (!expiry) {
+        updateSessionExpiry();
+        return true;
+    }
+    if (Date.now() > expiry) {
+        console.warn('[AUTH] Session duration of 1 hour has expired.');
+        removeAuthToken();
+        return false;
+    }
+    return true;
+}
+
 function getAuthToken() {
-    return localStorage.getItem('jwtToken');
+    return sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken');
 }
 
 function setAuthToken(token) {
-    localStorage.setItem('jwtToken', token);
+    try {
+        sessionStorage.setItem('jwtToken', token);
+        localStorage.setItem('jwtToken', token);
+    } catch (_) {}
+    updateSessionExpiry();
 }
 
 function removeAuthToken() {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('username');
-    localStorage.removeItem('email');
+    const keys = ['jwtToken', 'sessionExpiry', 'userRole', 'username', 'email', 'stateDistrictCode', 'currentCardNumber'];
+    keys.forEach(k => {
+        try {
+            sessionStorage.removeItem(k);
+            localStorage.removeItem(k);
+        } catch (_) {}
+    });
+}
+
+// Durable session tracking across tab switches and window focus
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            if (isSessionValid()) {
+                touchSession();
+                console.log('[AUTH] Tab active: Session touched and extended for 1 hour');
+            }
+        }
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('focus', () => {
+        if (isSessionValid()) {
+            touchSession();
+        }
+    });
 }
 
 async function apiRequest(endpoint, method = 'GET', data = null, isFormData = false) {
@@ -59,9 +128,14 @@ async function apiRequest(endpoint, method = 'GET', data = null, isFormData = fa
 
         console.log(`[API Response] Status: ${response.status}, Success: ${result.success}`);
 
-        // Handle 401 Unauthorized - but NOT for login endpoint
+        // If request succeeded, refresh 1-hour session expiry
+        if (response.ok) {
+            touchSession();
+        }
+
+        // Handle 401 Unauthorized - token is rejected or invalid
         if (response.status === 401 && endpoint !== '/auth/login') {
-            console.log('[API] Unauthorized - Removing auth and redirecting to login');
+            console.warn('[API] Unauthorized (401) from server - Redirecting to login');
             removeAuthToken();
             window.location.href = '/login_page.html';
             return null;
@@ -98,12 +172,6 @@ async function login(username, password) {
     return result;
 }
 
-async function refreshTokenEndpoint() {
-    const token = getAuthToken();
-    if (!token) return null;
-    return apiRequest('/auth/refresh', 'POST', null);
-}
-
 // ===== QR CODE ENDPOINTS =====
 async function generateQRCode() {
     return apiRequest('/beneficiary/generateQR', 'POST');
@@ -136,16 +204,16 @@ async function registerBeneficiary(beneficiary) {
     return apiRequest('/distributor/register', 'PUT', beneficiary);
 }
 
-async function verifyBeneficiary(beneficiaryUsername, isApproved) {
+async function verifyBeneficiary(rationCardNumber, isApproved) {
     return apiRequest(
-        `/distributor/verifyBeneficiary?beneficiaryUsername=${beneficiaryUsername}&isApproved=${isApproved}`,
+        `/distributor/verifyBeneficiary?beneficiaryUsername=${rationCardNumber}&isApproved=${isApproved}`,
         'POST'
     );
 }
 
-async function processTransaction(beneficiaryUsername, aadhaarNumber, useOthersScheme) {
+async function processTransaction(beneficiaryUsername, aadhaarNumber, useOthersScheme = false, verificationMethod = 'FACE') {
     return apiRequest(
-        `/distributor/processTransaction?beneficiaryUsername=${beneficiaryUsername}&aadhaarNumber=${aadhaarNumber}&useOthersScheme=${useOthersScheme}`,
+        `/distributor/processTransaction?beneficiaryUsername=${encodeURIComponent(beneficiaryUsername)}&aadhaarNumber=${encodeURIComponent(aadhaarNumber)}&useOthersScheme=${useOthersScheme}&verificationMethod=${encodeURIComponent(verificationMethod)}`,
         'POST'
     );
 }
@@ -157,36 +225,44 @@ async function getDistributorComplaints() {
 async function submitDistributorComplaint(title, description, category, priority) {
     return apiRequest('/distributor/submitComplaint', 'POST', {
         complaintTitle: title,
-        description,
-        category,
-        priority
+        description: description,
+        category: category,
+        priority: priority
     });
 }
 
-async function submitDistributorBeneficiaryComplaint(beneficiaryUsername, title, description, category, priority) {
-    return apiRequest(`/distributor/submitBeneficiaryComplaint?beneficiaryUsername=${beneficiaryUsername}`, 'POST', {
-        complaintTitle: title,
-        description,
-        category,
-        priority
-    });
+async function submitBeneficiaryComplaintByDistributor(beneficiaryUsername, title, description, category, priority) {
+    return apiRequest(
+        `/distributor/submitBeneficiaryComplaint?beneficiaryUsername=${beneficiaryUsername}`,
+        'POST',
+        {
+            complaintTitle: title,
+            description: description,
+            category: category,
+            priority: priority
+        }
+    );
 }
-
 
 // ===== ADMIN ENDPOINTS =====
-async function addNewMember(cardNumber, aadhaarData) {
-    return apiRequest(`/admin/addNewMember/${cardNumber}`, 'PUT', aadhaarData);
+async function getAdminDashboardStats() {
+    return apiRequest('/admin/stats', 'GET');
 }
 
-async function removeMember(cardNumber, aadhaarNumber) {
-    return apiRequest(`/admin/delete/${cardNumber}/${aadhaarNumber}`, 'DELETE');
+async function addNewMember(cardNumber, aadhaar) {
+    return apiRequest(`/admin/addNewMember/${cardNumber}`, 'PUT', aadhaar);
 }
 
-async function migrateAadhaarFromCurrentCardToNewCard(oldCardNumber, newCardNumber, userAadhaarNumber) {
-    return apiRequest(
-        `/admin/separationCase/${oldCardNumber}/${newCardNumber}/${userAadhaarNumber}`,
-        'PUT'
-    );
+async function addMemberToCard(cardNumber, aadhaar) {
+    return addNewMember(cardNumber, aadhaar);
+}
+
+async function deleteUserFromCard(cardNumber, userAadhaarNumber) {
+    return apiRequest(`/admin/deleteUser/${cardNumber}/${userAadhaarNumber}`, 'DELETE');
+}
+
+async function separateCardMembers(payload) {
+    return apiRequest('/admin/separateCard', 'POST', payload);
 }
 
 async function getAllBeneficiary(cardNumber) {
@@ -211,8 +287,8 @@ async function rejectComplaint(complaintId, resolutionNotes) {
     );
 }
 
-async function createDistributor(username, password, email, stateDistrictCode) {
-    return apiRequest('/admin/createDistributor', 'POST', {
+async function registerDistributor(username, password, email, stateDistrictCode) {
+    return apiRequest('/auth/register', 'POST', {
         username,
         password,
         email,
@@ -228,23 +304,19 @@ function logout() {
 }
 
 function isAuthenticated() {
-    return getAuthToken() !== null;
+    return isSessionValid();
 }
 
 function getUserRole() {
-    return localStorage.getItem('userRole');
+    return sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
 }
 
 function getUsername() {
-    return localStorage.getItem('username');
+    return sessionStorage.getItem('username') || localStorage.getItem('username');
 }
 
-async function getBeneficiaryTransactions() {
-    return apiRequest('/beneficiary/getTransactions', 'GET');
-}
-
-async function getBeneficiaryComplaints() {
-    return apiRequest('/beneficiary/getComplaints', 'GET');
+async function getCardDetails(cardNumber) {
+    return apiRequest(`/admin/getCardDetails/${cardNumber}`, 'GET');
 }
 
 async function getBeneficiaryMembers() {
@@ -296,24 +368,25 @@ async function getBeneficiaryProfile() {
 
 // ===== CUSTOM MODALS =====
 window.showCustomModal = function(message, title = 'Notification') {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         let modal = document.getElementById('genericModal');
         if (!modal) {
-            document.body.insertAdjacentHTML('beforeend', `
-            <div id="genericModal" class="modal">
-                <div class="modal-content" style="max-width: 400px; text-align: center;">
-                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
-                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
-                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
-                        <input type="text" id="genericModalInput" class="form-control" />
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
-                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
+            const modalHtml = `
+                <div class="modal" id="genericModal" style="z-index: 999999;">
+                    <div class="modal-content" style="max-width: 420px; text-align: center; border-top: 5px solid var(--primary);">
+                        <h3 id="genericModalTitle" style="color: var(--primary); margin-bottom: 12px; font-size: 1.25rem;">Notification</h3>
+                        <p id="genericModalMessage" style="color: #475569; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; word-break: break-word;"></p>
+                        <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
+                            <input type="text" id="genericModalInput" class="form-control" style="width: 100%; box-sizing: border-box; text-align: left;" placeholder="Enter details...">
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button id="genericModalCancelBtn" class="submit-btn" style="display: none; background: #94a3b8; width: auto; padding: 10px 24px;">Cancel</button>
+                            <button id="genericModalOkBtn" class="submit-btn" style="width: auto; min-width: 120px; padding: 10px 24px;">OK</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            `);
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
             modal = document.getElementById('genericModal');
         }
 
@@ -326,32 +399,19 @@ window.showCustomModal = function(message, title = 'Notification') {
         const handleOk = () => {
             okBtn.removeEventListener('click', handleOk);
             modal.classList.remove('active');
-            resolve(true);
+            resolve();
         };
+        
         okBtn.addEventListener('click', handleOk);
         modal.classList.add('active');
     });
 };
 
-window.showCustomConfirm = function(message, title = 'Confirm') {
-    return new Promise(resolve => {
+window.showCustomConfirm = function(message, title = 'Please Confirm') {
+    return new Promise((resolve) => {
         let modal = document.getElementById('genericModal');
         if (!modal) {
-            document.body.insertAdjacentHTML('beforeend', `
-            <div id="genericModal" class="modal">
-                <div class="modal-content" style="max-width: 400px; text-align: center;">
-                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
-                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
-                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
-                        <input type="text" id="genericModalInput" class="form-control" />
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
-                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
-                    </div>
-                </div>
-            </div>
-            `);
+            window.showCustomModal(message, title);
             modal = document.getElementById('genericModal');
         }
 
@@ -378,25 +438,11 @@ window.showCustomConfirm = function(message, title = 'Confirm') {
     });
 };
 
-window.showCustomPrompt = function(message, title = 'Input Required', defaultValue = '') {
-    return new Promise(resolve => {
+window.showCustomPrompt = function(message, defaultValue = '', title = 'Input Required') {
+    return new Promise((resolve) => {
         let modal = document.getElementById('genericModal');
         if (!modal) {
-            document.body.insertAdjacentHTML('beforeend', `
-            <div id="genericModal" class="modal">
-                <div class="modal-content" style="max-width: 400px; text-align: center;">
-                    <h3 id="genericModalTitle" style="color:var(--primary); margin-bottom: 15px;"></h3>
-                    <p id="genericModalMessage" style="margin-bottom: 20px; font-size: 15px;"></p>
-                    <div id="genericModalInputContainer" style="display: none; margin-bottom: 20px;">
-                        <input type="text" id="genericModalInput" class="form-control" />
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button id="genericModalCancelBtn" class="submit-btn" style="background: var(--gray); display: none; width: auto; padding: 10px 20px;">Cancel</button>
-                        <button id="genericModalOkBtn" class="submit-btn" style="width: auto; padding: 10px 20px;">OK</button>
-                    </div>
-                </div>
-            </div>
-            `);
+            window.showCustomModal(message, title);
             modal = document.getElementById('genericModal');
         }
 

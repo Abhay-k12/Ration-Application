@@ -294,6 +294,7 @@
                                         <th>Amount (₹)</th>
                                         <th>Distributor</th>
                                         <th>Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rcTransactionsTableBody"></tbody>
@@ -308,6 +309,7 @@
                                         <th>Subject</th>
                                         <th>Date</th>
                                         <th>Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rcComplaintsTableBody"></tbody>
@@ -447,25 +449,39 @@
     <div class="modal" id="complaintModal">
         <div class="modal-content" style="max-width: 600px;">
             <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
-            <h3 style="color: var(--primary); margin-bottom: 20px;">Complaint Details</h3>
+            <h3 style="color: var(--primary); margin-bottom: 20px;"><i class="ri-alert-line"></i> Complaint Details</h3>
 
             <div id="complaintDetailContent" style="text-align: left;"></div>
 
             <!-- Resolution/Rejection Notes Input -->
-            <div class="form-group" style="margin-top: 20px; text-align: left;">
+            <div class="form-group" id="adminResolutionBox" style="margin-top: 20px; text-align: left;">
                 <label class="form-label" style="color: var(--primary); font-weight: 600;">Resolution / Rejection Notes
                     <span style="color: red;">*</span></label>
                 <textarea id="adminResolutionNotes" class="form-control" rows="3"
                     placeholder="Enter your remarks here before resolving or rejecting..."></textarea>
             </div>
 
-            <div class="modal-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+            <div class="modal-actions" id="adminComplaintActions" style="margin-top: 15px; display: flex; gap: 10px;">
                 <button class="resolve-btn" id="resolveBtn" onclick="resolveComplaintAction()">
                     <i class="ri-check-line"></i> Resolve
                 </button>
                 <button class="reject-btn" id="rejectBtn" onclick="rejectComplaintAction()">
                     <i class="ri-close-line"></i> Reject
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div class="modal" id="txnModal">
+        <div class="modal-content" style="max-width: 550px;">
+            <span class="close-modal" onclick="closeModal('txnModal')">&times;</span>
+            <h3 style="color: var(--primary); margin-bottom: 20px;"><i class="ri-receipt-line"></i> Transaction Details</h3>
+            <div id="txnDetailContent" style="text-align: left;">
+                <p>Loading...</p>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="submit-btn" style="width: auto; padding: 8px 20px;" onclick="closeModal('txnModal')">Close</button>
             </div>
         </div>
     </div>
@@ -514,10 +530,11 @@
                 <div class="form-group">
                     <label class="form-label">Employment Status</label>
                     <select id="memberEmployment" class="form-control" required>
-                        <option value="GOVERNMENT">Government Employee</option>
-                        <option value="PRIVATE">Private Employee</option>
+                        <option value="GOVERNMENT">Government</option>
+                        <option value="PRIVATE">Private</option>
                         <option value="STUDENT">Student</option>
-                        <option value="HOUSE_WIFE">Homemaker</option>
+                        <option value="HOUSE_WIFE">House Wife</option>
+                        <option value="UNEMPLOYED">Unemployed</option>
                     </select>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
@@ -609,9 +626,11 @@
                 <label class="form-label">New Employment Status</label>
                 <select id="updateMemberEmp" class="form-control">
                     <option value="">Keep current</option>
-                    <option value="Employed">Employed</option>
-                    <option value="Unemployed">Unemployed</option>
-                    <option value="Self-Employed">Self-Employed</option>
+                    <option value="GOVERNMENT">Government</option>
+                    <option value="PRIVATE">Private</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="HOUSE_WIFE">House Wife</option>
+                    <option value="UNEMPLOYED">Unemployed</option>
                 </select>
             </div>
             <div class="form-group">

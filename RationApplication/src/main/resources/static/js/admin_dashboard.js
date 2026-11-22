@@ -3,8 +3,8 @@ if (!window.getAuthToken || !window.login) {
     window.location.href = '/login_page.html';
 }
 
-const token = localStorage.getItem('jwtToken');
-const userRole = localStorage.getItem('userRole');
+const token = typeof getAuthToken === 'function' ? getAuthToken() : (sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken'));
+const userRole = typeof getUserRole === 'function' ? getUserRole() : (sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
 
 if (!token || userRole !== 'ADMIN') {
     console.log('[AUTH] Not authorized as ADMIN, redirecting');
@@ -12,8 +12,15 @@ if (!token || userRole !== 'ADMIN') {
 }
 
 window.addEventListener('load', () => {
-    const token = getAuthToken();
-    const userRole = localStorage.getItem('userRole');
+    if (typeof isSessionValid === 'function' && !isSessionValid()) {
+        console.log('[AUTH] Admin session duration expired (1 hr)');
+        removeAuthToken();
+        window.location.href = '/login_page.html';
+        return;
+    }
+
+    const token = typeof getAuthToken === 'function' ? getAuthToken() : (sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken'));
+    const userRole = typeof getUserRole === 'function' ? getUserRole() : (sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
 
     console.log('[AUTH] Token present:', token ? true : false);
     console.log('[AUTH] User role:', userRole);
@@ -24,9 +31,20 @@ window.addEventListener('load', () => {
         return;
     }
 
+    if (typeof touchSession === 'function') {
+        touchSession();
+    }
     console.log('[INIT] Loading admin data');
     loadAdminData();
     setupEventListeners();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (typeof isSessionValid === 'function' && isSessionValid()) {
+            if (typeof touchSession === 'function') touchSession();
+        }
+    }
 });
 
 function setupEventListeners() {
@@ -43,6 +61,10 @@ function setupEventListeners() {
 
                 if (moduleId === 'module2') {
                     loadComplaints();
+            const currentCard = localStorage.getItem('currentCardNumber');
+            if (currentCard) {
+                loadCardTransactionsAndComplaints(currentCard);
+            }
                 } else if (moduleId === 'module4') {
                     loadSchemes();
                 }
@@ -202,19 +224,31 @@ async function handleCreateDistributor(e) {
     }
 }
 
+async function addNewMember(cardNumber, aadhaarData) {
+    if (typeof window.addNewMember === 'function' && window.addNewMember !== addNewMember) {
+        return window.addNewMember(cardNumber, aadhaarData);
+    }
+    return apiRequest(`/admin/addNewMember/${cardNumber}`, 'PUT', aadhaarData);
+}
+
 async function handleAddMember(e) {
     e.preventDefault();
 
     const cardNumber = localStorage.getItem('currentCardNumber');
+    if (!cardNumber) {
+        await showCustomModal('No ration card selected. Please search for a ration card first.');
+        return;
+    }
+
     const aadhaarData = {
-        aadhaarNumber: document.getElementById('memberAadhaar').value,
-        name: document.getElementById('memberName').value,
+        aadhaarNumber: document.getElementById('memberAadhaar').value.trim(),
+        name: document.getElementById('memberName').value.trim(),
         dateOfBirth: document.getElementById('memberDOB').value,
         employmentStatus: document.getElementById('memberEmployment').value,
-        photograph: document.getElementById('memberPhotograph').value
+        photograph: document.getElementById('memberPhotograph').value || ''
     };
 
-    console.log('[MEMBER] Adding member to card:', cardNumber);
+    console.log('[MEMBER] Adding member to card:', cardNumber, aadhaarData);
 
     try {
         const response = await addNewMember(cardNumber, aadhaarData);
@@ -223,6 +257,17 @@ async function handleAddMember(e) {
             console.log('[MEMBER] Member added successfully');
             await showCustomModal('Member added successfully!');
             closeModal('addMemberModal');
+
+            // Reset modal form
+            const form = document.getElementById('addMemberForm');
+            if (form) form.reset();
+            const photoStatus = document.getElementById('photo-status');
+            if (photoStatus) {
+                photoStatus.textContent = 'No photo captured';
+                photoStatus.style.color = 'var(--gray)';
+            }
+            document.getElementById('memberPhotograph').value = '';
+
             searchRationCard();
         } else {
             console.log('[MEMBER] Failed:', response?.message);
@@ -594,53 +639,103 @@ function hideGlobalLoader() {
     if (loader) loader.style.display = 'none';
 }
 
+function openComplaintModal(complaint) {
+    if (!complaint) return;
+    const modal = document.getElementById('complaintModal');
+    const contentEl = document.getElementById('complaintDetailContent');
+    const notesInput = document.getElementById('adminResolutionNotes');
+    const resolutionBox = document.getElementById('adminResolutionBox');
+    const actionsBox = document.getElementById('adminComplaintActions');
+
+    if (modal) modal.classList.add('active');
+    if (notesInput) notesInput.value = '';
+
+    const st = complaint.status ? complaint.status.toUpperCase() : 'PENDING';
+    const isResolvedOrRejected = (st === 'RESOLVED' || st === 'PROCESSED' || st === 'REJECTED');
+
+    // Show/hide resolution actions depending on status
+    if (resolutionBox) resolutionBox.style.display = isResolvedOrRejected ? 'none' : 'block';
+    if (actionsBox) actionsBox.style.display = isResolvedOrRejected ? 'none' : 'flex';
+
+    let resolutionSection = '';
+    if (complaint.resolutionNotes) {
+        const bg = (st === 'REJECTED') ? '#fef2f2' : '#f0fdf4';
+        const border = (st === 'REJECTED') ? '#fecaca' : '#bbf7d0';
+        const titleColor = (st === 'REJECTED') ? '#dc2626' : '#16a34a';
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 15px; background: ${bg}; border-radius: 8px; border: 1px solid ${border};">
+                <strong style="color: ${titleColor};"><i class="ri-feedback-line"></i> Resolution Remarks / Notes:</strong>
+                <p style="margin-top: 8px; white-space: pre-wrap; font-size: 14px;">${complaint.resolutionNotes}</p>
+                ${complaint.resolvedAt ? `<p style="margin-top: 6px; font-size: 12px; color: var(--gray);">Resolved On: ${new Date(complaint.resolvedAt).toLocaleString()}</p>` : ''}
+            </div>
+        `;
+    } else if (isResolvedOrRejected) {
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 13px; color: var(--gray);"><em>Status: ${st} (No additional remarks recorded)</em></p>
+            </div>
+        `;
+    }
+
+    let statusBadgeColor = '#d97706';
+    let statusBadgeBg = '#fef3c7';
+    if (st === 'RESOLVED' || st === 'PROCESSED') {
+        statusBadgeColor = '#16a34a';
+        statusBadgeBg = '#dcfce7';
+    } else if (st === 'REJECTED') {
+        statusBadgeColor = '#dc2626';
+        statusBadgeBg = '#fee2e2';
+    }
+
+    if (contentEl) {
+        contentEl.innerHTML = `
+            <div style="font-size: 14px; line-height: 1.6;">
+                <p><strong>Complaint ID:</strong> ${complaint.id || 'N/A'}</p>
+                <p><strong>Applicant:</strong> ${complaint.applicantUsername || 'N/A'}</p>
+                <p><strong>Subject:</strong> ${complaint.complaintTitle || 'N/A'}</p>
+                <p><strong>Category:</strong> ${complaint.category || 'N/A'}</p>
+                <p><strong>Status:</strong> <span style="font-weight:600; color: ${statusBadgeColor}; background: ${statusBadgeBg}; padding: 2px 8px; border-radius: 4px;">${st}</span></p>
+                <p><strong>Date:</strong> ${new Date(complaint.createdAt).toLocaleDateString()} ${new Date(complaint.createdAt).toLocaleTimeString()}</p>
+
+                <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong style="color: var(--secondary);"><i class="ri-file-text-line"></i> Complaint Body / Description:</strong>
+                    <p style="margin-top: 8px; white-space: pre-wrap;">${complaint.description || 'No description provided.'}</p>
+                </div>
+
+                <div style="margin-top: 15px; padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+                    <strong style="color: #16a34a;"><i class="ri-links-line"></i> Document Link:</strong>
+                    <p style="margin-top: 8px; word-break: break-all;">
+                        ${complaint.documentLink
+                ? `<a href="${complaint.documentLink}" target="_blank" style="color: #2563eb; text-decoration: underline;">View Attached Document</a>`
+                : 'No document attached.'}
+                    </p>
+                </div>
+
+                ${resolutionSection}
+            </div>
+        `;
+
+        localStorage.setItem('currentComplaintId', complaint.id);
+    }
+}
+
 async function viewComplaintDetail(index) {
     try {
         console.log('[COMPLAINT] Viewing complaint at index:', index);
-
-        const complaint = window.loadedAdminComplaints[index];
-        const modal = document.getElementById('complaintModal');
-        const contentEl = document.getElementById('complaintDetailContent');
-        const notesInput = document.getElementById('adminResolutionNotes');
-
-        if (modal) modal.classList.add('active');
-
-        // Clear previous notes
-        if (notesInput) notesInput.value = '';
-
-        if (contentEl && complaint) {
-            contentEl.innerHTML = `
-                <div style="font-size: 14px; line-height: 1.6;">
-                    <p><strong>Complaint ID:</strong> ${complaint.id}</p>
-                    <p><strong>Applicant:</strong> ${complaint.applicantUsername || 'N/A'}</p>
-                    <p><strong>Subject:</strong> ${complaint.complaintTitle || 'N/A'}</p>
-                    <p><strong>Category:</strong> ${complaint.category || 'N/A'}</p>
-                    <p><strong>Status:</strong> <span style="font-weight:600; color: var(--primary);">${complaint.status || 'PENDING'}</span></p>
-                    <p><strong>Date:</strong> ${new Date(complaint.createdAt).toLocaleDateString()}</p>
-
-                    <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: var(--secondary);">Description:</strong>
-                        <p style="margin-top: 8px; white-space: pre-wrap;">${complaint.description || 'No description provided.'}</p>
-                    </div>
-
-                    <div style="margin-top: 15px; padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
-                        <strong style="color: #16a34a;"><i class="ri-links-line"></i> Document Link:</strong>
-                        <p style="margin-top: 8px; word-break: break-all;">
-                            ${complaint.documentLink
-                    ? `<a href="${complaint.documentLink}" target="_blank" style="color: #2563eb; text-decoration: underline;">View Attached Document</a>`
-                    : 'No document attached.'}
-                        </p>
-                    </div>
-                </div>
-            `;
-
-            localStorage.setItem('currentComplaintId', complaint.id);
-
-        } else if (contentEl) {
-            contentEl.innerHTML = `<p style="color: var(--danger);">Error loading complaint details.</p>`;
-        }
+        const complaint = window.loadedAdminComplaints ? window.loadedAdminComplaints[index] : null;
+        openComplaintModal(complaint);
     } catch (error) {
         console.error('[COMPLAINT] Error:', error);
+    }
+}
+
+function viewCardComplaintDetail(index) {
+    try {
+        console.log('[CARD COMPLAINT] Viewing card complaint at index:', index);
+        const complaint = window.loadedCardComplaints ? window.loadedCardComplaints[index] : null;
+        openComplaintModal(complaint);
+    } catch (error) {
+        console.error('[CARD COMPLAINT] Error:', error);
     }
 }
 
@@ -674,6 +769,10 @@ async function resolveComplaintAction() {
             await showCustomModal('Complaint resolved successfully!');
             closeModal('complaintModal');
             loadComplaints();
+            const currentCard = localStorage.getItem('currentCardNumber');
+            if (currentCard) {
+                loadCardTransactionsAndComplaints(currentCard);
+            }
         } else {
             await showCustomModal('Error: ' + (response?.message || 'Failed to resolve complaint'));
         }
@@ -752,7 +851,8 @@ function addAdminNewMemberHtml(index) {
                     <option value="GOVERNMENT">Government</option>
                     <option value="PRIVATE">Private</option>
                     <option value="STUDENT">Student</option>
-                    <option value="HOUSE_WIFE">Homemaker</option>
+                    <option value="HOUSE_WIFE">House Wife</option>
+                    <option value="UNEMPLOYED">Unemployed</option>
                 </select>
             </div>
         </div>
@@ -802,6 +902,10 @@ async function rejectComplaintAction() {
             await showCustomModal('Complaint rejected successfully!');
             closeModal('complaintModal');
             loadComplaints();
+            const currentCard = localStorage.getItem('currentCardNumber');
+            if (currentCard) {
+                loadCardTransactionsAndComplaints(currentCard);
+            }
         } else {
             await showCustomModal('Error: ' + (response?.message || 'Failed to reject complaint'));
         }
@@ -904,9 +1008,21 @@ async function searchRationCard() {
             document.getElementById('cardHeadName').textContent = response[0].name || 'N/A';
             document.getElementById('cardTotalMembers').textContent = response.length;
             
-            // Re-fetch card data to populate exact Income if an endpoint exists, else render default state:
+            // Populate exact annual income of the cardholder
             const incomeEl = document.getElementById('cardAnnualIncome');
-            if (incomeEl) incomeEl.textContent = 'Data Protected';
+            try {
+                const cardDetails = await getCardDetails(cardNumber);
+                if (incomeEl) {
+                    if (cardDetails && cardDetails.annualIncome !== undefined && cardDetails.annualIncome !== null) {
+                        incomeEl.textContent = Number(cardDetails.annualIncome).toLocaleString('en-IN');
+                    } else {
+                        incomeEl.textContent = '0';
+                    }
+                }
+            } catch (incomeErr) {
+                console.warn('[CARD] Could not load annual income:', incomeErr);
+                if (incomeEl) incomeEl.textContent = '0';
+            }
 
             const membersList = document.getElementById('membersList');
             if (membersList) membersList.innerHTML = '';
@@ -962,6 +1078,69 @@ function switchCardTab(e, tabName) {
     if (tabName === 'complaints') document.getElementById('cardTabComplaints').style.display = 'block';
 }
 
+function viewCardTransactionDetail(index) {
+    const txn = window.loadedCardTransactions ? window.loadedCardTransactions[index] : null;
+    if (!txn) return;
+
+    let calculatedAmount = 0;
+    if (txn.costPerSupplies && Array.isArray(txn.costPerSupplies)) {
+        calculatedAmount = txn.costPerSupplies.reduce((sum, cost) => sum + cost, 0);
+    }
+
+    const txDate = txn.dateOfTransaction ? new Date(txn.dateOfTransaction) : new Date(txn.createdAt || Date.now());
+    const monthName = txn.transactionMonth || txDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const verifyMethod = txn.verificationMethod || (txn.faceVerified ? 'Face Verification' : 'Email OTP');
+    const txnId = txn.id || txn._id || 'N/A';
+
+    let suppliesHtml = '';
+    if (txn.suppliesName && Array.isArray(txn.suppliesName) && txn.suppliesName.length > 0) {
+        suppliesHtml = `
+            <div style="margin-top: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <strong style="color: var(--primary);"><i class="ri-shopping-basket-line"></i> Supplies Allocated:</strong>
+                <table style="width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #cbd5e1; text-align: left; background: #f1f5f9;">
+                            <th style="padding: 6px;">Item</th>
+                            <th style="padding: 6px;">Quantity</th>
+                            <th style="padding: 6px;">Cost (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${txn.suppliesName.map((name, i) => `
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 6px;">${name}</td>
+                                <td style="padding: 6px;">${txn.suppliesWeight && txn.suppliesWeight[i] !== undefined ? txn.suppliesWeight[i] + ' kg' : '--'}</td>
+                                <td style="padding: 6px;">₹${txn.costPerSupplies && txn.costPerSupplies[i] !== undefined ? txn.costPerSupplies[i] : '--'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    const content = `
+        <div style="font-size: 14px; line-height: 1.8;">
+            <p><strong>Receipt Number:</strong> <span style="font-family: monospace; font-weight: 600;">${txnId}</span></p>
+            <p><strong>Beneficiary Card:</strong> ${txn.beneficiaryUsername || localStorage.getItem('currentCardNumber') || 'N/A'}</p>
+            ${txn.aadhaarNumber ? `<p><strong>Verified Member Aadhaar:</strong> ${txn.aadhaarNumber}</p>` : ''}
+            <p><strong>Date & Time:</strong> ${txDate.toLocaleDateString()} ${txDate.toLocaleTimeString()}</p>
+            <p><strong>Ration Month:</strong> ${monthName}</p>
+            <p><strong>Total Amount Paid:</strong> <span style="font-weight: 700; color: var(--secondary);">₹${calculatedAmount}</span></p>
+            <p><strong>Distributor:</strong> ${txn.distributorUsername || 'N/A'}</p>
+            <p><strong>Status:</strong> <span class="status-badge" style="background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${txn.status || 'COMPLETED'}</span></p>
+            <p><strong>Verification Method:</strong> <span style="padding: 2px 8px; background: #e0f2fe; color: #0284c7; border-radius: 4px; font-weight: 500;">${verifyMethod}</span></p>
+            ${suppliesHtml}
+        </div>
+    `;
+
+    const contentEl = document.getElementById('txnDetailContent');
+    if (contentEl) contentEl.innerHTML = content;
+
+    const modal = document.getElementById('txnModal');
+    if (modal) modal.classList.add('active');
+}
+
 async function loadCardTransactionsAndComplaints(cardNumber) {
     try {
         const tResp = await apiRequest(`/admin/getBeneficiaryTransactions/${cardNumber}`, 'GET');
@@ -970,36 +1149,59 @@ async function loadCardTransactionsAndComplaints(cardNumber) {
         const tb = document.getElementById('rcTransactionsTableBody');
         tb.innerHTML = '';
         if (tResp && tResp.length > 0) {
-            tResp.forEach(tx => {
+            window.loadedCardTransactions = tResp;
+            tResp.forEach((tx, index) => {
                 const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.title = 'Click to view complete transaction details';
+                row.onclick = () => viewCardTransactionDetail(index);
                 row.innerHTML = `
-                    <td>${tx.id || 'N/A'}</td>
-                    <td>${new Date(tx.dateOfTransaction).toLocaleDateString()}</td>
-                    <td>Rs ${(tx.costPerSupplies || []).reduce((a, b) => a + b, 0)}</td>
-                    <td>${tx.distributorUsername}</td>
+                    <td><strong>${tx.id || 'N/A'}</strong></td>
+                    <td>${new Date(tx.dateOfTransaction || tx.createdAt).toLocaleDateString()}</td>
+                    <td>₹${(tx.costPerSupplies || []).reduce((a, b) => a + b, 0)}</td>
+                    <td>${tx.distributorUsername || 'N/A'}</td>
                     <td><span class="status-badge status-approved">SUCCESS</span></td>
+                    <td><button class="action-btn edit" onclick="event.stopPropagation(); viewCardTransactionDetail(${index})">View</button></td>
                 `;
                 tb.appendChild(row);
             });
         } else {
-            tb.innerHTML = '<tr><td colspan="5" style="text-align:center">No transactions</td></tr>';
+            window.loadedCardTransactions = [];
+            tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--gray);">No transactions found</td></tr>';
         }
 
         const cb = document.getElementById('rcComplaintsTableBody');
         cb.innerHTML = '';
         if (cResp && cResp.length > 0) {
-            cResp.forEach(cx => {
+            window.loadedCardComplaints = cResp;
+            cResp.forEach((cx, index) => {
+                const status = cx.status ? cx.status.toUpperCase() : 'PENDING';
+                let statusColor = '#d97706';
+                let statusBg = '#fef3c7';
+                if (status === 'RESOLVED' || status === 'PROCESSED') {
+                    statusColor = '#16a34a';
+                    statusBg = '#dcfce7';
+                } else if (status === 'REJECTED') {
+                    statusColor = '#dc2626';
+                    statusBg = '#fee2e2';
+                }
+
                 const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.title = 'Click to view complete complaint details';
+                row.onclick = () => viewCardComplaintDetail(index);
                 row.innerHTML = `
-                    <td>${cx.id || 'N/A'}</td>
-                    <td>${cx.complaintTitle}</td>
+                    <td><strong>${cx.id || 'N/A'}</strong></td>
+                    <td>${cx.complaintTitle || 'N/A'}</td>
                     <td>${new Date(cx.createdAt).toLocaleDateString()}</td>
-                    <td><span class="status-badge" style="background: var(--primary); color: white; padding: 4px 8px; border-radius: 4px; font-weight: 500;">${cx.status}</span></td>
+                    <td><span class="status-badge" style="color: ${statusColor}; background: ${statusBg}; padding: 4px 8px; border-radius: 4px; font-weight: 500;">${status}</span></td>
+                    <td><button class="action-btn edit" onclick="event.stopPropagation(); viewCardComplaintDetail(${index})">View</button></td>
                 `;
                 cb.appendChild(row);
             });
         } else {
-            cb.innerHTML = '<tr><td colspan="4" style="text-align:center">No complaints</td></tr>';
+            window.loadedCardComplaints = [];
+            cb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--gray);">No complaints found</td></tr>';
         }
     } catch (err) {
         console.error('Error fetching card Tx/Cx', err);

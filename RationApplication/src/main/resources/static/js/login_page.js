@@ -241,13 +241,36 @@
       if (response.success) {
         console.log("[LOGIN] Login successful");
 
-        setAuthToken(response.token);
-        localStorage.setItem("username", response.username || username);
-        localStorage.setItem("userRole", response.roles?.[0] || "");
-        localStorage.setItem("email", response.email || "");
-        localStorage.setItem("stateDistrictCode", response.stateDistrictCode || "");
+        if (typeof removeAuthToken === "function") {
+          removeAuthToken();
+        }
 
-        const role = response.roles?.[0];
+        setAuthToken(response.token);
+
+        let targetRole = currentRole;
+        if (response.roles && response.roles.length > 0) {
+          const cleanRoles = response.roles.map((r) => r.replace(/^ROLE_/, "").toUpperCase());
+          if (cleanRoles.includes(currentRole)) {
+            targetRole = currentRole;
+          } else {
+            targetRole = cleanRoles[0];
+          }
+        }
+
+        const usernameVal = response.username || username;
+        const emailVal = response.email || "";
+        const sdcVal = response.stateDistrictCode || "";
+
+        try {
+          sessionStorage.setItem("username", usernameVal);
+          localStorage.setItem("username", usernameVal);
+          sessionStorage.setItem("userRole", targetRole);
+          localStorage.setItem("userRole", targetRole);
+          sessionStorage.setItem("email", emailVal);
+          localStorage.setItem("email", emailVal);
+          sessionStorage.setItem("stateDistrictCode", sdcVal);
+          localStorage.setItem("stateDistrictCode", sdcVal);
+        } catch (_) {}
 
         showSuccess(
           "Login successful! Welcome, " +
@@ -256,13 +279,13 @@
         );
 
         setTimeout(() => {
-          console.log("[LOGIN] Redirecting to dashboard for role:", role);
+          console.log("[LOGIN] Redirecting to dashboard for role:", targetRole);
 
-          if (role === "BENEFICIARY") {
+          if (targetRole === "BENEFICIARY") {
             window.location.href = "/beneficiary_dashboard.html";
-          } else if (role === "DISTRIBUTOR") {
+          } else if (targetRole === "DISTRIBUTOR") {
             window.location.href = "/distributor_dashboard.html";
-          } else if (role === "ADMIN") {
+          } else if (targetRole === "ADMIN") {
             window.location.href = "/admin_dashboard.html";
           } else {
             window.location.href = "/index.html";
@@ -548,5 +571,6 @@
   `;
   document.head.appendChild(style);
 
+  syncRoleInputs("BENEFICIARY");
   console.log("[INIT] Login page initialized successfully");
 })();

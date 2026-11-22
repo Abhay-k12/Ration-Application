@@ -9,8 +9,8 @@ if (!window.getAuthToken || !window.login) {
     window.location.href = '/login_page.html';
 }
 
-const token = localStorage.getItem('jwtToken');
-const userRole = localStorage.getItem('userRole');
+const token = typeof getAuthToken === 'function' ? getAuthToken() : (sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken'));
+const userRole = typeof getUserRole === 'function' ? getUserRole() : (sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
 
 if (!token || userRole !== 'DISTRIBUTOR') {
     console.log('[AUTH] Not authorized as DISTRIBUTOR, redirecting');
@@ -19,8 +19,15 @@ if (!token || userRole !== 'DISTRIBUTOR') {
 
 // Check authentication on page load
 window.addEventListener('load', () => {
-    const token = getAuthToken();
-    const userRole = localStorage.getItem('userRole');
+    if (typeof isSessionValid === 'function' && !isSessionValid()) {
+        console.log('[AUTH] Distributor session duration expired (1 hr)');
+        removeAuthToken();
+        window.location.href = '/login_page.html';
+        return;
+    }
+
+    const token = typeof getAuthToken === 'function' ? getAuthToken() : (sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken'));
+    const userRole = typeof getUserRole === 'function' ? getUserRole() : (sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
 
     console.log('[AUTH] Token present:', token ? true : false);
     console.log('[AUTH] User role:', userRole);
@@ -31,10 +38,21 @@ window.addEventListener('load', () => {
         return;
     }
 
+    if (typeof touchSession === 'function') {
+        touchSession();
+    }
     console.log('[INIT] Loading distributor data');
     loadDistributorData();
     setupEventListeners();
     initializeFamilyForm();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (typeof isSessionValid === 'function' && isSessionValid()) {
+            if (typeof touchSession === 'function') touchSession();
+        }
+    }
 });
 
 function setupEventListeners() {
@@ -167,11 +185,11 @@ function addMemberForm(number, suffix = '') {
                 <label class="form-label">Employment Status</label>
                 <select class="form-control member-employment">
                     <option value="">Select status</option>
-                    <option value="GOVERNMENT">Government Employee</option>
-                    <option value="PRIVATE">Private Employee</option>
+                    <option value="GOVERNMENT">Government</option>
+                    <option value="PRIVATE">Private</option>
                     <option value="STUDENT">Student</option>
-                    <option value="HOUSE_WIFE">Homemaker</option>
-                    <option value="OTHER">Other</option>
+                    <option value="HOUSE_WIFE">House Wife</option>
+                    <option value="UNEMPLOYED">Unemployed</option>
                 </select>
             </div>
         </div>
