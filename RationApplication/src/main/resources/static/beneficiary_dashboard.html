@@ -68,7 +68,7 @@
                 <div class="nav-item active" data-module="module1"><i class="ri-profile-line"></i> Ration details</div>
                 <div class="nav-item" data-module="module2"><i class="ri-qr-code-line"></i> Generate QR</div>
                 <div class="nav-item" data-module="module3"><i class="ri-alert-line"></i> Register complaint</div>
-                <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> Complaint history</div>
+                <div class="nav-item" data-module="module4"><i class="ri-history-line"></i> View Complaints / History</div>
                 <div class="nav-item" data-module="module5"><i class="ri-file-list-3-line"></i> Transaction history
                 </div>
                 <div class="nav-item" data-module="module6"><i class="ri-calendar-line"></i> View Schemes</div>
@@ -125,14 +125,20 @@
 
             <!-- MODULE 2: Generate QR Through Ration Card of the beneficiary-->
             <div id="module2" class="module">
-                <div class="ration-card">
+                <div class="ration-card" id="rationCardCard" onclick="openEnlargedQRModal()" title="Click to enlarge QR Code for easy scanning">
+                    <div class="ration-card-tap-badge">
+                        <i class="ri-fullscreen-line"></i> Tap Card to Enlarge QR Code for Scanning
+                    </div>
                     <div class="ration-header">
                         <div class="govt-emblem">
                             <i class="ri-government-line" style="font-size:32px;"></i>
                             <div><strong>Government of India</strong><br>Ministry of Food</div>
                         </div>
-                        <div class="qr-code-placeholder" id="qrCodeDisplay">
+                        <div class="qr-code-placeholder" id="qrCodeDisplay" title="Click to enlarge">
                             <i class="ri-qr-code-line" style="font-size:32px;"></i>
+                            <div class="qr-zoom-overlay">
+                                <i class="ri-zoom-in-line"></i>
+                            </div>
                         </div>
                     </div>
                     <div style="display: flex; gap: 25px; align-items: center;">
@@ -152,13 +158,16 @@
                     </div>
                     <div style="margin-top:20px; background:#fef3c7; padding:15px; border-radius:16px;">
                         <i class="ri-information-line"></i> Show this QR code at the PDS shop to receive your monthly
-                        ration.
+                        ration. Tap anywhere on the card to open the enlarged scanner pass.
                     </div>
-                    <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="submit-btn" onclick="generateQRCode()" style="flex: 1;">
-                            <i class="ri-refresh-line"></i> Generate QR Code
+                    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="submit-btn" onclick="event.stopPropagation(); generateQRCode();" style="flex: 1; min-width: 140px;">
+                            <i class="ri-refresh-line"></i> Generate QR
                         </button>
-                        <button class="submit-btn" onclick="downloadQR()" style="flex: 1; background: #6B7280;">
+                        <button type="button" class="submit-btn" onclick="event.stopPropagation(); openEnlargedQRModal();" style="flex: 1; min-width: 140px; background: #0284c7;">
+                            <i class="ri-fullscreen-line"></i> Enlarge QR Code
+                        </button>
+                        <button type="button" class="submit-btn" onclick="event.stopPropagation(); downloadQR();" style="flex: 1; min-width: 120px; background: #6B7280;">
                             <i class="ri-download-line"></i> Download
                         </button>
                     </div>
@@ -231,24 +240,128 @@
         </main>
     </div>
 
+    <!-- MODAL for Enlarged QR Code (Scanner Ready & Spacious) -->
+    <div class="modal" id="qrModal">
+        <div class="modal-content qr-enlarged-modal-content">
+            <span class="close-modal" onclick="closeModal('qrModal')">&times;</span>
+            
+            <!-- Top official header banner -->
+            <div class="qr-modal-header-banner">
+                <div class="qr-govt-badge">
+                    <i class="ri-government-line"></i>
+                    <div>
+                        <h4>Department of Food & Public Distribution</h4>
+                        <span>National Food Security Portal · Targeted PDS Digital Pass</span>
+                    </div>
+                </div>
+                <div class="qr-active-pill">
+                    <span class="pulse-dot"></span>
+                    <span>Ready to Scan</span>
+                </div>
+            </div>
+
+            <!-- 2-column landscape body -->
+            <div class="qr-modal-body-grid">
+                <!-- Left Column: The QR code & Quick Actions -->
+                <div class="qr-modal-left-col">
+                    <div class="qr-scan-frame-wrapper">
+                        <div class="scan-bracket top-left"></div>
+                        <div class="scan-bracket top-right"></div>
+                        <div class="scan-bracket bottom-left"></div>
+                        <div class="scan-bracket bottom-right"></div>
+                        
+                        <div class="qr-large-container" id="modalQrCodeContainer">
+                            <div class="qr-modal-empty" id="modalQrPlaceholder">
+                                <i class="ri-qr-code-line"></i>
+                                <p>No QR Code generated yet</p>
+                                <button type="button" class="submit-btn" onclick="generateQRCode(true)" style="margin-top: 10px; width: auto; padding: 8px 18px;">
+                                    <i class="ri-refresh-line"></i> Generate Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="qr-modal-left-actions">
+                        <button type="button" class="submit-btn qr-action-btn" onclick="downloadQR()" style="background: var(--primary);">
+                            <i class="ri-download-2-line"></i> Download Pass
+                        </button>
+                        <button type="button" class="submit-btn qr-action-btn" onclick="generateQRCode(true)" style="background: #0284c7;">
+                            <i class="ri-refresh-line"></i> Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Ration Card Details & Verification Advice -->
+                <div class="qr-modal-right-col">
+                    <div class="qr-card-info-box">
+                        <div class="qr-info-row">
+                            <div class="qr-info-item">
+                                <span class="meta-label">Head of Family</span>
+                                <strong id="modalBeneficiaryName">--</strong>
+                            </div>
+                            <div class="qr-info-item">
+                                <span class="meta-label">Ration Card No.</span>
+                                <strong class="rc-badge-pill" id="modalRcNumber">--</strong>
+                            </div>
+                        </div>
+                        <div class="qr-info-row" style="margin-top: 14px;">
+                            <div class="qr-info-item">
+                                <span class="meta-label">Family Members</span>
+                                <strong id="modalFamilyCount">--</strong>
+                            </div>
+                            <div class="qr-info-item">
+                                <span class="meta-label">District / State</span>
+                                <strong id="modalDistrict">--</strong>
+                            </div>
+                            <div class="qr-info-item">
+                                <span class="meta-label">Card Status</span>
+                                <strong style="color: var(--secondary);"><i class="ri-checkbox-circle-fill"></i> Active</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="qr-scan-tip">
+                        <i class="ri-lightbulb-flash-line"></i>
+                        <div>
+                            <strong>Scanner Guidance:</strong>
+                            <span>Present this QR code 15–20 cm in front of the distributor's optical scanner or webcam with device screen brightness set to maximum.</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-modal-footer">
+                        <span class="qr-secure-note"><i class="ri-shield-check-line"></i> Authenticated TPDS Digital Ration Token</span>
+                        <button type="button" class="submit-btn qr-close-btn" onclick="closeModal('qrModal')">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL for complaint detail -->
     <div class="modal" id="complaintModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 620px;">
             <span class="close-modal" onclick="closeModal('complaintModal')">&times;</span>
-            <h3 style="color:var(--primary);">Complaint details</h3>
+            <h3 style="color: var(--primary); margin-bottom: 20px;"><i class="ri-file-list-line"></i> Complaint Details</h3>
             <div id="complaintDetailContent">
                 <p>Loading...</p>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" class="submit-btn" style="width: auto; padding: 8px 25px;" onclick="closeModal('complaintModal')">Close</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL for transaction detail -->
     <div class="modal" id="txnModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 580px;">
             <span class="close-modal" onclick="closeModal('txnModal')">&times;</span>
-            <h3 style="color:var(--primary);">Transaction receipt</h3>
+            <h3 style="color: var(--primary); margin-bottom: 20px;"><i class="ri-receipt-line"></i> Transaction Receipt</h3>
             <div id="txnDetailContent">
                 <p>Loading...</p>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" class="submit-btn" style="width: auto; padding: 8px 25px;" onclick="closeModal('txnModal')">Close</button>
             </div>
         </div>
     </div>
