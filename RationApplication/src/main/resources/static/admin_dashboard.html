@@ -201,6 +201,32 @@
                     </table>
                 </div>
             </div>
+ <!-- MODULE 2: Complaint Section -->
+            <div id="module2" class="module">
+                <div class="card">
+                    <div class="card-title"><i class="ri-error-warning-line"></i> Complaint Management</div>
+
+                    <table class="complaint-table">
+                        <thead>
+                            <tr>
+                                <th>Complaint ID</th>
+                                <th>Beneficiary</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--gray);">Loading complaints...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
 
             <!-- MODULE 3: Ration Card Service -->
             <div id="module3" class="module">
@@ -508,6 +534,7 @@
         </div>
     </div>
 
+
     <!-- Remove Member Modal -->
     <div class="modal" id="removeMemberModal">
         <div class="modal-content">
@@ -546,7 +573,6 @@
             </form>
         </div>
     </div>
-
     <!-- Camera Modal -->
     <div class="modal" id="cameraModal" style="z-index: 10001;">
         <div class="modal-content" style="max-width: 500px; text-align: center;">
@@ -568,6 +594,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Update Member Modal -->
     <div class="modal" id="updateMemberModal">
@@ -604,7 +631,8 @@
         </div>
     </div>
 
-    <!-- Update Card Details Modal -->
+   
+ <!-- Update Card Details Modal -->
     <div class="modal" id="updateCardModal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('updateCardModal')">&times;</span>
@@ -628,7 +656,13 @@
         </div>
     </div>
 
-    <!-- Transfer Member Modal -->
+
+
+
+
+
+
+ <!-- Transfer Member Modal -->
     <div class="modal" id="transferMemberModal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('transferMemberModal')">&times;</span>
@@ -652,6 +686,8 @@
             </button>
         </div>
     </div>
+
+
 
     <script src="js/api_client.js"></script>
     <script src="js/admin_dashboard.js"></script>

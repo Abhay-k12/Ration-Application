@@ -19,117 +19,218 @@ public class SchemeService {
     @Autowired
     private SchemeRepository schemeRepository;
 
-    public Scheme createScheme(Scheme scheme) {
-        try {
-            log.info("Creating scheme: {}", scheme.getSchemeName());
-            Scheme savedScheme = schemeRepository.save(scheme);
-            log.info("Scheme created with ID: {}", savedScheme.getId());
-            return savedScheme;
-        } catch (Exception e) {
-            log.error("Error creating scheme: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create scheme", e);
-        }
+public Scheme createScheme(Scheme scheme) {
+
+    try {
+
+        log.info("Creating scheme: {}", scheme.getSchemeName());
+
+
+        Scheme savedScheme =
+                schemeRepository.save(scheme);
+
+
+        log.info("Scheme created with ID: {}", savedScheme.getId());
+
+
+        return savedScheme;
+
+    } catch (Exception e) {
+
+        log.error("Error creating scheme: {}", e.getMessage(), e);
+
+
+        throw new RuntimeException("Failed to create scheme", e);
     }
+}
 
 
-    public Scheme getSchemeById(String schemeId) {
-        try {
-            log.info("Fetching scheme by ID: {}", schemeId);
-            Optional<Scheme> scheme = schemeRepository.findById(new ObjectId(schemeId));
-            return scheme.orElse(null);
-        } catch (Exception e) {
-            log.error("Error fetching scheme by ID: {}", e.getMessage(), e);
-            return null;
-        }
+
+
+public Scheme getSchemeById(String schemeId) {
+
+    try {
+
+        log.info("Fetching scheme by ID: {}", schemeId);
+
+
+        Optional<Scheme> scheme =
+                schemeRepository.findById(new ObjectId(schemeId));
+
+
+        return scheme.orElse(null);
+
+    } catch (Exception e) {
+
+        log.error("Error fetching scheme by ID: {}", e.getMessage(), e);
+
+
+        return null;
     }
+}
 
 
-    public List<Scheme> getAllSchemes() {
-        try {
-            log.info("Fetching all schemes");
-            return schemeRepository.findAll();
-        } catch (Exception e) {
-            log.error("Error fetching all schemes: {}", e.getMessage(), e);
-            return new ArrayList<>();
-        }
+
+
+public List<Scheme> getAllSchemes() {
+
+    try {
+
+        log.info("Fetching all schemes");
+
+
+        return schemeRepository.findAll();
+
+    } catch (Exception e) {
+
+        log.error("Error fetching all schemes: {}", e.getMessage(), e);
+
+
+        return new ArrayList<>();
     }
+}
+
+    
+public List<Scheme> getSchemesByDistrict(String stateDistrictCode) {
+
+    try {
+
+        log.info("Fetching schemes for district: {}", stateDistrictCode);
 
 
-    public List<Scheme> getSchemesByDistrict(String stateDistrictCode) {
-        try {
-            log.info("Fetching schemes for district: {}", stateDistrictCode);
-            List<Scheme> schemes = schemeRepository.findAll();
+        List<Scheme> schemes =
+                schemeRepository.findAll();
 
-            return schemes.stream()
-                    .filter(scheme -> scheme.getStateDistrictCode() != null &&
-                            scheme.getStateDistrictCode().equals(stateDistrictCode))
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("Error fetching schemes by district: {}", e.getMessage(), e);
-            return new ArrayList<>();
-        }
+
+        return schemes.stream()
+
+                .filter(scheme ->
+                        scheme.getStateDistrictCode() != null &&
+
+                        scheme.getStateDistrictCode().equals(stateDistrictCode)
+                )
+
+                .collect(Collectors.toList());
+
+    } catch (Exception e) {
+
+        log.error("Error fetching schemes by district: {}", e.getMessage(), e);
+
+
+        return new ArrayList<>();
     }
+}
+
+public Scheme updateScheme(String schemeId, Scheme schemeUpdates) {
+
+    try {
+
+        log.info("Updating scheme: {}", schemeId);
 
 
-    public Scheme updateScheme(String schemeId, Scheme schemeUpdates) {
-        try {
-            log.info("Updating scheme: {}", schemeId);
+        Optional<Scheme> existingScheme =
+                schemeRepository.findById(new ObjectId(schemeId));
 
-            Optional<Scheme> existingScheme = schemeRepository.findById(new ObjectId(schemeId));
 
-            if (existingScheme.isPresent()) {
-                Scheme scheme = existingScheme.get();
+        if (existingScheme.isPresent()) {
 
-                if (schemeUpdates.getSchemeName() != null) {
-                    scheme.setSchemeName(schemeUpdates.getSchemeName());
-                }
-                if (schemeUpdates.getSchemeType() != null) {
-                    scheme.setSchemeType(schemeUpdates.getSchemeType());
-                }
-                if (schemeUpdates.getStateDistrictCode() != null) {
-                    scheme.setStateDistrictCode(schemeUpdates.getStateDistrictCode());
-                }
-                if (schemeUpdates.getSuppliesName() != null) {
-                    scheme.setSuppliesName(schemeUpdates.getSuppliesName());
-                }
-                if (schemeUpdates.getSuppliesCost() != null) {
-                    scheme.setSuppliesCost(schemeUpdates.getSuppliesCost());
-                }
-                if (schemeUpdates.getSupplyPerPerson() != null) {
-                    scheme.setSupplyPerPerson(schemeUpdates.getSupplyPerPerson());
-                }
+            Scheme scheme = existingScheme.get();
 
-                Scheme updatedScheme = schemeRepository.save(scheme);
-                log.info("Scheme updated: {}", schemeId);
-                return updatedScheme;
+
+            if (schemeUpdates.getSchemeName() != null) {
+
+                scheme.setSchemeName(schemeUpdates.getSchemeName());
             }
 
-            log.warn("Scheme not found for update: {}", schemeId);
-            return null;
-        } catch (Exception e) {
-            log.error("Error updating scheme: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to update scheme", e);
-        }
-    }
 
+            if (schemeUpdates.getSchemeType() != null) {
 
-    public boolean deleteScheme(String schemeId) {
-        try {
-            log.info("Deleting scheme: {}", schemeId);
-
-            Optional<Scheme> scheme = schemeRepository.findById(new ObjectId(schemeId));
-
-            if (scheme.isPresent()) {
-                schemeRepository.deleteById(new ObjectId(schemeId));
-                log.info("Scheme deleted: {}", schemeId);
-                return true;
+                scheme.setSchemeType(schemeUpdates.getSchemeType());
             }
 
-            log.warn("Scheme not found for deletion: {}", schemeId);
-            return false;
-        } catch (Exception e) {
-            log.error("Error deleting scheme: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to delete scheme", e);
+
+            if (schemeUpdates.getStateDistrictCode() != null) {
+
+                scheme.setStateDistrictCode(schemeUpdates.getStateDistrictCode());
+            }
+
+
+            if (schemeUpdates.getSuppliesName() != null) {
+
+                scheme.setSuppliesName(schemeUpdates.getSuppliesName());
+            }
+
+
+            if (schemeUpdates.getSuppliesCost() != null) {
+
+                scheme.setSuppliesCost(schemeUpdates.getSuppliesCost());
+            }
+
+
+            if (schemeUpdates.getSupplyPerPerson() != null) {
+
+                scheme.setSupplyPerPerson(schemeUpdates.getSupplyPerPerson());
+            }
+
+
+            Scheme updatedScheme = schemeRepository.save(scheme);
+
+
+            log.info("Scheme updated: {}", schemeId);
+
+
+            return updatedScheme;
         }
+
+
+        log.warn("Scheme not found for update: {}", schemeId);
+
+
+        return null;
+
+    } catch (Exception e) {
+
+        log.error("Error updating scheme: {}", e.getMessage(), e);
+
+
+        throw new RuntimeException("Failed to update scheme", e);
+    }
+}
+
+
+public boolean deleteScheme(String schemeId) {
+
+    try {
+
+        log.info("Deleting scheme: {}", schemeId);
+
+
+        Optional<Scheme> scheme =
+                schemeRepository.findById(new ObjectId(schemeId));
+
+
+        if (scheme.isPresent()) {
+
+            schemeRepository.deleteById(new ObjectId(schemeId));
+
+
+            log.info("Scheme deleted: {}", schemeId);
+
+
+            return true;
+        }
+
+
+        log.warn("Scheme not found for deletion: {}", schemeId);
+
+
+        return false;
+
+    } catch (Exception e) {
+
+        log.error("Error deleting scheme: {}", e.getMessage(), e);
+
+
+        throw new RuntimeException("Failed to delete scheme", e);
     }
 }
