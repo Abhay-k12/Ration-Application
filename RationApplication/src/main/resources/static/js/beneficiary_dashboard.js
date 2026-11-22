@@ -3,8 +3,15 @@ let currentComplaints = [];
 let currentTransactions = [];
 
 window.addEventListener('load', () => {
-    const token = localStorage.getItem('jwtToken');
-    const userRole = localStorage.getItem('userRole');
+    if (typeof isSessionValid === 'function' && !isSessionValid()) {
+        console.log('[AUTH] Session duration (1 hr) expired, redirecting to login');
+        removeAuthToken();
+        window.location.href = '/login_page.html';
+        return;
+    }
+
+    const token = typeof getAuthToken === 'function' ? getAuthToken() : (sessionStorage.getItem('jwtToken') || localStorage.getItem('jwtToken'));
+    const userRole = typeof getUserRole === 'function' ? getUserRole() : (sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
 
     console.log('[AUTH] Token:', token ? 'Present' : 'Missing');
     console.log('[AUTH] Role:', userRole);
@@ -15,9 +22,21 @@ window.addEventListener('load', () => {
         return;
     }
 
+    if (typeof touchSession === 'function') {
+        touchSession();
+    }
     console.log('[INIT] Loading beneficiary data');
     loadBeneficiaryData();
     setupEventListeners();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (typeof isSessionValid === 'function' && isSessionValid()) {
+            if (typeof touchSession === 'function') touchSession();
+            console.log('[AUTH] Beneficiary tab active: 1-hour session refreshed');
+        }
+    }
 });
 
 function setupEventListeners() {
@@ -238,24 +257,6 @@ async function generateQRCode() {
     }
 }
 
-async function downloadQR() {
-    try {
-        const img = document.querySelector('#qrCodeDisplay img');
-        if (img) {
-            const link = document.createElement('a');
-            link.href = img.src;
-            link.download = 'ration-qr-code.png';
-            link.click();
-            console.log('[QR] QR code downloaded');
-        } else {
-            await showCustomModal('Please generate QR code first');
-        }
-    } catch (error) {
-        console.error('[QR] Download error:', error);
-        await showCustomModal('Error downloading QR code: ' + error.message);
-    }
-}
-
 async function handleComplaintSubmit(e) {
     e.preventDefault();
 
@@ -331,48 +332,97 @@ async function handleChangePassword(e) {
     }
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 async function loadComplaints() {
     try {
         console.log('[COMPLAINTS] Loading complaints');
+        if (typeof touchSession === 'function') {
+            touchSession();
+        }
 
         const response = await getBeneficiaryComplaints();
 
         console.log('[COMPLAINTS] Response:', response);
 
-        if (response && Array.isArray(response)) {
-            const container = document.getElementById('complaintHistoryContainer');
-            if (container) container.innerHTML = '';
+        const container = document.getElementById('complaintHistoryContainer');
+        if (!container) return;
+        container.innerHTML = '';
 
+        if (response && Array.isArray(response)) {
             if (response.length === 0) {
-                if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No complaints found</p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;"><i class="ri-inbox-line" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>No complaints found</p>';
                 return;
             }
 
             currentComplaints = response;
 
+            let tableHtml = `
+                <div class="table-responsive">
+                    <table class="complaint-table">
+                        <thead>
+                            <tr>
+                                <th>Complaint ID</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="beneficiaryComplaintsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = tableHtml;
+            const tbody = document.getElementById('beneficiaryComplaintsTableBody');
+
             response.forEach((complaint, index) => {
-                const statusClass = `status-${complaint.status.toLowerCase()}`;
-                const card = document.createElement('div');
-                card.className = `complaint-card`;
-                card.style.borderLeftColor = complaint.status === 'RESOLVED' ? 'var(--secondary)' :
-                    complaint.status === 'REJECTED' ? 'var(--danger)' :
-                        'var(--accent)';
-                card.onclick = () => viewComplaintDetail(index);
-                card.innerHTML = `
-                    <div>
-                        <strong>${complaint.complaintTitle}</strong>
-                        <br><small>${new Date(complaint.createdAt).toLocaleDateString()}</small>
-                    </div>
-                    <span class="status-badge ${statusClass}">${complaint.status}</span>
+                const status = complaint.status ? complaint.status.toUpperCase() : 'PENDING';
+                let statusColor = '#d97706';
+                let statusBg = '#fef3c7';
+                if (status === 'RESOLVED' || status === 'PROCESSED') {
+                    statusColor = '#16a34a';
+                    statusBg = '#dcfce7';
+                } else if (status === 'REJECTED') {
+                    statusColor = '#dc2626';
+                    statusBg = '#fee2e2';
+                }
+
+                const displayId = complaint.id ? (complaint.id.length > 12 ? complaint.id.substring(0, 10) + '...' : complaint.id) : ('CMP/' + (index + 1));
+                const complaintDate = complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'N/A';
+
+                const row = document.createElement('tr');
+                row.title = 'Click to view complete complaint details & resolution';
+                row.onclick = () => viewComplaintDetail(index);
+                row.innerHTML = `
+                    <td><strong style="font-family: monospace; color: var(--primary);">${escapeHtml(displayId)}</strong></td>
+                    <td><strong>${escapeHtml(complaint.complaintTitle || 'No Subject')}</strong></td>
+                    <td>${complaintDate}</td>
+                    <td><span class="status-badge" style="color: ${statusColor}; background: ${statusBg}; padding: 4px 10px; border-radius: 4px; font-weight: 500; font-size: 12px; box-shadow: none;">${status}</span></td>
+                    <td><button class="action-btn edit" onclick="event.stopPropagation(); viewComplaintDetail(${index})"><i class="ri-eye-line"></i> View</button></td>
                 `;
-                if (container) container.appendChild(card);
+                tbody.appendChild(row);
             });
+        } else if (response && (response.status === 401 || response.status === 403)) {
+            console.warn('[COMPLAINTS] Access restricted:', response);
+            container.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 40px;">Access restricted. Please ensure your beneficiary session is active.</p>';
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No complaints found</p>';
         }
     } catch (error) {
         console.error('[COMPLAINTS] Error:', error);
         const container = document.getElementById('complaintHistoryContainer');
         if (container) {
-            container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">Failed to load complaints</p>';
+            container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No complaints found</p>';
         }
     }
 }
@@ -385,16 +435,38 @@ async function loadTransactions() {
 
         console.log('[TRANSACTIONS] Response:', response);
 
-        if (response && Array.isArray(response)) {
-            const container = document.getElementById('transactionHistoryContainer');
-            if (container) container.innerHTML = '';
+        const container = document.getElementById('transactionHistoryContainer');
+        if (!container) return;
+        container.innerHTML = '';
 
+        if (response && Array.isArray(response)) {
             if (response.length === 0) {
-                if (container) container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No transactions found</p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;"><i class="ri-file-list-line" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>No transactions found</p>';
                 return;
             }
 
             currentTransactions = response;
+
+            let tableHtml = `
+                <div class="table-responsive">
+                    <table class="complaint-table">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Date & Time</th>
+                                <th>Amount (₹)</th>
+                                <th>Distributor</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="beneficiaryTransactionsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = tableHtml;
+            const tbody = document.getElementById('beneficiaryTransactionsTableBody');
 
             response.forEach((txn, index) => {
                 let calculatedAmount = 0;
@@ -402,25 +474,25 @@ async function loadTransactions() {
                     calculatedAmount = txn.costPerSupplies.reduce((sum, cost) => sum + cost, 0);
                 }
 
-                const isCompleted = txn.status === 'COMPLETED';
-                const statusBadgeClass = isCompleted ? 'taken' : 'skipped';
                 const txnId = txn.id || txn._id || 'N/A';
+                const displayId = txnId.length > 12 ? txnId.substring(0, 10) + '...' : txnId;
+                const txDate = txn.dateOfTransaction ? new Date(txn.dateOfTransaction) : new Date(txn.createdAt || Date.now());
 
-                const card = document.createElement('div');
-                card.className = 'txn-card';
-                card.onclick = () => viewTransactionDetail(index);
-                card.innerHTML = `
-                    <div>
-                        <strong>${new Date(txn.dateOfTransaction).toLocaleDateString()}</strong>
-                        <br><small>Receipt: ${txnId}</small>
-                    </div>
-                    <div style="text-align:right">
-                        <span class="txn-badge ${statusBadgeClass}">${isCompleted ? 'Received' : 'Skipped'}</span>
-                        <br><small>Amount: ₹${calculatedAmount}</small>
-                    </div>
+                const row = document.createElement('tr');
+                row.title = 'Click to view complete receipt & purchased commodities';
+                row.onclick = () => viewTransactionDetail(index);
+                row.innerHTML = `
+                    <td><strong style="font-family: monospace; color: var(--primary);">${escapeHtml(displayId)}</strong></td>
+                    <td>${txDate.toLocaleDateString()}</td>
+                    <td><strong style="color: var(--secondary);">₹${calculatedAmount}</strong></td>
+                    <td>${escapeHtml(txn.distributorUsername || 'N/A')}</td>
+                    <td><span class="status-badge" style="background: #dcfce7; color: #16a34a; padding: 4px 10px; border-radius: 4px; font-weight: 500; font-size: 12px; box-shadow: none;">${txn.status || 'COMPLETED'}</span></td>
+                    <td><button class="action-btn edit" onclick="event.stopPropagation(); viewTransactionDetail(${index})"><i class="ri-eye-line"></i> View</button></td>
                 `;
-                if (container) container.appendChild(card);
+                tbody.appendChild(row);
             });
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No transactions found</p>';
         }
     } catch (error) {
         console.error('[TRANSACTIONS] Error:', error);
@@ -496,14 +568,82 @@ function viewComplaintDetail(index) {
     const complaint = currentComplaints[index];
     if (!complaint) return;
 
+    const status = complaint.status ? complaint.status.toUpperCase() : 'PENDING';
+    let statusBadgeColor = '#d97706';
+    let statusBadgeBg = '#fef3c7';
+    if (status === 'RESOLVED' || status === 'PROCESSED') {
+        statusBadgeColor = '#16a34a';
+        statusBadgeBg = '#dcfce7';
+    } else if (status === 'REJECTED') {
+        statusBadgeColor = '#dc2626';
+        statusBadgeBg = '#fee2e2';
+    }
+
+    let resolutionSection = '';
+    if (complaint.resolutionNotes) {
+        const isRejected = (status === 'REJECTED');
+        const bg = isRejected ? '#fef2f2' : '#f0fdf4';
+        const border = isRejected ? '#fecaca' : '#bbf7d0';
+        const titleColor = isRejected ? '#dc2626' : '#16a34a';
+        const icon = isRejected ? 'ri-close-circle-line' : 'ri-checkbox-circle-line';
+        const label = isRejected ? 'Rejection Reason / Remarks from Authority:' : 'Resolution Remarks from Authority:';
+
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 15px; background: ${bg}; border-radius: 12px; border: 1px solid ${border};">
+                <strong style="color: ${titleColor}; font-size: 14px;"><i class="${icon}"></i> ${label}</strong>
+                <p style="margin-top: 8px; white-space: pre-wrap; font-size: 14px; color: #1e293b;">${escapeHtml(complaint.resolutionNotes)}</p>
+                ${complaint.resolvedAt ? `<p style="margin-top: 6px; font-size: 12px; color: var(--gray);">Action Taken On: ${new Date(complaint.resolvedAt).toLocaleString()}</p>` : ''}
+            </div>
+        `;
+    } else if (status === 'RESOLVED' || status === 'PROCESSED') {
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 12px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                <strong style="color: #16a34a; font-size: 13px;"><i class="ri-checkbox-circle-line"></i> This complaint has been resolved by the district administration.</strong>
+            </div>
+        `;
+    } else if (status === 'REJECTED') {
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 12px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                <strong style="color: #dc2626; font-size: 13px;"><i class="ri-close-circle-line"></i> This complaint was reviewed and closed by the administration.</strong>
+            </div>
+        `;
+    } else {
+        resolutionSection = `
+            <div style="margin-top: 15px; padding: 12px; background: #fffbeb; border-radius: 12px; border: 1px solid #fef3c7;">
+                <strong style="color: #b45309; font-size: 13px;"><i class="ri-time-line"></i> Status: Under Administrative Review</strong>
+                <p style="margin-top: 4px; font-size: 12px; color: #92400e; margin-bottom: 0;">Your grievance has been registered and is being evaluated by the TPDS district officer.</p>
+            </div>
+        `;
+    }
+
+    const createdDate = complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() + ' ' + new Date(complaint.createdAt).toLocaleTimeString() : 'N/A';
+
     const content = `
-        <p><strong>Complaint ID:</strong> ${complaint.id || 'N/A'}</p>
-        <p><strong>Subject:</strong> ${complaint.complaintTitle}</p>
-        <p><strong>Date:</strong> ${new Date(complaint.createdAt).toLocaleDateString()}</p>
-        <p><strong>Status:</strong> <span class="status-badge status-${complaint.status.toLowerCase()}">${complaint.status}</span></p>
-        <p><strong>Description:</strong> ${complaint.description}</p>
-        ${complaint.resolutionNotes ? `<p><strong>Resolution Notes:</strong> ${complaint.resolutionNotes}</p>` : ''}
-        ${complaint.resolvedAt ? `<p><strong>Resolved At:</strong> ${new Date(complaint.resolvedAt).toLocaleDateString()}</p>` : ''}
+        <div style="font-size: 14px; line-height: 1.8;">
+            <p><strong>Complaint ID:</strong> <span style="font-family: monospace; font-weight: 600; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">${escapeHtml(complaint.id || 'N/A')}</span></p>
+            <p><strong>Subject:</strong> <span>${escapeHtml(complaint.complaintTitle || 'No Subject')}</span></p>
+            <p><strong>Category:</strong> <span>${escapeHtml(complaint.category || 'General')}</span></p>
+            <p><strong>Registered Date:</strong> <span>${createdDate}</span></p>
+            <p><strong>Status:</strong> <span class="status-badge" style="color: ${statusBadgeColor}; background: ${statusBadgeBg}; padding: 2px 10px; border-radius: 4px; font-weight: 600; font-size: 12px; box-shadow: none;">${status}</span></p>
+
+            <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <strong style="color: var(--secondary);"><i class="ri-file-text-line"></i> Complaint Body / Description:</strong>
+                <p style="margin-top: 8px; white-space: pre-wrap; font-size: 14px; color: #1e293b;">${escapeHtml(complaint.description || 'No description provided.')}</p>
+            </div>
+
+            ${complaint.documentLink ? `
+                <div style="margin-top: 15px; padding: 14px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                    <strong style="color: #16a34a;"><i class="ri-links-line"></i> Attached Supporting Document:</strong>
+                    <p style="margin-top: 6px; word-break: break-all; margin-bottom: 0;">
+                        <a href="${escapeHtml(complaint.documentLink)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 500;">
+                            <i class="ri-external-link-line"></i> Open Attached Document
+                        </a>
+                    </p>
+                </div>
+            ` : ''}
+
+            ${resolutionSection}
+        </div>
     `;
 
     const contentEl = document.getElementById('complaintDetailContent');
@@ -522,20 +662,55 @@ function viewTransactionDetail(index) {
         calculatedAmount = txn.costPerSupplies.reduce((sum, cost) => sum + cost, 0);
     }
 
-    const isCompleted = txn.status === 'COMPLETED';
-    const txDate = new Date(txn.dateOfTransaction);
-    const monthName = txDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-    const verifyMethod = txn.faceVerified ? 'Face Verification' : 'Manual / QR';
+    const txDate = txn.dateOfTransaction ? new Date(txn.dateOfTransaction) : new Date(txn.createdAt || Date.now());
+    const monthName = txn.transactionMonth || txDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const verifyMethod = txn.verificationMethod || (txn.faceVerified ? 'Face Verification' : 'Email OTP');
     const txnId = txn.id || txn._id || 'N/A';
 
+    let suppliesHtml = '';
+    if (txn.suppliesName && Array.isArray(txn.suppliesName) && txn.suppliesName.length > 0) {
+        suppliesHtml = `
+            <div style="margin-top: 15px; padding: 14px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <strong style="color: var(--primary); font-size: 14px;"><i class="ri-shopping-basket-line"></i> Items / Supplies Purchased:</strong>
+                <table style="width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #cbd5e1; text-align: left; background: #f1f5f9;">
+                            <th style="padding: 8px 10px; color: var(--primary);">Commodity</th>
+                            <th style="padding: 8px 10px; color: var(--primary);">Allocated Quantity</th>
+                            <th style="padding: 8px 10px; color: var(--primary);">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${txn.suppliesName.map((name, i) => `
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px; font-weight: 500;">${escapeHtml(name)}</td>
+                                <td style="padding: 8px 10px;">${txn.suppliesWeight && txn.suppliesWeight[i] !== undefined ? txn.suppliesWeight[i] + ' kg' : '--'}</td>
+                                <td style="padding: 8px 10px; font-weight: 600; color: var(--secondary);">₹${txn.costPerSupplies && txn.costPerSupplies[i] !== undefined ? txn.costPerSupplies[i] : '--'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        suppliesHtml = `
+            <div style="margin-top: 15px; padding: 12px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 13px; color: var(--gray); font-style: italic;"><i class="ri-information-line"></i> Standard subsidized monthly ration quota allocated.</p>
+            </div>
+        `;
+    }
+
     const content = `
-        <p><strong>Receipt Number:</strong> ${txnId}</p>
-        <p><strong>Date & Time:</strong> ${txDate.toLocaleDateString()} ${txDate.toLocaleTimeString()}</p>
-        <p><strong>Amount Paid:</strong> ₹${calculatedAmount}</p>
-        <p><strong>Month:</strong> ${monthName}</p>
-        <p><strong>Status:</strong> <span class="txn-badge ${isCompleted ? 'taken' : 'skipped'}">${txn.status || 'Skipped'}</span></p>
-        <p><strong>Distributor:</strong> ${txn.distributorUsername || 'N/A'}</p>
-        <p><strong>Verification Method:</strong> ${verifyMethod}</p>
+        <div style="font-size: 14px; line-height: 1.8;">
+            <p><strong>Receipt Number:</strong> <span style="font-family: monospace; font-weight: 600; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">${escapeHtml(txnId)}</span></p>
+            <p><strong>Date & Time:</strong> ${txDate.toLocaleDateString()} ${txDate.toLocaleTimeString()}</p>
+            <p><strong>Ration Month:</strong> ${monthName}</p>
+            <p><strong>Total Amount Paid:</strong> <span style="font-weight: 700; color: var(--secondary); font-size: 15px;">₹${calculatedAmount}</span></p>
+            <p><strong>Distributor / FPS:</strong> ${escapeHtml(txn.distributorUsername || 'N/A')}</p>
+            <p><strong>Status:</strong> <span class="status-badge" style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-weight: 600; font-size: 12px; box-shadow: none;">${txn.status || 'COMPLETED'}</span></p>
+            <p><strong>Verification Method:</strong> <span style="padding: 2px 10px; background: #e0f2fe; color: #0284c7; border-radius: 4px; font-weight: 500; font-size: 12px;">${verifyMethod}</span></p>
+            ${suppliesHtml}
+        </div>
     `;
 
     const contentEl = document.getElementById('txnDetailContent');
@@ -558,3 +733,159 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
+/* ==========================================================================
+   ENLARGED QR CODE MODAL LOGIC
+   ========================================================================== */
+let currentQrCodeData = null;
+
+function openEnlargedQRModal() {
+    const beneficiaryName = document.getElementById('qrBeneficiaryName')?.textContent || 
+                            document.getElementById('beneficiaryName')?.textContent || 
+                            localStorage.getItem('username') || 'Beneficiary';
+    const rcNumber = document.getElementById('qrRationCard')?.textContent || 
+                     document.getElementById('rcNumber')?.textContent || 
+                     localStorage.getItem('username') || '--';
+    const rawFamilyCount = document.getElementById('qrFamilyCount')?.textContent || 
+                           document.getElementById('memberCount')?.textContent || '--';
+    const district = localStorage.getItem('stateDistrictCode') || 'UP-01';
+
+    const modalNameEl = document.getElementById('modalBeneficiaryName');
+    const modalRcEl = document.getElementById('modalRcNumber');
+    const modalCountEl = document.getElementById('modalFamilyCount');
+    const modalDistrictEl = document.getElementById('modalDistrict');
+    const modalContainer = document.getElementById('modalQrCodeContainer');
+    const modal = document.getElementById('qrModal');
+
+    if (modalNameEl) modalNameEl.textContent = beneficiaryName;
+    if (modalRcEl) modalRcEl.textContent = rcNumber;
+    if (modalCountEl) {
+        modalCountEl.textContent = (rawFamilyCount.includes('Members') || rawFamilyCount.includes('Member')) 
+            ? rawFamilyCount 
+            : (rawFamilyCount !== '--' ? rawFamilyCount + ' Members' : '--');
+    }
+    if (modalDistrictEl) modalDistrictEl.textContent = district;
+
+    if (modal) modal.classList.add('active');
+
+    // Check if QR code is already generated
+    const existingImg = document.querySelector('#qrCodeDisplay img');
+    if (currentQrCodeData) {
+        if (modalContainer) {
+            modalContainer.innerHTML = `<img src="${currentQrCodeData}" alt="Enlarged Ration QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
+        }
+    } else if (existingImg && existingImg.src) {
+        currentQrCodeData = existingImg.src;
+        if (modalContainer) {
+            modalContainer.innerHTML = `<img src="${existingImg.src}" alt="Enlarged Ration QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
+        }
+    } else {
+        // Automatically generate if not yet created
+        generateQRCode(true);
+    }
+}
+
+async function generateQRCode(isFromModal = false) {
+    let btn = null;
+    try {
+        if (typeof event !== 'undefined' && event && event.target) {
+            btn = event.target.closest('button');
+        }
+    } catch (_) {}
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i> Generating...';
+    }
+
+    const modalContainer = document.getElementById('modalQrCodeContainer');
+    if (isFromModal && modalContainer) {
+        modalContainer.innerHTML = `
+            <div class="qr-modal-empty" style="color: var(--primary);">
+                <i class="ri-loader-4-line" style="font-size: 42px; animation: spin 1s linear infinite;"></i>
+                <p style="margin-top: 10px; font-weight: 500;">Generating high-resolution QR...</p>
+            </div>
+        `;
+    }
+
+    try {
+        console.log('[QR] Generating QR code');
+        const response = await apiRequest('/beneficiary/generateQR', 'POST');
+
+        if (response && response.success && response.qrCodeImage) {
+            currentQrCodeData = response.qrCodeImage;
+
+            // Update card preview
+            const qrDisplay = document.getElementById('qrCodeDisplay');
+            if (qrDisplay) {
+                qrDisplay.innerHTML = `
+                    <img src="${response.qrCodeImage}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">
+                    <div class="qr-zoom-overlay"><i class="ri-zoom-in-line"></i></div>
+                `;
+            }
+
+            // Update enlarged modal
+            if (modalContainer) {
+                modalContainer.innerHTML = `<img src="${response.qrCodeImage}" alt="Enlarged Ration QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
+            }
+
+            console.log('[QR] QR code generated successfully');
+        } else {
+            console.log('[QR] Failed:', response?.message);
+            if (modalContainer && isFromModal) {
+                modalContainer.innerHTML = `
+                    <div class="qr-modal-empty">
+                        <i class="ri-error-warning-line" style="color: var(--danger); font-size: 40px;"></i>
+                        <p style="color: var(--danger); margin-top: 6px;">${response?.message || 'Failed to generate QR'}</p>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('[QR] Error:', error);
+        if (modalContainer && isFromModal) {
+            modalContainer.innerHTML = `
+                <div class="qr-modal-empty">
+                    <i class="ri-error-warning-line" style="color: var(--danger); font-size: 40px;"></i>
+                    <p style="color: var(--danger); margin-top: 6px;">Error: ${error.message}</p>
+                </div>
+            `;
+        } else {
+            await showCustomModal('Error: ' + error.message);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-refresh-line"></i> Generate QR';
+        }
+    }
+}
+
+async function downloadQR() {
+    try {
+        const img = document.querySelector('#modalQrCodeContainer img') || 
+                    document.querySelector('#qrCodeDisplay img');
+        if (img && img.src) {
+            const rcNumber = document.getElementById('qrRationCard')?.textContent || 
+                             localStorage.getItem('username') || 'RationCard';
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `RationPass_${rcNumber.trim()}.png`;
+            link.click();
+            console.log('[QR] QR code downloaded');
+        } else {
+            await showCustomModal('Please generate the QR code first');
+        }
+    } catch (error) {
+        console.error('[QR] Download error:', error);
+        await showCustomModal('Error downloading QR code: ' + error.message);
+    }
+}
+
+// Close modal on Escape key
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+    }
+});
