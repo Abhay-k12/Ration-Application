@@ -298,6 +298,16 @@ async function registerDistributor(username, password, email, stateDistrictCode)
 }
 
 // ===== UTILITY FUNCTIONS =====
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function logout() {
     removeAuthToken();
     window.location.href = '/login_page.html';
@@ -317,6 +327,10 @@ function getUsername() {
 
 async function getCardDetails(cardNumber) {
     return apiRequest(`/admin/getCardDetails/${cardNumber}`, 'GET');
+}
+
+async function getDistributorAnalytics(distributorUsername) {
+    return apiRequest(`/admin/getDistributorAnalytics/${encodeURIComponent(distributorUsername)}`, 'GET');
 }
 
 async function getBeneficiaryMembers() {
