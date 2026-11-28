@@ -39,6 +39,16 @@ window.addEventListener('load', () => {
     setupEventListeners();
 });
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         if (typeof isSessionValid === 'function' && isSessionValid()) {
@@ -940,9 +950,14 @@ async function loadDistributors() {
                     <td>${dist.email}</td>
                     <td>${dist.stateDistrictCode}</td>
                     <td>
-                        <button class="shift-btn" onclick="openComposeMail('${dist.email}')">
-                            <i class="ri-mail-send-line"></i> Compose Email
-                        </button>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <button class="action-btn mail" onclick="openComposeMail('${dist.email}')" title="Send email to distributor">
+                                <i class="ri-mail-send-line"></i> Compose Email
+                            </button>
+                            <button class="action-btn analytics" onclick="viewDistributorAnalytics('${dist.username}', '${dist.email}', '${dist.stateDistrictCode}')" title="View allocation analytics & statistics">
+                                <i class="ri-pie-chart-line"></i> See Analytics
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1645,4 +1660,224 @@ async function submitTransferMemberAction() {
             }
         } catch (e) { await showCustomModal("Error: " + e.message); }
     }
+}
+
+/* ==========================================================================
+   DISTRIBUTOR ALLOCATION ANALYTICS DASHBOARD
+   ========================================================================== */
+let distributorCommodityChart = null;
+let distributorSchemeChart = null;
+
+async function viewDistributorAnalytics(distributorUsername, email = '', district = '') {
+    const modal = document.getElementById('distributorAnalyticsModal');
+    if (!modal) return;
+
+    // Reset UI elements
+    document.getElementById('analyticsDistributorName').textContent = distributorUsername || '--';
+    document.getElementById('analyticsDistributorDistrict').textContent = district || localStorage.getItem('stateDistrictCode') || 'District';
+    document.getElementById('analyticsDistributorEmail').textContent = email ? `(${email})` : '';
+
+    const loadingEl = document.getElementById('analyticsLoadingState');
+    const emptyEl = document.getElementById('analyticsEmptyState');
+    const contentEl = document.getElementById('analyticsContent');
+
+    loadingEl.style.display = 'block';
+    emptyEl.style.display = 'none';
+    contentEl.style.display = 'none';
+
+    modal.classList.add('active');
+
+    try {
+        console.log('[ANALYTICS] Fetching analytics for:', distributorUsername);
+        const data = await getDistributorAnalytics(distributorUsername);
+
+        loadingEl.style.display = 'none';
+
+        if (!data || !data.totalTransactions || data.totalTransactions === 0) {
+            emptyEl.style.display = 'block';
+            return;
+        }
+
+        contentEl.style.display = 'block';
+
+        // 1. Populate KPI Tiles
+        document.getElementById('kpiBeneficiaries').textContent = (data.totalBeneficiariesServed || 0).toLocaleString('en-IN');
+        document.getElementById('kpiTransactions').textContent = (data.totalTransactions || 0).toLocaleString('en-IN');
+        document.getElementById('kpiRevenue').textContent = `₹${(data.totalRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('kpiQuantity').textContent = `${(data.totalQuantityDistributed || 0).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} kg`;
+
+        // 2. Authentication Channels
+        document.getElementById('analyticsFaceCount').textContent = `${data.faceVerifications || 0} (${data.totalTransactions ? Math.round((data.faceVerifications / data.totalTransactions) * 100) : 0}%)`;
+        document.getElementById('analyticsOtpCount').textContent = `${data.otpVerifications || 0} (${data.totalTransactions ? Math.round((data.otpVerifications / data.totalTransactions) * 100) : 0}%)`;
+
+        // 3. Render Commodity Pie Chart
+        renderCommodityChart(data.commodities || []);
+
+        // 4. Render Scheme Doughnut Chart
+        renderSchemeChart(data.schemes || []);
+
+        // 5. Populate Commodity Audit Table
+        populateCommodityAuditTable(data.commodities || []);
+
+    } catch (error) {
+        console.error('[ANALYTICS] Error loading analytics:', error);
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        const p = emptyEl.querySelector('p');
+        if (p) p.textContent = `Error loading analytics: ${error.message}`;
+    }
+}
+
+function renderCommodityChart(commodities) {
+    const canvas = document.getElementById('commodityPieChart');
+    if (!canvas) return;
+
+    if (distributorCommodityChart) {
+        distributorCommodityChart.destroy();
+        distributorCommodityChart = null;
+    }
+
+    const badge = document.getElementById('commodityCountBadge');
+    if (badge) badge.textContent = `${commodities.length} Commodities`;
+
+    if (!commodities || commodities.length === 0) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    const labels = commodities.map(c => c.name);
+    const weights = commodities.map(c => c.totalWeight);
+    const revenues = commodities.map(c => c.totalRevenue);
+
+    // Harmonious palette: Emerald, Navy, Amber, Sky Blue, Rose, Violet
+    const palette = ['#10b981', '#1e3a8a', '#f59e0b', '#0284c7', '#f43f5e', '#8b5cf6', '#14b8a6', '#64748b'];
+
+    distributorCommodityChart = new Chart(canvas, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: weights,
+                backgroundColor: palette.slice(0, labels.length),
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 12,
+                        font: { family: 'Poppins', size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const index = context.dataIndex;
+                            const weight = weights[index] || 0;
+                            const revenue = revenues[index] || 0;
+                            return ` ${context.label}: ${weight.toFixed(1)} kg (₹${revenue.toLocaleString('en-IN')})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderSchemeChart(schemes) {
+    const canvas = document.getElementById('schemeDoughnutChart');
+    if (!canvas) return;
+
+    if (distributorSchemeChart) {
+        distributorSchemeChart.destroy();
+        distributorSchemeChart = null;
+    }
+
+    const badge = document.getElementById('schemeCountBadge');
+    if (badge) badge.textContent = `${schemes.length} Schemes`;
+
+    if (!schemes || schemes.length === 0) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    const labels = schemes.map(s => s.schemeName || s.schemeType);
+    const counts = schemes.map(s => s.count);
+    const percentages = schemes.map(s => s.percentage);
+
+    const palette = ['#f59e0b', '#1e3a8a', '#10b981', '#6366f1', '#ec4899', '#06b6d4'];
+
+    distributorSchemeChart = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: counts,
+                backgroundColor: palette.slice(0, labels.length),
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 12,
+                        font: { family: 'Poppins', size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const index = context.dataIndex;
+                            const count = counts[index] || 0;
+                            const pct = percentages[index] || 0;
+                            return ` ${context.label}: ${count} allocations (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function populateCommodityAuditTable(commodities) {
+    const tbody = document.getElementById('commodityAuditTableBody');
+    if (!tbody) return;
+
+    if (!commodities || commodities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray); padding: 25px;">No commodity distribution records found for this distributor</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = commodities.map(item => `
+        <tr>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--secondary); display: inline-block;"></span>
+                    <strong style="color: var(--primary); font-size: 14px;">${escapeHtml(item.name)}</strong>
+                </div>
+            </td>
+            <td><strong>${(item.totalWeight || 0).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} kg</strong></td>
+            <td><span style="font-weight: 700; color: var(--secondary); font-size: 14px;">₹${(item.totalRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+            <td><span style="color: #64748b; font-family: monospace; font-size: 13px;">₹${(item.avgRate || 0).toFixed(2)} / kg</span></td>
+            <td><span class="status-badge" style="background: #e0f2fe; color: #0369a1; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">${item.allocationCount || 0} allocations</span></td>
+        </tr>
+    `).join('');
 }

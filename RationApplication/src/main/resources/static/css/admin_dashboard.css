@@ -478,6 +478,46 @@ nav ul li a:hover {
     color: white;
 }
 
+.action-btn.mail, .shift-btn {
+    background: rgba(30, 58, 138, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(30, 58, 138, 0.25);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn.mail:hover, .shift-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.action-btn.analytics {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--secondary);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn.analytics:hover {
+    background: var(--secondary);
+    color: white;
+}
+
 /* ===== CASE CARD ===== */
 .case-card {
     background: white;
