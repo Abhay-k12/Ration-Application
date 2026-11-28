@@ -46,6 +46,10 @@ public class Transaction {
     @Indexed
     private String distributorUsername;
 
+    private String schemeName;
+
+    private String schemeType;
+
     private Long createdAt;
 
     private Status status;
