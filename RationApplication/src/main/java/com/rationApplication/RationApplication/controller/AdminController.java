@@ -308,6 +308,20 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/getDistributorAnalytics/{distributorUsername}")
+    public ResponseEntity<?> getDistributorAnalytics(@PathVariable String distributorUsername) {
+        try {
+            Map<String, Object> analytics = transactionService.getDistributorAnalytics(distributorUsername);
+            return new ResponseEntity<>(analytics, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error fetching analytics for distributor {}: {}", distributorUsername, e.getMessage());
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "Error fetching analytics: " + e.getMessage());
+            return new ResponseEntity<>(err, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/getDashboardStats")
     public ResponseEntity<?> getDashboardStats(Authentication authentication) {
         try {
