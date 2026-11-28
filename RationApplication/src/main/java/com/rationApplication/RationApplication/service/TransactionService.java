@@ -15,9 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -95,6 +93,8 @@ public class TransactionService {
             transaction.setFaceVerified(isFace);
             transaction.setVerificationMethod(isFace ? "Face Verification" : "Email OTP");
             transaction.setDistributorUsername(distributorUsername);
+            transaction.setSchemeName(scheme.getSchemeName());
+            transaction.setSchemeType(applicableScheme != null ? applicableScheme.name() : (scheme.getSchemeType() != null ? scheme.getSchemeType().name() : "GENERAL"));
             transaction.setStatus(Status.COMPLETED);
             transaction.setCreatedAt(System.currentTimeMillis());
 
@@ -398,6 +398,132 @@ public class TransactionService {
             log.error("Error counting transactions: {}", e.getMessage());
             return 0;
         }
+    }
+
+    public Map<String, Object> getDistributorAnalytics(String distributorUsername) {
+        Map<String, Object> analytics = new HashMap<>();
+        List<Transaction> transactions = transactionRepository.findByDistributorUsername(distributorUsername);
+        if (transactions == null) {
+            transactions = new ArrayList<>();
+        }
+
+        int totalTransactions = transactions.size();
+        Set<String> uniqueBeneficiaries = new HashSet<>();
+        double totalRevenue = 0.0;
+        double totalQuantity = 0.0;
+        int faceCount = 0;
+        int otpCount = 0;
+
+        // Commodity breakdown: name -> {totalWeight, totalRevenue, count}
+        Map<String, Map<String, Object>> commodityMap = new LinkedHashMap<>();
+
+        // Scheme breakdown: schemeType -> count
+        Map<String, Integer> schemeCountMap = new LinkedHashMap<>();
+        Map<String, String> schemeNameMap = new HashMap<>();
+
+        for (Transaction tx : transactions) {
+            if (tx.getBeneficiaryUsername() != null && !tx.getBeneficiaryUsername().isEmpty()) {
+                uniqueBeneficiaries.add(tx.getBeneficiaryUsername());
+            }
+
+            // Verification method
+            String vMethod = tx.getVerificationMethod();
+            if (vMethod != null && (vMethod.equalsIgnoreCase("Face Verification") || vMethod.equalsIgnoreCase("FACE") || tx.isFaceVerified())) {
+                faceCount++;
+            } else {
+                otpCount++;
+            }
+
+            // Scheme tracking
+            String sType = tx.getSchemeType();
+            String sName = tx.getSchemeName();
+            if (sType == null || sType.isEmpty()) {
+                try {
+                    Beneficiary ben = beneficiaryRepository.findByUsername(tx.getBeneficiaryUsername());
+                    if (ben != null && ben.getAnnualIncome() > 0) {
+                        SchemeType resolved = determineSchemeByIncome(ben.getAnnualIncome());
+                        sType = resolved != null ? resolved.name() : "INCOME_BASED";
+                        sName = sType + " Quota Scheme";
+                    } else {
+                        sType = "STANDARD";
+                        sName = "Standard TPDS Subsidized Quota";
+                    }
+                } catch (Exception e) {
+                    sType = "STANDARD";
+                    sName = "Standard Subsidized Scheme";
+                }
+            }
+            if (sName == null || sName.isEmpty()) {
+                sName = sType + " Ration Scheme";
+            }
+            schemeCountMap.put(sType, schemeCountMap.getOrDefault(sType, 0) + 1);
+            schemeNameMap.putIfAbsent(sType, sName);
+
+            // Supplies breakdown
+            List<String> names = tx.getSuppliesName();
+            List<Float> weights = tx.getSuppliesWeight();
+            List<Float> costs = tx.getCostPerSupplies();
+
+            if (names != null && !names.isEmpty()) {
+                for (int i = 0; i < names.size(); i++) {
+                    String cName = names.get(i);
+                    float weight = (weights != null && i < weights.size() && weights.get(i) != null) ? weights.get(i) : 0f;
+                    float cost = (costs != null && i < costs.size() && costs.get(i) != null) ? costs.get(i) : 0f;
+
+                    totalQuantity += weight;
+                    totalRevenue += cost;
+
+                    Map<String, Object> cData = commodityMap.computeIfAbsent(cName, k -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("name", k);
+                        map.put("totalWeight", 0.0);
+                        map.put("totalRevenue", 0.0);
+                        map.put("allocationCount", 0);
+                        return map;
+                    });
+
+                    cData.put("totalWeight", ((Double) cData.get("totalWeight")) + weight);
+                    cData.put("totalRevenue", ((Double) cData.get("totalRevenue")) + cost);
+                    cData.put("allocationCount", ((Integer) cData.get("allocationCount")) + 1);
+                }
+            }
+        }
+
+        // Format commodities list with avgRate
+        List<Map<String, Object>> commodityList = new ArrayList<>();
+        for (Map<String, Object> item : commodityMap.values()) {
+            double w = (Double) item.get("totalWeight");
+            double r = (Double) item.get("totalRevenue");
+            double avgRate = w > 0 ? (r / w) : 0.0;
+            item.put("avgRate", Math.round(avgRate * 100.0) / 100.0);
+            item.put("totalWeight", Math.round(w * 100.0) / 100.0);
+            item.put("totalRevenue", Math.round(r * 100.0) / 100.0);
+            commodityList.add(item);
+        }
+
+        // Format schemes list
+        List<Map<String, Object>> schemeList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : schemeCountMap.entrySet()) {
+            Map<String, Object> sMap = new HashMap<>();
+            sMap.put("schemeType", entry.getKey());
+            sMap.put("schemeName", schemeNameMap.getOrDefault(entry.getKey(), entry.getKey()));
+            sMap.put("count", entry.getValue());
+            double pct = totalTransactions > 0 ? ((double) entry.getValue() * 100.0 / totalTransactions) : 0.0;
+            sMap.put("percentage", Math.round(pct * 10.0) / 10.0);
+            schemeList.add(sMap);
+        }
+
+        analytics.put("distributorUsername", distributorUsername);
+        analytics.put("totalBeneficiariesServed", uniqueBeneficiaries.size());
+        analytics.put("totalTransactions", totalTransactions);
+        analytics.put("totalRevenue", Math.round(totalRevenue * 100.0) / 100.0);
+        analytics.put("totalQuantityDistributed", Math.round(totalQuantity * 100.0) / 100.0);
+        analytics.put("commodities", commodityList);
+        analytics.put("schemes", schemeList);
+        analytics.put("faceVerifications", faceCount);
+        analytics.put("otpVerifications", otpCount);
+
+        return analytics;
     }
 
     // RESULT CLASS
